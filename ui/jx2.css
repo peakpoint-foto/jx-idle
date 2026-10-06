@@ -695,3 +695,6 @@ body.jxthumb #jxOverflow,body.jxthumb.jxleft #jxOverflow{left:auto;right:0;botto
 /* ---------- Màn ngang: mọi UI bên trái gói trong cột 232px ---------- */
 body.jxland #jxStat{max-width:232px}
 body.jxland .acts{max-width:232px;flex-wrap:wrap}
+
+/* Màn dọc nhỏ (rộng < 360px hoặc cao < 640px): bỏ dải trạng thái và dòng thông báo trên chiến trường cho đỡ chật; nhật ký vẫn xem ở nút Nhật ký */
+body.jxsmall #jxStat,body.jxsmall #jxChat{display:none!important}

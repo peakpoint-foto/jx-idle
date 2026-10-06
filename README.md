@@ -95,6 +95,7 @@ Hệ thống > Bảng điều khiển > **Bật phiên thử nghiệm**. Có 6 n
 
 ## Giao diện gọn
 
+- Trên màn dọc nhỏ (rộng dưới 360px hoặc cao dưới 640px), dải trạng thái và dòng thông báo trên chiến trường được ẩn cho đỡ chật; xem nhật ký ở nút Nhật ký.
 - Dải trạng thái dưới tên nhân vật cho biết đang Tự cày, Thủ công (kèm đếm ngược tự đánh lại), trong tháp/công thành/Tống Kim, tốc độ và buff EXP.
 - Thẻ **Hệ thống** gom thành 4 nhóm gập (Chơi & tự động, Nhân vật & lưu trữ, Hiển thị & điều khiển, Dữ liệu). "Thao tác nhanh" có đủ công tắc Vượt ải, Xoay chiêu, Tự dùng thuốc, Thủ công.
 - Hộp **Quà** chia thẻ theo nhóm (Hôm nay, Hoạt động, Thưởng, Nhân vật, Cộng đồng); phần luật dài được gập lại.
