@@ -63,6 +63,7 @@ async function onlSync(quiet) {
   try {
     const r = await onlApi("/sync", { body: { save: pack(S) } });
     ONL.lastSync = Date.now();
+    if (ONL.me && ONL.me.char) Object.assign(ONL.me.char, { power: r.power, bracket: r.bracket, flagged: r.flagged ? 1 : 0 });
     return r;
   } catch (e) {
     if (!quiet && typeof toast === "function") toast(e.msg || "Đồng bộ lỗi");
@@ -111,6 +112,7 @@ function onlAfterCreate(want) {
 
 /* ---- Thẻ Hệ thống: trạng thái online ---- */
 const fmtHours = s => (s / 3600).toFixed(1) + " giờ";
+const ONL_BRACKET = { so: "Sơ cấp (40–79)", trung: "Trung cấp (80–99)", cao: "Cao cấp (100–119)", thuong: "Thượng thừa (120+)" };
 function onlCardHTML() {
   if (!onlEligible()) return `<h3>Chơi Online</h3><div class="card"><small class="dim">Chơi online (PvP) chỉ dành cho nhân vật Công Thành Chiến.</small></div>`;
   const acc = onlGet();
@@ -118,6 +120,8 @@ function onlCardHTML() {
     const me = ONL.me, ago = ONL.lastSync ? Math.round((Date.now() - ONL.lastSync) / 60e3) + " phút trước" : "chưa";
     return `<h3>Chơi Online</h3><div class="card lootf onlcard"><div class="row">Tên online <b>${esc(acc.name)}</b></div>
       <div class="row">Giờ chơi đã đo <b>${me ? fmtHours(me.play_sec) : "…"}</b></div><div class="row">Đồng bộ gần nhất <span>${ago}</span></div>
+      ${me && me.char ? `<div class="row">Bậc PvP <b>${ONL_BRACKET[me.char.bracket] || "Chưa đủ cấp 40"}</b></div><div class="row">Lực chiến (máy chủ tính) <b>${fmt(me.char.power || 0)}</b></div>` : ""}
+      ${me && me.flags && me.flags.length ? `<div class="onlflag"><b>Đang bị loại khỏi bảng xếp hạng vì nghi gian lận</b>${me.flags.map(f => `<small>${esc(f.detail || f.code)}</small>`).join("")}</div>` : ""}
       <div class="btnrow"><button class="btn" id="onlSyncBtn">Đồng bộ ngay</button><button class="btn" id="onlCodeBtn">Mã khôi phục</button></div>
       <small class="dim" id="onlCode" hidden>Giữ kín mã này, nó thay cho mật khẩu: <code>${esc(acc.token)}</code></small></div>`;
   }

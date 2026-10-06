@@ -1,6 +1,7 @@
 // Tài khoản online: đăng ký, heartbeat (đo giờ chơi phía server), đồng bộ save.
 import { HttpError, bearer, sha256Hex, randomToken, ipHash } from "./http.js";
 import { rateLimit } from "./db.js";
+import { applyValidation } from "./ladder.js";
 
 // Khớp với js/save.js: offline tối đa 8 giờ mỗi lần, 12 giờ mỗi 24 giờ.
 export const OFFLINE_MAX = 8 * 3600;
@@ -88,7 +89,8 @@ export async function register(req, env, body) {
     if (/UNIQUE/i.test(String(e && e.message))) throw new HttpError(409, "name_taken", "Tên đã có người dùng");
     throw e;
   }
-  return { id, token, name, play_sec: 0 };
+  const v = await applyValidation(env, id, state, 0);
+  return { id, token, name, play_sec: 0, ...v };
 }
 
 // Cộng giờ chơi theo đồng hồ server. Hai tab cùng gửi cũng chỉ cộng đúng thời gian thực đã trôi.
@@ -130,11 +132,13 @@ export async function sync(req, env, body) {
   )
     .bind(acc.id, String(state.fac), state.sex ? 1 : 0, Math.floor(state.lvl), +state.xp || 0, JSON.stringify(state), now)
     .run();
-  return { ok: true, lvl: Math.floor(state.lvl), play_sec: Math.floor(acc.play_sec) };
+  const v = await applyValidation(env, acc.id, state, +acc.play_sec || 0);
+  return { ok: true, lvl: Math.floor(state.lvl), play_sec: Math.floor(acc.play_sec), ...v };
 }
 
 export async function me(req, env) {
   const acc = await auth(req, env);
-  const ch = await env.DB.prepare("SELECT fac,lvl,updated_at FROM chars WHERE account_id=?1").bind(acc.id).first();
-  return { id: acc.id, name: acc.name, created_at: acc.created_at, play_sec: Math.floor(acc.play_sec), char: ch || null };
+  const ch = await env.DB.prepare("SELECT fac,lvl,updated_at,power,bracket,flagged FROM chars WHERE account_id=?1").bind(acc.id).first();
+  const fl = await env.DB.prepare("SELECT code,detail,at FROM flags WHERE account_id=?1 AND cleared_at IS NULL ORDER BY at").bind(acc.id).all();
+  return { id: acc.id, name: acc.name, created_at: acc.created_at, play_sec: Math.floor(acc.play_sec), char: ch || null, flags: fl.results };
 }

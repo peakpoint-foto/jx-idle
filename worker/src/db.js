@@ -25,16 +25,42 @@ export const SCHEMA = [
     sync_n INTEGER NOT NULL DEFAULT 0
   )`,
   `CREATE TABLE IF NOT EXISTS rate(k TEXT PRIMARY KEY, n INTEGER NOT NULL, t INTEGER NOT NULL)`,
+  `CREATE TABLE IF NOT EXISTS flags(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    account_id TEXT NOT NULL,
+    code TEXT NOT NULL,
+    detail TEXT,
+    at INTEGER NOT NULL,
+    cleared_at INTEGER
+  )`,
+  `CREATE INDEX IF NOT EXISTS flags_acc ON flags(account_id, cleared_at)`,
+  `CREATE INDEX IF NOT EXISTS flags_at ON flags(at)`,
+];
+
+// Cột thêm sau lần phát hành đầu: ALTER chạy riêng, bỏ qua lỗi "duplicate column" khi đã có.
+const COLUMNS = [
+  "ALTER TABLE chars ADD COLUMN power INTEGER NOT NULL DEFAULT 0",
+  "ALTER TABLE chars ADD COLUMN bracket TEXT",
+  "ALTER TABLE chars ADD COLUMN flagged INTEGER NOT NULL DEFAULT 0",
 ];
 
 let ready = null;
 
 export function ensureSchema(db) {
   if (!ready) {
-    ready = db.batch(SCHEMA.map((s) => db.prepare(s))).catch((e) => {
-      ready = null;
-      throw e;
-    });
+    ready = db
+      .batch(SCHEMA.map((s) => db.prepare(s)))
+      .then(async () => {
+        for (const sql of COLUMNS)
+          await db.prepare(sql).run().catch((e) => {
+            if (!/duplicate column/i.test(String(e && e.message))) throw e;
+          });
+        await db.prepare("CREATE INDEX IF NOT EXISTS chars_ladder ON chars(bracket, flagged, power)").run();
+      })
+      .catch((e) => {
+        ready = null;
+        throw e;
+      });
   }
   return ready;
 }

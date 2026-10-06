@@ -2,6 +2,8 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "jx-idle-final",
   "main": "worker/src/index.js",
+  // Đóng gói mã game cho máy chủ (worker/gen/game.js) trước mỗi lần dev/deploy.
+  "build": { "command": "node worker/build-game.mjs", "watch_dir": "worker/src" },
   "compatibility_date": "2025-09-01",
   "assets": {
     "directory": ".",
@@ -21,4 +23,5 @@
   // Biến tùy chọn (Settings > Variables and Secrets):
   //   TURNSTILE_SITEKEY (biến) + TURNSTILE_SECRET (secret): bật chống bot khi đăng ký.
   //   IP_SALT (secret): muối khi băm IP.
+  //   ADMIN_KEY (secret, ≥16 ký tự): khóa cho /api/admin/* (xem và gỡ cờ nghi gian lận).
 }
