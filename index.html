@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0e1412">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.json">
+<title>Võ Lâm Idle</title>
+<link rel="stylesheet" href="fonts/font.css">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="ui/jx2.css">
+<link rel="stylesheet" href="ui/jx/jx_layout.css">
+<link rel="stylesheet" href="ui/jx/jx_win.css">
+</head>
+<body>
+<div id="app">
+  <section id="battle">
+    <div id="bg"></div>
+    <canvas id="arena"></canvas>
+    <header id="top">
+      <div class="hud1">
+        <div class="hcap"><b id="lv">1</b><span class="lvbox" hidden></span></div>
+        <div class="hslot hp"><i id="hpBar"></i><span id="hpTxt" class="sk"></span></div>
+        <div class="hslot mp"><i id="mpBar"></i><span id="mpTxt" class="sk"></span></div>
+        <div class="hslot xp" title="Kinh nghiệm"><i id="xpBar"></i><span id="xpTxt" class="sk"></span></div>
+      </div>
+      <div class="hname sk"><b id="heroName">Võ Lâm Idle</b><small><span class="mlbl">Chiêu chính: <span id="mainSk"></span></span><span class="hgold"><img src="ui/v2/money2.png" alt=""><span id="gold">0</span></span></small></div>
+      <div class="stg"><div class="t sk" id="jxZone"></div><div class="bit" id="jxBit"></div><div class="n sk" id="jxStgN"></div><span id="stageLbl" hidden></span></div>
+      <button class="mtg" id="jxMini" title="Ẩn / hiện bản đồ nhỏ" aria-label="Ẩn hoặc hiện bản đồ nhỏ"></button>
+    </header>
+    <div class="acts" id="jxActs">
+      <button class="rnd tg" id="jxPush" data-r="push" title="Hạ đủ quái thì tự sang ải sau"><i></i><span class="sk">Vượt ải</span></button>
+      <button class="rnd" id="svBtn" data-r="train" title="Luyện công: chế độ sinh tồn"><i></i><span class="sk">Luyện công</span></button>
+      <button class="rnd" id="actSiege" data-r="siege" aria-label="Hoạt động Công thành"><i></i><span class="sk">Công thành</span></button>
+      <button class="rnd" id="actTongKim" data-r="tk" aria-label="Chiến trường Tống Kim"><i></i><span class="sk">Tống Kim</span></button>
+      <button class="rnd" id="actTower" data-r="tower" aria-label="Tháp thử thách"><i></i><span class="sk">Leo tháp</span></button>
+    </div>
+    <div class="rcol" id="jxR">
+      <button class="rbtn" data-jt="log" data-ic="rec"><i></i><span class="sk">Nhật ký</span></button>
+      <button class="rbtn big" id="giftBtn" title="Phần thưởng" data-ic="gift"><i></i><span class="sk">Quà</span></button>
+      <button class="rbtn" id="jxPick" data-ic="pick" title="Bật / tắt tự nhặt đồ theo bộ lọc Hành trang (phím G)"><i></i><span class="sk">Nhặt</span></button>
+      <button class="rbtn" id="jxMenu" title="Mở rộng điều khiển" aria-label="Mở rộng điều khiển" aria-expanded="false" aria-controls="jxOverflow"><i></i><span class="sk">Mở rộng</span></button>
+      <div id="jxOverflow" class="hidden" aria-label="Điều khiển bổ sung">
+        <button class="rbtn" id="jxGear" data-jt="inv" data-ic="item" title="Trang bị và bộ lọc"><i></i><span class="sk">Bộ lọc</span></button>
+      <button class="rbtn" id="jxSpd" data-ic="spd" title="Tốc độ game x1 / x1.5 / x2.5 (phím X)"><i></i><span class="sk">Tốc độ x1</span></button>
+
+      <button class="rbtn" id="jxRot" data-ic="rot" title="Xoay chiêu tự động"><i></i><span class="sk">Xoay</span></button>
+      <button class="rbtn" id="jxIn" data-ic="horse"><i></i><span class="sk">Joystick</span></button>
+      <button class="rbtn" data-jt="more" data-ic="sys"><i></i><span class="sk">Hệ thống</span></button>
+      </div>
+    </div>
+    <div class="jxhide">
+      <button id="ctrlBtn"></button><button id="inBtn"></button><button id="rotBtn"></button><button id="compactBtn"></button>
+    </div>
+    <div class="chat sk" id="jxChat"></div>
+    <div id="svHud" class="hidden">
+      <div id="svTopBar">
+        <span id="svGoldWrap"><img src="ui/v2/money2.png" alt=""> <b id="svGold">0</b></span>
+        <button id="svPauseBtn" class="pq">Tạm dừng</button>
+      </div>
+      <div id="svPad">
+        <button id="svUlt" class="pbtn ult"><div class="cd"></div><span class="lbl">Tuyệt kỹ</span><small class="lock"></small></button>
+        <button id="svBomb" class="pbtn bomb"><span class="lbl">Bom <b id="svBombCnt">0</b></span></button>
+        <button id="svHpBtn" class="pbtn pot hp"><div class="cd"></div><span>HP</span></button>
+      </div>
+    </div>
+    <div id="svBar" class="hidden"></div>
+    <div id="townBar" class="hidden"><b id="townName"></b><button class="btn sm" id="bShop">Cửa hàng</button><button class="btn sm" id="bStashT">Kho chung</button><button class="btn sm" id="bSellTown">Bán đồ lọc</button><button class="btn sm on" id="bBack">Trở lại ải</button></div>
+  </section>
+
+  <div class="bb" id="bb"><canvas id="bbc" width="355" height="92"></canvas>
+    <div id="pad">
+      <button class="pbtn sk" data-i="0" aria-label="Ô kỹ năng 1"><i></i><b>1</b></button>
+      <button class="pbtn sk" data-i="1" aria-label="Ô kỹ năng 2"><i></i><b>2</b></button>
+      <button class="pbtn sk" data-i="2" aria-label="Ô kỹ năng 3"><i></i><b>3</b></button>
+      <button class="pbtn sk" data-i="3" aria-label="Ô kỹ năng 4"><i></i><b>4</b></button>
+      <button class="pbtn pot hp" id="bHp" title="Bình HP (Q)"><div class="cd"></div><span>HP</span></button>
+      <button class="pbtn pot mp" id="bMp" title="Bình MP (E)"><div class="cd"></div><span>MP</span></button>
+      <button class="pbtn pot tp" id="bTp" title="Thổ Địa Phù: về thành"><i aria-hidden="true"></i><div class="cd"></div><span>TP</span></button>
+    </div>
+    <nav id="tabs">
+      <button data-t="log" class="on jxh">Giang hồ</button>
+      <button data-t="char" class="tray" data-ic="char" title="Nhân vật" aria-label="Nhân vật"><i></i><em class="dot" id="dotChar"></em></button>
+      <button data-t="skill" class="tray" data-ic="skill" title="Võ công" aria-label="Võ công"><i></i><em class="dot" id="dotSkill"></em></button>
+      <button data-t="inv" class="tray" data-ic="item" title="Hành trang" aria-label="Hành trang"><i></i></button>
+      <button data-t="more" class="jxh">Khác</button>
+    </nav>
+  </div>
+  <div class="bbunder" id="bbunder"><canvas id="bbrow" width="1" height="1"></canvas></div>
+
+  <div id="jxDim" class="hidden"></div>
+  <main id="panel" class="jxc" data-ttl="">
+    <button class="wx" id="jxPX" aria-label="Đóng"></button>
+    <div class="tab" id="t-log"></div>
+    <div class="tab hidden" id="t-char"></div>
+    <div class="tab hidden" id="t-skill"></div>
+    <div class="tab hidden" id="t-inv"></div>
+    <div class="tab hidden" id="t-more"></div>
+  </main>
+
+  <div id="modal" class="hidden" role="dialog" aria-modal="true"><div class="mbox" tabindex="-1"><button class="mx" id="mClose" aria-label="Đóng"></button><div id="mBody"></div></div></div>
+  <div id="toast" role="status" aria-live="polite"></div>
+</div>
+<script src="data.js"></script>
+<script src="world.js"></script>
+<script src="sound.js"></script>
+<script src="fx.js"></script>
+<script src="jmo.js"></script>
+<script src="js/vi_names.js"></script>
+<script src="js/ge_patch.js"></script>
+<script src="js/core.js"></script>
+<script src="js/modes.js"></script>
+<script src="js/mapobs.js"></script>
+<script src="js/stats.js"></script>
+<script src="js/loot.js"></script>
+<script src="js/gear_policy.js"></script>
+<script src="rdata.js"></script>
+<script src="js/sets.js"></script>
+<script src="ref.js"></script>
+<script src="js/recipes.js"></script>
+<script src="js/combat.js"></script>
+<script src="js/save.js"></script>
+<script src="js/doll-data.js"></script>
+<script src="js/doll.js"></script>
+<script src="js/render.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/control.js"></script>
+<script src="js/shop.js"></script>
+<script src="js/rewards.js"></script>
+<script src="js/siege.js"></script>
+<script src="js/activities.js"></script>
+<script src="js/depth.js"></script>
+<script src="js/builds.js"></script>
+<script src="js/journal.js"></script>
+<script src="js/forge.js"></script>
+<script src="js/auto.js"></script>
+<script src="js/admin.js"></script>
+<script src="js/guide.js"></script>
+<script src="js/stash.js"></script>
+<script src="js/survival.js"></script>
+<script src="js/modes_play.js"></script>
+<script src="js/main.js"></script>
+<script src="js/jxshell.js"></script>
+<script src="js/quick.js"></script>
+<script src="js/jxorig.js"></script>
+</body>
+</html>

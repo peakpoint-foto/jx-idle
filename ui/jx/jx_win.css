@@ -1,0 +1,96 @@
+/* ===== Khung gốc JX1 — phần viết tay (Track B, 06/10/2026). Toạ độ/ảnh/màu từng control nằm ở jx_layout.css (SINH TỰ ĐỘNG từ ui.pak). =====
+   Chỉ có hiệu lực khi js/jxorig.js bật html.jxo (>= 1024 px, pointer:fine); mobile / màn hẹp không đổi. */
+
+html.jxo body #panel.jxw{position:absolute;left:var(--jxl)!important;top:var(--jxt)!important;width:var(--jxw)!important;height:var(--jxh)!important;min-height:0;max-height:none;
+  padding:0;border:0!important;border-image:none!important;background:none;overflow:visible;animation:none;box-sizing:content-box}
+html.jxo #panel.jxw::before,html.jxo #panel.jxw::after{display:none}
+html.jxo #panel.jxw>.wx{display:none}
+html.jxo #panel.jxw>.tab{position:relative;width:100%;height:100%;max-height:none;padding:0;zoom:1;overflow:visible}
+html.jxo #jxDim{background:transparent;pointer-events:none}                      /* khung gốc không phủ tối sân đấu */
+
+/* ---- khung chung ---- */
+.jxlegacy{display:none!important}
+.jxf{position:relative;box-sizing:border-box;font:12px/14px var(--font);color:#fff;user-select:none;-webkit-user-select:none;image-rendering:pixelated}
+.jxf>*{position:absolute;margin:0;padding:0;box-sizing:border-box}
+.jxf>i{display:block}
+.jxf button{border:0;background-color:transparent;font:inherit;color:inherit;cursor:pointer;border-radius:0}
+.jxf button:focus-visible{outline:1px solid #ffeda5;outline-offset:-1px}
+.jxf span[data-c]{white-space:nowrap;overflow:hidden;text-shadow:1px 1px 0 #000}
+.jxf-char{width:428px;height:430px}.jxf-item{width:214px;height:454px}.jxf-skill{width:205px;height:376px}
+.jxf img{image-rendering:auto;pointer-events:none}
+.jxf button:disabled{cursor:default;opacity:1}
+
+/* ---- nút +/− điểm: spr 状态加点按钮改 (khung 0 nhấn · 1 thường · 2 khoá) ---- */
+.jxf button[data-a]{background-image:url(plus.png);background-repeat:no-repeat;background-position:-14px 0}
+.jxf button[data-a]:hover:not(:disabled){filter:brightness(1.25)}
+.jxf button[data-a]:active:not(:disabled){background-position:0 0}
+.jxf button[data-a]:disabled{background-position:-28px 0}
+
+/* ---- ô trang bị / vật phẩm: nền theo [ObjContColor] của UiItem.ini ---- */
+.jxs,.jxi{display:flex;align-items:center;justify-content:center;overflow:hidden;position:absolute}
+.jxs.has,.jxi{background-color:color-mix(in srgb,var(--jxo-normal) calc(var(--jxo-objalpha) * 100%),transparent)}
+.jxs.has.bad,.jxi.bad{background-color:color-mix(in srgb,var(--jxo-notuse) calc(var(--jxo-objalpha) * 100%),transparent)}
+.jxs:hover,.jxi:hover{background-color:color-mix(in srgb,var(--jxo-over) calc(var(--jxo-objalpha) * 100%),transparent)}
+.jxs img,.jxi img{max-width:100%;max-height:100%}
+.jxi.rr,.jxs.rr{box-shadow:inset 0 0 0 1px var(--rc)}
+.jxs i,.jxi i{position:absolute;right:1px;bottom:0;font:10px/11px var(--font);font-style:normal;color:#fff;text-shadow:1px 0 #000,-1px 0 #000,0 1px #000,0 -1px #000}
+.jxs em,.jxi em{position:absolute;left:1px;top:0;font:10px/11px var(--font);font-style:normal;color:#ffd94e;text-shadow:1px 0 #000,-1px 0 #000,0 1px #000,0 -1px #000}
+.jxs b,.jxi b{position:absolute;left:2px;bottom:2px;width:5px;height:5px;border-radius:50%;box-shadow:0 0 0 1px #000}
+.jxs u.up,.jxi u.up{position:absolute;right:1px;top:1px;width:0;height:0;border:4px solid transparent;border-bottom:6px solid #7f7;border-top:0;text-decoration:none}
+.jxs u.lk,.jxi u.lk{position:absolute;left:1px;top:1px;width:10px;height:12px;background:url(../v3/i_lock.png) 0 0/20px 12px no-repeat;image-rendering:auto}
+
+/* ---- Hành trang: [ItemBox] 168×280, ô 28 px, 6 cột; cuộn bằng con lăn ---- */
+.jxbox{overflow:hidden}
+.jxin{position:absolute;left:0;top:0;width:168px}
+.jxsb{position:absolute;right:0;width:3px;background:rgba(255,235,160,.55);display:none}
+.jxf-item [data-c=MoneyIcon]{left:25px;top:353px;width:18px;height:18px;background:url(item_MoneyIcon.png) no-repeat}
+.jxf-item [data-c^=MakeAdv],.jxf-item [data-c^=MarkPrice],.jxf-item [data-c^=MakeStall]{cursor:default}
+.jxf-item [data-c=Main]{left:0;top:0;width:214px;height:454px;background:url(item_Main.png) no-repeat}
+
+/* ---- Kỹ năng: lưới 5×5 ô 36 px; chữ cấp dưới icon ---- */
+.jxk{overflow:visible!important;padding:0;background:#000}
+.jxk img{position:absolute;left:0;top:0;width:36px;height:36px;max-width:none;max-height:none;image-rendering:pixelated}
+.jxk i{position:absolute;left:-2px;right:-2px;bottom:auto;top:37px;font:11px/12px var(--font);font-style:normal;text-align:center;color:rgb(218,255,165);text-shadow:1px 1px 0 #000}
+.jxk.off img{filter:grayscale(1) brightness(.55)}
+.jxk.lock img{filter:grayscale(1) brightness(.4)}
+.jxk.off,.jxk.lock{outline:1px solid #555;outline-offset:-1px}
+.jxk.main{outline:1px solid #ffd94e;outline-offset:-1px}
+.jxk em{position:absolute;right:1px;top:0;font:10px/11px var(--font);font-style:normal;color:#9ff;text-shadow:1px 0 #000,-1px 0 #000,0 1px #000,0 -1px #000}
+.jxk:hover{outline:1px solid #7cff7d;outline-offset:-1px}
+.jxp{position:absolute;left:0;top:-3px;width:14px;height:14px;background:url(plus.png) -14px 0 no-repeat;cursor:pointer}
+.jxp:hover{filter:brightness(1.3)}
+.jxf-skill [data-c=Main]{left:0;top:0;width:205px;height:376px;background:url(skill_Main.png) no-repeat}
+.jxf-skill [data-c=Page]{left:7px;top:57px;width:191px;height:278px;background:url(skill_Page.png) no-repeat}
+.jxf-skill [data-c=FightBtn],.jxf-skill [data-c=LiveBtn]{background-size:auto;background-repeat:no-repeat}
+
+/* ---- cột phụ .jxx (Lệch được duyệt): bộ lọc / nút tính năng game không có trong client gốc; giữ DOM cũ, cuộn riêng ---- */
+.jxx{position:absolute;top:0;width:300px;max-height:var(--jxxmax,560px);overflow-y:auto;overflow-x:hidden;box-sizing:border-box;padding:8px 8px 10px;
+  background:rgba(8,16,12,.92);border:1px solid var(--jx-line2,#3b6a50);box-shadow:0 0 0 1px #000;scrollbar-width:thin;scrollbar-color:#3b6a50 transparent;font-size:12px;line-height:1.4;color:#e8f2ea}
+.jxx-r{left:calc(100% + 8px)}
+.jxx-l{right:calc(100% + 8px)}
+.jxx .attr .plus{display:none}                       /* nút + nằm ở khung gốc; ở đây chỉ còn − và Gợi ý/Tẩy */
+.jxx .card,.jxx .skl{margin-bottom:6px}
+.jxx>h3:first-child{margin-top:0}
+
+/* ---- R2.7: màu phẩm chất / dòng thuộc tính theo KItem.cpp:965-983, 1292-1375 (đồ xanh 100,100,255 · tím 170,30,255 · vàng/Hoàng Kim 255,255,0; dòng ẩn chưa mở: 120,120,120 · 170,135,184 · 123,125,90) ---- */
+.sl[data-nat=magic] .m,.sl[data-nat=magic] .h.on:not(.g){color:#6365ff}
+.sl[data-nat=magic] .h:not(.on){color:#787878}
+.sl[data-nat=violet] .m,.sl[data-nat=violet] .h.on:not(.g){color:#aa1eff}
+.sl[data-nat=violet] .h:not(.on){color:#aa87b8}
+.sl[data-nat=gold] .m,.sl[data-nat=gold] .h.on:not(.g){color:#ffff00}
+.sl[data-nat=gold] .h:not(.on){color:#7b7d5a}
+.it.r1,.jxi.rr{--rcx:#6464ff}
+.it.r1{border-color:#6464ff;box-shadow:inset 0 0 0 1px #6464ff,inset 0 0 8px #3a3ab8}
+.it.r3{border-color:#aa1eff;box-shadow:inset 0 0 0 1px #aa1eff,inset 0 0 10px #6a14b0}
+
+/* ---- R2.9: dùng nốt spr gốc chưa dùng trong ui/v3 (i_lvup 升级 · i_unlock/i_lock securitylock · dd1 · sb_thumb2) ---- */
+.ji-lvup{background-image:url(../v3/i_lvup.png);background-size:32px 16px;background-position:0 0}
+#bLock::before{content:"";display:inline-block;width:10px;height:12px;margin-right:5px;vertical-align:-2px;background:url(../v3/i_unlock.png) 0 0/20px 12px no-repeat;image-rendering:auto}
+#bLock.islk::before{background-image:url(../v3/i_lock.png)}
+@media (pointer:fine){
+  select:active{background-image:url(../v3/dd1.png)!important}
+  #panel .tab::-webkit-scrollbar-thumb:active,#mBody::-webkit-scrollbar-thumb:active,.log::-webkit-scrollbar-thumb:active,.shoplist::-webkit-scrollbar-thumb:active{border-image-source:url(../v3/sb_thumb2.png)}
+}
+/* Give the companion skill list enough space for Vietnamese names and controls. */
+html.jxo #panel[data-jxk=skill] .jxx{width:360px;max-width:calc(100vw - var(--jxl) - var(--jxw) - 16px)}
+html.jxo #panel[data-jxk=inv] .jxx{width:360px;max-width:calc(var(--jxl) - 16px)}
