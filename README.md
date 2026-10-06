@@ -70,7 +70,7 @@ Ba mục Công thành, Tống Kim và Tháp được mở từ các nút riêng 
 
 ## Thao tác một tay
 
-- Trên màn dọc cảm ứng, nút ở đáy chiến trường xếp thành hai hàng căn giữa: hàng trên là năm nút hoạt động, hàng dưới là các nút điều hướng (Nhật ký, Quà, Tự cày, Hôm nay, Nhặt, ⋯). Trên màn ngang, mọi nút và thông báo bên trái gói trong cột rộng khoảng 230px để không che chiến trường. Vào Hệ thống > Trợ năng > **Tay thuận** để đổi bên vùng kéo di chuyển (và cột nút ở màn ngang).
+- Trên màn dọc cảm ứng, năm nút hoạt động nằm ở góc trên bên trái, ngay dưới dòng thông báo; các nút điều hướng (Nhật ký, Quà, Tự cày, Hôm nay, Nhặt, ⋯) xếp một hàng căn giữa ở đáy chiến trường. Trên màn ngang, mọi nút và thông báo bên trái gói trong cột rộng khoảng 230px để không che chiến trường. Vào Hệ thống > Trợ năng > **Tay thuận** để đổi bên vùng kéo di chuyển (và cột nút ở màn ngang).
 - **Tự cày:** bật hoặc tắt cùng lúc Vượt ải, Tự nhặt và Xoay chiêu.
 - **Hôm nay:** danh sách điểm danh, nhiệm vụ, công thành, Tống Kim, tháp còn lượt; chạm để vào thẳng mục tương ứng.
 - **Dọn đồ** (trong nút ⋯): bán rác theo chính sách an toàn và mặc đồ tốt hơn.
@@ -148,7 +148,7 @@ Khi túi gần đầy, món không được bảo vệ có thể bị dọn theo
 
 ## Võ công và điểm tiềm năng
 
-Điểm tiềm năng được phân phối trong thẻ Nhân vật. Điểm võ công được quản lý trong thẻ Võ công. Nút **Gợi ý** xem phân phối đề xuất; **Tẩy** hoặc nút trừ điểm dùng để phân bổ lại khi điều kiện cho phép.
+Điểm tiềm năng được phân phối trong thẻ Nhân vật; mỗi lần bấm **+** cộng 5 điểm (còn ít hơn 5 thì cộng hết), nút **−** vẫn rút lại 1 điểm. Điểm võ công được quản lý trong thẻ Võ công. Nút **Gợi ý** xem phân phối đề xuất; **Tẩy** hoặc nút trừ điểm dùng để phân bổ lại khi điều kiện cho phép.
 
 Trang bị tăng cấp kỹ năng được tính cho kỹ năng đã học và thể hiện ngay cạnh cấp kỹ năng. Nếu tổng điểm cộng vượt giới hạn, giao diện cho biết phần nhận được và phần bị giới hạn. Kỹ năng bổ trợ đủ điều kiện được đưa vào chỉ số nhân vật và danh sách giao diện; mở thông tin kỹ năng để xem hiệu ứng cụ thể. Một số kỹ năng kiểu bùa chú không có tác dụng trong chế độ idle.
 
