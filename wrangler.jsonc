@@ -19,7 +19,10 @@
       "migrations_dir": "migrations"
     }
   ],
-  "observability": { "enabled": true }
+  "observability": { "enabled": true },
+  // Bản xem trước của PR (Workers Builds chạy `wrangler preview`). Binding D1 không kế thừa vào đây,
+  // nên bản xem trước không chạm dữ liệu thật; API online ở bản xem trước trả 503 "no_db".
+  "previews": {}
   // Biến tùy chọn (Settings > Variables and Secrets):
   //   TURNSTILE_SITEKEY (biến) + TURNSTILE_SECRET (secret): bật chống bot khi đăng ký.
   //   IP_SALT (secret): muối khi băm IP.
