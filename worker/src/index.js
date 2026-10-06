@@ -3,6 +3,7 @@
 import { HttpError, json, readJson, CORS } from "./http.js";
 import { ensureSchema } from "./db.js";
 import { register, heartbeat, sync, me } from "./account.js";
+import { ladder, notices, adminFlags, adminUnflag } from "./ladder.js";
 
 const ROUTES = {
   "GET /api/config": (req, env) => ({ turnstile: env.TURNSTILE_SITEKEY || "", v: 1 }),
@@ -10,6 +11,10 @@ const ROUTES = {
   "POST /api/hb": (req, env) => heartbeat(req, env),
   "POST /api/sync": (req, env, body) => sync(req, env, body),
   "GET /api/me": (req, env) => me(req, env),
+  "GET /api/ladder": ladder,
+  "GET /api/notices": notices,
+  "GET /api/admin/flags": adminFlags,
+  "POST /api/admin/unflag": adminUnflag,
 };
 
 export default {

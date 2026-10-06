@@ -2,3 +2,4 @@ node_modules/
 .wrangler/
 .dev.vars
 _backup_truoc_toi_uu/
+worker/gen/

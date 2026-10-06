@@ -142,6 +142,8 @@ Chỉ nhân vật **Công Thành Chiến** chơi online được, và online ch�
 - Không đăng ký vẫn PvP được, chỉ là không có tên trên bảng xếp hạng.
 - Khi đã đăng ký, game gửi tín hiệu mỗi phút để máy chủ đo giờ chơi, và đồng bộ nhân vật mỗi 5 phút. Thời gian offline được tính theo đúng giới hạn tu luyện offline của game (8 giờ mỗi lần, 12 giờ mỗi ngày).
 - **Mã khôi phục** trong Hệ thống thay cho mật khẩu. Giữ kín, không chia sẻ.
+- Từ cấp 40, nhân vật vào bậc PvP: **Sơ cấp** 40–79, **Trung cấp** 80–99, **Cao cấp** 100–119, **Thượng thừa** 120 trở lên. Bảng xếp hạng mỗi bậc xếp theo lực chiến do máy chủ tự tính.
+- Mỗi lần đồng bộ, máy chủ kiểm tra trang bị (chỉ số gốc, thuộc tính, cường hóa, trần đồ của chế độ), điểm tiềm năng, điểm kỹ năng và cấp so với giờ chơi đã đo. Vi phạm thì nhân vật bị **loại khỏi bảng xếp hạng** và hiện trên **bảng thông báo** kèm lý do, nhưng vẫn chơi bình thường. Cờ chỉ được gỡ bởi quản trị.
 
 Bản chạy cục bộ (start_game.bat) vẫn gọi được máy chủ online, miễn là máy có mạng.
 
@@ -152,7 +154,12 @@ Máy chủ là Cloudflare Worker `jx-idle-final` (cấu hình trong `wrangler.js
 1. `npm install`, rồi `npx wrangler deploy`. Lần đầu, Wrangler tự tạo D1 `jx-idle-final-db`. Nếu đã có D1, thêm `database_id` vào `wrangler.jsonc`.
 2. Bảng dữ liệu được Worker tự tạo ở request đầu tiên. Không cần chạy migration riêng.
 3. Tùy chọn: đặt `TURNSTILE_SITEKEY` (biến) và `TURNSTILE_SECRET` (secret) để bật chống bot khi đăng ký, và `IP_SALT` (secret) làm muối băm IP.
-4. Chạy thử cục bộ: `npx wrangler dev`, kiểm thử: `npm test`.
+4. Đặt secret `ADMIN_KEY` (ít nhất 16 ký tự) để dùng API quản trị, gửi kèm header `x-admin-key`:
+   - `GET /api/admin/flags?name=<tên>`: xem cờ của một nhân vật (bỏ `name` để xem 200 cờ mới nhất).
+   - `POST /api/admin/unflag` với `{"name":"<tên>"}`: gỡ mọi cờ đang mở. Nếu nhân vật vẫn vi phạm, lần đồng bộ sau sẽ bị gắn cờ lại.
+5. Ngưỡng cấp theo giờ chơi nằm ở `LV_TIME` trong `worker/src/validate.js`. Mặc định cố ý rộng tay: 2 quái/giây, hệ số EXP ×4, thêm 25% và 1 giờ dự phòng. Ví dụ cấp 100 cần khoảng 1,8 giờ, cấp 120 khoảng 4,8 giờ, cấp 160 khoảng 16 giờ.
+6. Máy chủ dùng lại mã game: `worker/build-game.mjs` đóng gói các script cần thiết thành `worker/gen/game.js`. Wrangler tự chạy bước này trước mỗi lần dev/deploy (`build.command`).
+7. Chạy thử cục bộ: `npx wrangler dev`, kiểm thử: `npm test`.
 
 ## Tốc độ, âm thanh và hiển thị
 
