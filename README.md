@@ -48,6 +48,8 @@ Khi bắt đầu, chọn chế độ, môn phái, tên, giới tính và thử t
 - **Phong Hỏa Liên Thành:** thử thách sinh tồn khắc nghiệt hơn; tiến độ và chiến lợi phẩm tuân theo luật riêng của chế độ.
 - **2.0:** nhịp chơi nhanh, thuận tiện thử các hệ thống và hoạt động.
 
+Ở Công Thành Chiến, may mắn được nhân 5 lần (cộng nền 10) nhưng **chỉ cho chất lượng đồ Xanh**: dòng thuộc tính hiếm hơn và giá trị nghiêng về mức cao. Số lượng đồ rơi và tỉ lệ ra đồ Vàng không đổi. Khoảng 0,8% đồ Xanh (khi may mắn bằng 0, tăng dần theo may mắn) là đồ **Cực phẩm**: mọi dòng đạt từ 95% giá trị tối đa, tên có tiền tố «Cực phẩm» và nhật ký báo khi rơi.
+
 Ở Công Thành Chiến, ngoài đánh quái còn có các nguồn EXP khác: trùm cho EXP ×3, tự điều khiển (joystick/chuột) +20% EXP, tháp ×0.65 EXP quái, mỗi lớp công thành và mỗi đợt Tống Kim cộng EXP theo % của cấp hiện tại (thắng Kinh thành ≈ 100% một cấp, thắng Tống Kim ≈ 42%), nhiệm vụ ngày và Dã Tẩu cộng EXP theo cấp, điểm danh/thắng hoạt động tặng buff EXP +25% (cộng dồn tối đa 6 giờ). Cửa hàng công thành và Tống Kim có thêm Đan Kinh Nghiệm và Linh Đan Tu Luyện. Chạm vào thanh KN trên đầu màn hình để xem thời gian dự kiến lên cấp.
 
 Nhân vật ở chế độ thường có thể chuyển sang 2.0 bằng chức năng trong trò chơi. Việc chuyển là một chiều, không thể trở lại chế độ cũ. Dữ liệu nhân vật ở mỗi chế độ được lưu tách biệt.
