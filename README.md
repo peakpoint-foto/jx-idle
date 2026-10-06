@@ -76,6 +76,13 @@ Ba mục Công thành, Tống Kim và Tháp được mở từ các nút riêng 
 - **Dọn đồ** (trong nút ⋯): bán rác theo chính sách an toàn và mặc đồ tốt hơn.
 - Công thành và Tống Kim hỏi xác nhận trước khi dùng lượt tuần (trừ chế độ 2.0 không giới hạn lượt).
 
+## Giao diện gọn
+
+- Dải trạng thái dưới tên nhân vật cho biết đang Tự cày, Thủ công (kèm đếm ngược tự đánh lại), trong tháp/công thành/Tống Kim, tốc độ và buff EXP.
+- Thẻ **Hệ thống** gom thành 4 nhóm gập (Chơi & tự động, Nhân vật & lưu trữ, Hiển thị & điều khiển, Dữ liệu). "Thao tác nhanh" có đủ công tắc Vượt ải, Xoay chiêu, Tự dùng thuốc, Thủ công.
+- Hộp **Quà** chia thẻ theo nhóm (Hôm nay, Hoạt động, Thưởng, Nhân vật, Cộng đồng); phần luật dài được gập lại.
+- Màn dọc thấp (dưới 640px cao) tự ẩn bản đồ nhỏ và đưa nút Hôm nay vào menu ⋯ để không chồng nút; chạm nút bản đồ để mở lại.
+
 ## Điều khiển
 
 Nhân vật mặc định tự chiến đấu. Trên máy tính, có thể dùng các phím:

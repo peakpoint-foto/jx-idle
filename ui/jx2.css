@@ -629,3 +629,24 @@ body.jxleft #jxOverflow{right:auto;left:calc(100% + 4px)}
 body.jxleft.jxland #jxOverflow{left:0;right:auto}
 @media (max-width:359px){body.jxthumb .acts{flex-wrap:wrap;width:148px;justify-content:flex-end}body.jxthumb.jxleft .acts{justify-content:flex-start}}
 @media (pointer:coarse){#jxR .rbtn span{font-size:10.5px;max-width:48px}#jxOverflow{gap:8px;padding:8px}}
+
+/* ---------- Gom giao diện (js/uihub.js) ---------- */
+@media (max-width:359px){
+  body.jxthumb .acts{flex-wrap:nowrap;width:auto;justify-content:flex-end;gap:0}
+  body.jxthumb.jxleft .acts{justify-content:flex-start}
+  body.jxthumb .acts .rnd{width:42px}
+  body.jxthumb .acts .rnd span{width:42px;font-size:10px}
+}
+#jxStat{position:absolute;left:var(--edge-l,2px);top:calc(50px + var(--safe-t,0px));z-index:6;max-width:calc(100% - 140px);padding:1px 7px;border:1px solid var(--jx-line2,#3b6a50);background:rgba(6,19,13,.72);color:var(--jx-gold,#e6c67a);font:600 10.5px/16px var(--font);pointer-events:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.jxland #jxStat{top:calc(100px + var(--safe-t,0px))}
+body.sv #jxStat{display:none!important}
+.mgrp{margin:6px 0;border:1px solid var(--jx-line2,#3b6a50);background:rgba(6,19,13,.35)}
+.mgrp>summary{cursor:pointer;padding:10px 12px;min-height:24px;font-weight:650;color:var(--jx-gold,#e6c67a);list-style:none}
+.mgrp>summary::-webkit-details-marker{display:none}
+.mgrp>summary::before{content:"▸";display:inline-block;width:1.1em;transition:transform .15s}
+.mgrp[open]>summary::before{transform:rotate(90deg)}
+.mgrp>*:not(summary){margin-left:8px;margin-right:8px}
+.mgrp>*:last-child{margin-bottom:8px}
+.dtabs .glab{grid-column:1/-1;margin-top:2px;font:600 10.5px/14px var(--font);color:var(--dim,#8aa79a);letter-spacing:.3px}
+.dsc{margin:4px 0 8px}
+.dsc>summary{cursor:pointer;padding:6px 0;font-size:var(--t-sm,12px);color:var(--jx-gold,#e6c67a)}
