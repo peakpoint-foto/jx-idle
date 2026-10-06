@@ -650,3 +650,15 @@ body.sv #jxStat{display:none!important}
 .dtabs .glab{grid-column:1/-1;margin-top:2px;font:600 10.5px/14px var(--font);color:var(--dim,#8aa79a);letter-spacing:.3px}
 .dsc{margin:4px 0 8px}
 .dsc>summary{cursor:pointer;padding:6px 0;font-size:var(--t-sm,12px);color:var(--jx-gold,#e6c67a)}
+
+/* Phiên thử nghiệm: dải đỏ bấm được để mở bảng điều khiển */
+#jxStat.adm{background:rgba(120,12,12,.88);color:#fff;border-color:#e06a5a;pointer-events:auto;cursor:pointer}
+
+/* Fade tối dưới cột nút và hàng nút để dễ nhìn trên mọi nền */
+.rcol::before,.acts::before{content:"";position:absolute;z-index:-1;pointer-events:none}
+.rcol::before{top:-14px;bottom:-28px;right:-6px;left:-14px;background:linear-gradient(to left,rgba(0,0,0,.72),rgba(0,0,0,.5) 55%,transparent);-webkit-mask-image:linear-gradient(to bottom,transparent,#000 12%,#000 82%,transparent);mask-image:linear-gradient(to bottom,transparent,#000 12%,#000 82%,transparent)}
+body.jxleft .rcol::before{left:-6px;right:-14px;background:linear-gradient(to right,rgba(0,0,0,.72),rgba(0,0,0,.5) 55%,transparent)}
+body.jxthumb .acts::before{left:-10px;right:-10px;bottom:-6px;top:-14px;background:linear-gradient(to top,rgba(0,0,0,.75),rgba(0,0,0,.5) 60%,transparent);-webkit-mask-image:linear-gradient(to right,transparent,#000 10%,#000 90%,transparent);mask-image:linear-gradient(to right,transparent,#000 10%,#000 90%,transparent)}
+body.jxland .acts::before{left:-6px;right:-6px;top:-6px;bottom:-12px;background:linear-gradient(to bottom,rgba(0,0,0,.6),transparent)}
+#mBody .row>span{flex:1;min-width:0}
+#mBody .row>select[data-m]{flex:0 0 130px}

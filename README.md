@@ -64,7 +64,7 @@ Các nút **Vượt ải**, **Luyện công**, **Công thành**, **Tống Kim** 
 - **Tống Kim:** mở chiến trường và phần thưởng. Số trận được giới hạn theo tuần như nội dung ghi trong bảng.
 - **Leo tháp:** mở Tháp thử thách. Ở 2.0, lượt vào và số tầng đều không giới hạn; chế độ khác có số lượt theo ngày và chinh phục tối đa 50 tầng. Cấp nhân vật tối thiểu và tầng đang tiến triển được hiển thị trong bảng.
 
-Trong tháp, mỗi tầng có một đợt quái tinh anh; tầng chia hết cho năm là tầng trùm. Qua tầng mới lần đầu sẽ nhận thưởng tiến trình. Chế độ 2.0 tiếp tục leo vô tận sau tầng 50, còn chế độ thường mở vòng lặp tầng 40–50 sau khi chinh phục tầng cuối. Phần thưởng lần đầu chỉ trao khi đạt tầng cao hơn kỷ lục trước đó.
+Trong tháp, mỗi tầng có một đợt quái tinh anh; tầng chia hết cho năm là tầng trùm. Qua tầng mới lần đầu sẽ nhận thưởng tiến trình. Mọi chế độ đều tiếp tục leo vô tận ngay trong lượt hiện tại sau khi qua tầng 50 (không tự thoát); chỉ chế độ 2.0 không giới hạn lượt vào, các chế độ khác vẫn có số lượt theo ngày và lần vào sau khi đã chinh phục tháp bắt đầu lại từ tầng 40. Phần thưởng lần đầu chỉ trao khi đạt tầng cao hơn kỷ lục trước đó.
 
 Ba mục Công thành, Tống Kim và Tháp được mở từ các nút riêng trên chiến trường, không còn nằm trong dãy tab Hệ thống/Phần thưởng. Cửa hàng, trạng thái hoạt động và các mục thưởng khác vẫn hiển thị trong bảng hoạt động tương ứng.
 
@@ -75,6 +75,10 @@ Ba mục Công thành, Tống Kim và Tháp được mở từ các nút riêng 
 - **Hôm nay:** danh sách điểm danh, nhiệm vụ, công thành, Tống Kim, tháp còn lượt; chạm để vào thẳng mục tương ứng.
 - **Dọn đồ** (trong nút ⋯): bán rác theo chính sách an toàn và mặc đồ tốt hơn.
 - Công thành và Tống Kim hỏi xác nhận trước khi dùng lượt tuần (trừ chế độ 2.0 không giới hạn lượt).
+
+## Bảng điều khiển (chỉ chế độ 2.0)
+
+Hệ thống > Bảng điều khiển > **Bật phiên thử nghiệm**. Có 6 nhóm: Hệ số (EXP, vàng, rơi đồ, máu/sát thương quái, sát thương của bạn, số quái, may mắn, tốc độ 0.5–10×, bất tử, nội lực vô hạn, bộ cài sẵn), Nhân vật, Thế giới, Đồ, Hoạt động và Công cụ (EXP/phút, quái/giây). Từ lúc bật, **tiến trình không được lưu**; tải lại trang là về đúng trạng thái đã lưu trước đó và hệ số trở về mặc định. Dải đỏ "THỬ NGHIỆM" trên màn hình bấm được để mở lại bảng.
 
 ## Giao diện gọn
 
