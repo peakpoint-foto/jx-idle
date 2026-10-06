@@ -48,6 +48,8 @@ Khi bắt đầu, chọn chế độ, môn phái, tên, giới tính và thử t
 - **Phong Hỏa Liên Thành:** thử thách sinh tồn khắc nghiệt hơn; tiến độ và chiến lợi phẩm tuân theo luật riêng của chế độ.
 - **2.0:** nhịp chơi nhanh, thuận tiện thử các hệ thống và hoạt động.
 
+Dã Tẩu ở Công Thành Chiến là chuỗi 7 việc lặp vô hạn, chỉ gồm việc làm được ở chế độ này: hạ quái, hạ tinh anh, vượt ải, leo 3 tầng tháp, hạ trùm, hoàn thành một lượt Luyện công và tìm một món đồ theo hệ có dòng thuộc tính yêu cầu (rơi ra là tính, hoặc nộp từ túi). EXP theo độ khó: 10% đến 35% một cấp mỗi việc, mỗi vòng tăng thêm 15% (tối đa ×2,5). Chuỗi Dã Tẩu ở chế độ khác giữ nguyên.
+
 Ở Công Thành Chiến, may mắn được nhân 5 lần (cộng nền 10) nhưng **chỉ cho chất lượng đồ Xanh**: dòng thuộc tính hiếm hơn và giá trị nghiêng về mức cao. Số lượng đồ rơi và tỉ lệ ra đồ Vàng không đổi. Khoảng 0,8% đồ Xanh (khi may mắn bằng 0, tăng dần theo may mắn) là đồ **Cực phẩm**: mọi dòng đạt từ 95% giá trị tối đa, tên có tiền tố «Cực phẩm» và nhật ký báo khi rơi.
 
 Ở Công Thành Chiến, ngoài đánh quái còn có các nguồn EXP khác: trùm cho EXP ×3, tự điều khiển (joystick/chuột) +20% EXP, tháp ×0.65 EXP quái, mỗi lớp công thành và mỗi đợt Tống Kim cộng EXP theo % của cấp hiện tại (thắng Kinh thành ≈ 100% một cấp, thắng Tống Kim ≈ 42%), nhiệm vụ ngày và Dã Tẩu cộng EXP theo cấp, điểm danh/thắng hoạt động tặng buff EXP +25% (cộng dồn tối đa 6 giờ). Cửa hàng công thành và Tống Kim có thêm Đan Kinh Nghiệm và Linh Đan Tu Luyện. Chạm vào thanh KN trên đầu màn hình để xem thời gian dự kiến lên cấp.
@@ -87,11 +89,11 @@ Dành cho chủ host Cloudflare:
 - Góp ý lưu trong bảng `feedback` của D1 (tự tạo khi Worker nhận request đầu tiên).
 - Đọc: `GET /api/admin/feedback` (thêm `?status=open` để lọc) với header `x-admin-key: <ADMIN_KEY>`.
 - Đánh dấu đã xử lý: `POST /api/admin/feedback` với body `{"id": 12}` (thêm `"status":"open"` để mở lại).
-- Tùy chọn: đặt secret `FEEDBACK_WEBHOOK` là URL webhook Discord hoặc Slack để nhận tin nhắn ngay khi có góp ý mới.
+- Tùy chọn: đặt secret `FEEDBACK_WEBHOOK` là URL webhook Discord hoặc Slack để nhận tin nhắn ngay khi có góp ý mới. Tin nhắn tắt mọi lượt nhắc (@everyone, @here) nên người chơi không ping được máy chủ của bạn.
 
 ## Bảng điều khiển (chỉ chế độ 2.0)
 
-Hệ thống > Bảng điều khiển > **Bật phiên thử nghiệm**. Có 6 nhóm: Hệ số (EXP, vàng, rơi đồ, máu/sát thương quái, sát thương của bạn, số quái, may mắn, tốc độ 0.5–10×, bất tử, nội lực vô hạn, bộ cài sẵn), Nhân vật, Thế giới, Đồ, Hoạt động và Công cụ (EXP/phút, quái/giây). Từ lúc bật, **tiến trình không được lưu**; tải lại trang là về đúng trạng thái đã lưu trước đó và hệ số trở về mặc định. Trước khi bật phải đánh dấu ô xác nhận đã hiểu; trong bảng luôn có khung đỏ ghi giờ của bản lưu cuối và nút "Thoát & về bản lưu" (bấm hai lần). Cảnh báo chỉ nằm trong bảng, không hiện ra màn hình chơi.
+Hệ thống > Bảng điều khiển > **Bật phiên thử nghiệm**. Có 6 nhóm: Hệ số (EXP, vàng, rơi đồ, máu/sát thương quái, sát thương của bạn, số quái, may mắn, tốc độ 0.5–10×, bất tử, nội lực vô hạn, bộ cài sẵn), Nhân vật, Thế giới, Đồ, Hoạt động và Công cụ (EXP/phút, quái/giây). Từ lúc bật, **tiến trình không được lưu**; tải lại trang là về đúng trạng thái đã lưu trước đó và hệ số trở về mặc định. Trong phiên, trò chơi không ghi bất kỳ dữ liệu nào vào trình duyệt (kể cả kho chung, bang hội, gia tộc, bộ sưu tập) và khoá các nút tải/xuất/nạp file lưu. Trước khi bật phải đánh dấu ô xác nhận đã hiểu; trong bảng luôn có khung đỏ ghi giờ của bản lưu cuối và nút "Thoát & về bản lưu" (bấm hai lần). Cảnh báo chỉ nằm trong bảng, không hiện ra màn hình chơi.
 
 ## Giao diện gọn
 

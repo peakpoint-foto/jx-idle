@@ -64,6 +64,18 @@ function checkItem(it, slot, flags) {
 
 /* ---- Toàn bộ nhân vật ---- */
 const ATTR_SLACK = 120, SKILL_SLACK = 25;
+// Điểm tiềm năng thưởng ngoài lên cấp: mốc cấp (theo cấp đã đạt), thành tựu, điểm danh 30 ngày (một lần),
+// cộng nguồn lặp lại theo thời gian chơi (điểm danh 7 ngày, cửa hàng công thành/Tống Kim, rương Phúc Duyên…).
+const ptsOf = (g) => (g && +g.pts) || 0;
+const ATTR_ONCE = G.ACH.reduce((s, a) => s + ptsOf(a[3]), 0) + Object.values(G.LOGIN30).reduce((s, g) => s + ptsOf(g), 0);
+const attrMilestones = (lvl) => G.LV_MS.reduce((s, [lv, g]) => s + (lvl >= lv ? ptsOf(g) : 0), 0);
+export const ATTR_PER_HOUR = 20, ATTR_GUEST_TIME = 400, REBORN_PTS = 50;
+export function attrBudget(state, playSec) {
+  const lvl = Math.floor(state.lvl), reborn = Math.max(0, +(state.rw && state.rw.stat && state.rw.stat.reborn) || 0);
+  // Nguồn lặp lại tính theo giờ chơi nhưng có trần theo cấp, để chơi rất lâu cũng không mở toang giới hạn.
+  const timed = Math.min(playSec != null ? Math.ceil((playSec / 3600) * ATTR_PER_HOUR) : ATTR_GUEST_TIME, 40 + lvl * 4);
+  return (lvl - 1) * G.PTS_PER_LEVEL + ATTR_SLACK + attrMilestones(lvl) + ATTR_ONCE + reborn * REBORN_PTS + timed;
+}
 
 // Trả về { flags: [[code, detail]], power, bracket, P } . playSec: giờ chơi máy chủ đã đo (null với khách).
 export function validateChar(state, playSec) {
@@ -73,7 +85,7 @@ export function validateChar(state, playSec) {
 
   const attr = state.attr || {};
   const attrUsed = ["str", "dex", "vit", "eng"].reduce((s, k) => s + Math.max(0, +attr[k] || 0), 0) + Math.max(0, +state.attrPts || 0);
-  const attrMax = (lvl - 1) * G.PTS_PER_LEVEL + ATTR_SLACK;
+  const attrMax = attrBudget(state, playSec);
   if (attrUsed > attrMax) flags.push(["attr_points", `Điểm tiềm năng ${attrUsed} > ${attrMax}`]);
 
   let skUsed = Math.max(0, +state.skPts || 0);

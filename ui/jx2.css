@@ -698,3 +698,5 @@ body.jxland .acts{max-width:232px;flex-wrap:wrap}
 
 /* Màn dọc nhỏ (rộng < 360px hoặc cao < 640px): bỏ dải trạng thái và dòng thông báo trên chiến trường cho đỡ chật; nhật ký vẫn xem ở nút Nhật ký */
 body.jxsmall #jxStat,body.jxsmall #jxChat{display:none!important}
+/* Máy tính / màn không phải cảm ứng dọc: dải trạng thái nằm dưới hàng nút hoạt động */
+body:not(.jxthumb) #jxStat{top:calc(100px + var(--safe-t,0px));max-width:232px}

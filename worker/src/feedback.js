@@ -34,7 +34,7 @@ export async function feedback(req, env, body, url, ectx) {
     .bind(at, fb.cat, fb.text, fb.contact || null, JSON.stringify(fb.ctx), ih).first();
   if (env.FEEDBACK_WEBHOOK) {
     const msg = `[Góp ý #${r.id} · ${FB_CATS[fb.cat]}] ${fb.text.slice(0, 1500)}${fb.contact ? `\nLiên hệ: ${fb.contact}` : ""}\n${JSON.stringify(fb.ctx).slice(0, 300)}`;
-    const p = fetch(env.FEEDBACK_WEBHOOK, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ content: msg, text: msg }) }).catch(() => {});
+    const p = fetch(env.FEEDBACK_WEBHOOK, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ content: msg, text: msg, allowed_mentions: { parse: [] } }) }).catch(() => {});
     if (ectx && ectx.waitUntil) ectx.waitUntil(p); else await p;
   }
   return { ok: true, id: r.id };

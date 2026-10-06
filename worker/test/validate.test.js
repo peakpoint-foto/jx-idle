@@ -65,3 +65,16 @@ test("bậc PvP", () => {
   assert.equal(bracketOf(119).k, "cao");
   assert.equal(bracketOf(150).k, "thuong");
 });
+
+test("điểm tiềm năng thưởng hợp lệ (mốc cấp, thành tựu, điểm danh, cửa hàng) không bị gắn cờ", () => {
+  const s = makeChar(99);
+  // 6 tuần chơi 3 giờ/ngày: 30 ngày điểm danh, mốc cấp tới 99, thưởng tuần công thành + Tống Kim
+  s.attrPts += 60 + 20 + 30 + 12 + 18;
+  assert.ok(!codes(validateChar(s, 126 * 3600)).includes("attr_points"));
+});
+
+test("điểm tiềm năng vượt xa mọi nguồn thưởng vẫn bị gắn cờ", () => {
+  const s = makeChar(50);
+  s.attrPts += 5000;
+  assert.ok(codes(validateChar(s, 10 * 3600)).includes("attr_points"));
+});
