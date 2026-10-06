@@ -619,3 +619,13 @@ body.jxland #jxOverflow{right:0;bottom:calc(100% + 5px);grid-template-columns:re
 .onlcard code{user-select:all;word-break:break-all;color:#ffe6a8}
 #onlTs{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:100}
 .bbtag.one{flex-direction:row;align-items:center}.bbtag.one .sep{display:inline}.bbtag.one i{font-size:1em}
+
+/* ---------- Thao tác một tay: nút hoạt động xuống vùng ngón cái (màn dọc cảm ứng) ---------- */
+body.jxthumb .acts{top:auto;bottom:6px;left:auto;right:var(--edge-r,2px);gap:2px}
+body.jxthumb.jxleft .acts{right:auto;left:var(--edge-l,2px)}
+body.jxthumb .acts .rnd{width:48px;height:52px;min-height:52px}
+body.jxthumb .acts .rnd span{width:48px;font-size:11px;line-height:12px}
+body.jxleft #jxOverflow{right:auto;left:calc(100% + 4px)}
+body.jxleft.jxland #jxOverflow{left:0;right:auto}
+@media (max-width:359px){body.jxthumb .acts{flex-wrap:wrap;width:148px;justify-content:flex-end}body.jxthumb.jxleft .acts{justify-content:flex-start}}
+@media (pointer:coarse){#jxR .rbtn span{font-size:10.5px;max-width:48px}#jxOverflow{gap:8px;padding:8px}}

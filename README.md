@@ -48,6 +48,8 @@ Khi bắt đầu, chọn chế độ, môn phái, tên, giới tính và thử t
 - **Phong Hỏa Liên Thành:** thử thách sinh tồn khắc nghiệt hơn; tiến độ và chiến lợi phẩm tuân theo luật riêng của chế độ.
 - **2.0:** nhịp chơi nhanh, thuận tiện thử các hệ thống và hoạt động.
 
+Ở Công Thành Chiến, ngoài đánh quái còn có các nguồn EXP khác: trùm cho EXP ×3, tự điều khiển (joystick/chuột) +20% EXP, tháp ×0.65 EXP quái, mỗi lớp công thành và mỗi đợt Tống Kim cộng EXP theo % của cấp hiện tại (thắng Kinh thành ≈ 100% một cấp, thắng Tống Kim ≈ 42%), nhiệm vụ ngày và Dã Tẩu cộng EXP theo cấp, điểm danh/thắng hoạt động tặng buff EXP +25% (cộng dồn tối đa 6 giờ). Cửa hàng công thành và Tống Kim có thêm Đan Kinh Nghiệm và Linh Đan Tu Luyện. Chạm vào thanh KN trên đầu màn hình để xem thời gian dự kiến lên cấp.
+
 Nhân vật ở chế độ thường có thể chuyển sang 2.0 bằng chức năng trong trò chơi. Việc chuyển là một chiều, không thể trở lại chế độ cũ. Dữ liệu nhân vật ở mỗi chế độ được lưu tách biệt.
 
 Mỗi môn phái thuộc một trong năm hệ Kim, Mộc, Thủy, Hỏa hoặc Thổ. Quy tắc tương sinh trong trò chơi là Kim sinh Thủy, Thủy sinh Mộc, Mộc sinh Hỏa, Hỏa sinh Thổ, Thổ sinh Kim. Mối quan hệ này ảnh hưởng tới các dòng ẩn của trang bị.
@@ -65,6 +67,14 @@ Các nút **Vượt ải**, **Luyện công**, **Công thành**, **Tống Kim** 
 Trong tháp, mỗi tầng có một đợt quái tinh anh; tầng chia hết cho năm là tầng trùm. Qua tầng mới lần đầu sẽ nhận thưởng tiến trình. Chế độ 2.0 tiếp tục leo vô tận sau tầng 50, còn chế độ thường mở vòng lặp tầng 40–50 sau khi chinh phục tầng cuối. Phần thưởng lần đầu chỉ trao khi đạt tầng cao hơn kỷ lục trước đó.
 
 Ba mục Công thành, Tống Kim và Tháp được mở từ các nút riêng trên chiến trường, không còn nằm trong dãy tab Hệ thống/Phần thưởng. Cửa hàng, trạng thái hoạt động và các mục thưởng khác vẫn hiển thị trong bảng hoạt động tương ứng.
+
+## Thao tác một tay
+
+- Trên màn dọc cảm ứng, năm nút hoạt động nằm ở góc dưới gần ngón cái. Vào Hệ thống > Trợ năng > **Tay thuận** để đảo bố cục (joystick, nút hoạt động, cột nút phải/trái).
+- **Tự cày:** bật hoặc tắt cùng lúc Vượt ải, Tự nhặt và Xoay chiêu.
+- **Hôm nay:** danh sách điểm danh, nhiệm vụ, công thành, Tống Kim, tháp còn lượt; chạm để vào thẳng mục tương ứng.
+- **Dọn đồ** (trong nút ⋯): bán rác theo chính sách an toàn và mặc đồ tốt hơn.
+- Công thành và Tống Kim hỏi xác nhận trước khi dùng lượt tuần (trừ chế độ 2.0 không giới hạn lượt).
 
 ## Điều khiển
 
