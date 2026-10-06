@@ -70,7 +70,7 @@ Ba mục Công thành, Tống Kim và Tháp được mở từ các nút riêng 
 
 ## Thao tác một tay
 
-- Trên màn dọc cảm ứng, năm nút hoạt động nằm ở góc dưới gần ngón cái. Vào Hệ thống > Trợ năng > **Tay thuận** để đảo bố cục (joystick, nút hoạt động, cột nút phải/trái).
+- Trên màn dọc cảm ứng, nút ở đáy chiến trường xếp thành hai hàng căn giữa: hàng trên là năm nút hoạt động, hàng dưới là các nút điều hướng (Nhật ký, Quà, Tự cày, Hôm nay, Nhặt, ⋯). Trên màn ngang, mọi nút và thông báo bên trái gói trong cột rộng khoảng 230px để không che chiến trường. Vào Hệ thống > Trợ năng > **Tay thuận** để đổi bên vùng kéo di chuyển (và cột nút ở màn ngang).
 - **Tự cày:** bật hoặc tắt cùng lúc Vượt ải, Tự nhặt và Xoay chiêu.
 - **Hôm nay:** danh sách điểm danh, nhiệm vụ, công thành, Tống Kim, tháp còn lượt; chạm để vào thẳng mục tương ứng.
 - **Dọn đồ** (trong nút ⋯): bán rác theo chính sách an toàn và mặc đồ tốt hơn.
