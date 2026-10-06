@@ -26,5 +26,6 @@
   // Biến tùy chọn (Settings > Variables and Secrets):
   //   TURNSTILE_SITEKEY (biến) + TURNSTILE_SECRET (secret): bật chống bot khi đăng ký.
   //   IP_SALT (secret): muối khi băm IP.
-  //   ADMIN_KEY (secret, ≥16 ký tự): khóa cho /api/admin/* (xem và gỡ cờ nghi gian lận).
+  //   ADMIN_KEY (secret, ≥16 ký tự): khóa cho /api/admin/* (xem và gỡ cờ nghi gian lận, đọc góp ý).
+  //   FEEDBACK_WEBHOOK (secret, tùy chọn): URL webhook Discord/Slack nhận thông báo khi có góp ý mới.
 }

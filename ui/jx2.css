@@ -662,3 +662,25 @@ body.jxthumb .acts::before{left:-10px;right:-10px;bottom:-6px;top:-14px;backgrou
 body.jxland .acts::before{left:-6px;right:-6px;top:-6px;bottom:-12px;background:linear-gradient(to bottom,rgba(0,0,0,.6),transparent)}
 #mBody .row>span{flex:1;min-width:0}
 #mBody .row>select[data-m]{flex:0 0 130px}
+
+/* Bảng điều khiển: cảnh báo không lưu luôn nằm trong bảng, dính đầu khi cuộn */
+.admwarn{margin:6px 0 8px;padding:8px 10px;border:2px solid #d0503c;background:rgba(110,16,10,.92);color:#ffe9e4;font-size:var(--t-sm,12px);line-height:1.45}
+.admwarn>b{display:block;color:#fff;font-size:13px;letter-spacing:.3px}.admwarn li b{color:#fff}
+.admwarn ul{margin:6px 0;padding-left:18px}
+.admwarn .admagree{display:flex;gap:8px;align-items:flex-start;margin-top:6px;padding:6px;background:rgba(0,0,0,.3);cursor:pointer;color:#fff;font-weight:600}
+.admwarn .admagree input{flex:0 0 auto;margin-top:2px}
+.admwarn.sticky{position:sticky;top:0;z-index:3;display:grid;grid-template-columns:1fr auto;gap:2px 8px;align-items:center}
+.admwarn.sticky b{grid-column:1/-1}
+.admwarn.sticky .btn{white-space:normal;max-width:130px}
+
+/* Cột nút ngang (màn ngang thấp): fade đổ từ dưới lên */
+body.jxland .rcol::before{top:-14px;bottom:-6px;left:-10px;right:-6px;background:linear-gradient(to top,rgba(0,0,0,.72),rgba(0,0,0,.45) 60%,transparent);-webkit-mask-image:linear-gradient(to right,transparent,#000 12%,#000 100%);mask-image:linear-gradient(to right,transparent,#000 12%,#000 100%)}
+/* Thao tác nhanh: lưới đều thay vì hàng lệch */
+#t-more .btnrow.qtg{grid-template-columns:repeat(auto-fill,minmax(96px,1fr))!important}
+
+/* Hộp góp ý: không tràn ngang trên màn hẹp */
+#mBody .fbbox,#mBody .fbbox *{max-width:100%;box-sizing:border-box}
+#mBody .fbbox .row{min-width:0}
+#mBody .fbbox .row>select,#mBody .fbbox .row>input{flex:1 1 auto;min-width:0}
+#mBody .fbbox textarea{width:100%;resize:vertical;font:inherit;padding:6px;background:#0b100e;color:var(--text,#e8e2cf);border:1px solid var(--jx-line2,#3b6a50)}
+#fbCtxTxt{display:block;word-break:break-all;opacity:.7;max-height:4.5em;overflow:auto}

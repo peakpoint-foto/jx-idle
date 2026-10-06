@@ -41,13 +41,20 @@ const ADM_ACT={
   {n:"Mở khoá tính năng",fn:()=>ADMIN_OPTS.find(o=>o.k==="unlock").fn()}]
 };
 const ADM_TABS=[["mul","Hệ số"],["hero","Nhân vật"],["world","Thế giới"],["item","Đồ"],["act","Hoạt động"],["tool","Công cụ"]];
-function admStart(){try{if(typeof save==="function")save()}catch(e){}ADMV.sandbox=1;toast("Bắt đầu phiên thử nghiệm: tiến trình không được lưu");admRefresh()}
-function admRun(fn,name){let kq="xong";try{kq=fn()||"xong"}catch(e){toast("Lỗi: "+(e&&e.message));return}R.dirty=true;invDirty=true;try{recalc()}catch(e){}toast(name+": "+kq);try{log('<span style="color:#8fe34a">[Điều khiển]</span> '+esc(name)+" — "+esc(kq))}catch(e){}if(typeof renderAll==="function")renderAll();admRefresh()}
+let ADM_CK=0,ADM_MSG="",ADM_EXIT=0;
+const admTime=t=>{const d=new Date(t);return d.toLocaleTimeString("vi-VN",{hour:"2-digit",minute:"2-digit"})+" ngày "+d.toLocaleDateString("vi-VN")};
+function admSay(m){ADM_MSG=m;const el=document.getElementById("admMsg");if(el){el.textContent=m;el.hidden=!m}}
+function admStart(){const ok=document.getElementById("admAgree");if(ok&&!ok.checked){admSay("Hãy đánh dấu ô xác nhận trước khi bật.");return}try{if(typeof save==="function")save()}catch(e){}ADM_CK=S.last||Date.now();ADMV.sandbox=1;ADM_MSG="Đã bật phiên thử nghiệm.";admRefresh()}
+function admRun(fn,name){let kq="xong";try{kq=fn()||"xong"}catch(e){admSay("Lỗi: "+(e&&e.message));return}R.dirty=true;invDirty=true;try{recalc()}catch(e){}admSay(name+": "+kq);try{log('<span style="color:#8fe34a">[Điều khiển]</span> '+esc(name)+" — "+esc(kq))}catch(e){}if(typeof renderAll==="function")renderAll();admRefresh()}
 const ADM_XS=[];
 setInterval(()=>{if(!ADMV.sandbox||typeof S==="undefined"||!S||!S.fac)return;if(ADMV.god&&R.P)R.life=R.P.life;if(ADMV.infMana&&R.P)R.mana=R.P.mana},150);
 setInterval(()=>{if(typeof R==="undefined"||!R)return;const t=Date.now();ADM_XS.push([t,R.xpTot||0,R.kills||0]);while(ADM_XS.length>2&&t-ADM_XS[0][0]>6e4)ADM_XS.shift();const el=document.getElementById("admLive");if(!el||!S||!S.fac)return;const a=ADM_XS[0],b=ADM_XS[ADM_XS.length-1],dt=(b[0]-a[0])/1e3||1;el.textContent=`Cấp ${S.lvl} · ải ${admStage()} · ${fmt(Math.round((b[1]-a[1])/dt*60))} EXP/phút · ${((b[2]-a[2])/dt).toFixed(2)} quái/giây · tốc độ ×${gameSpeed()}`},1000);
 function adminHtml(){
- if(!ADMV.sandbox)return'<h3>Bảng điều khiển <small>chỉ 2.0</small></h3><div class="card"><p class="desc">Chỉnh hệ số EXP, vàng, rơi đồ, quái, tốc độ và cấp/đồ/ải ngay trong lúc chơi.</p><p class="reqnote"><b>Lưu ý:</b> từ lúc bật, mọi tiến trình <b>không được lưu</b>. Tải lại trang là về đúng trạng thái đã lưu trước khi bật và các hệ số trở về mặc định.</p><div class="btnrow"><button class="btn" id="admGo">Bật phiên thử nghiệm</button><button class="btn" onclick="closeModal()">Để sau</button></div></div>';
+ if(!ADMV.sandbox)return'<h3>Bảng điều khiển <small>chỉ chế độ 2.0</small></h3><p class="desc">Chỉnh hệ số EXP, vàng, rơi đồ, quái, tốc độ và cấp, đồ, ải ngay trong lúc chơi để thử nghiệm.</p>'
+  +'<div class="admwarn"><b>⚠ PHIÊN THỬ NGHIỆM SẼ KHÔNG ĐƯỢC LƯU</b><ul><li>Trò chơi lưu một lần ngay trước khi bật. Đó là bản lưu cuối cùng.</li><li>Sau khi bật, <b>mọi thứ</b> bạn nhận hoặc thay đổi (cấp, kinh nghiệm, đồ, ngân lượng, nhiệm vụ, điểm danh, lượt hoạt động…) kể cả do chơi bình thường đều <b>mất</b> khi tải lại hoặc đóng trang.</li><li>Không thể tắt phiên mà vẫn giữ tiến trình. Chỉ có cách tải lại trang để quay về bản lưu.</li><li>Tiến trình mất trong phiên thử nghiệm không được hỗ trợ khôi phục.</li></ul>'
+  +'<label class="admagree"><input type="checkbox" id="admAgree"> Tôi đã hiểu: mọi tiến trình từ lúc bật sẽ không được lưu.</label></div>'
+  +'<p class="reqbad" id="admMsg"'+(ADM_MSG?"":" hidden")+'>'+esc(ADM_MSG)+'</p>'
+  +'<div class="btnrow"><button class="btn red" id="admGo" disabled>Bật thử nghiệm</button><button class="btn" onclick="closeModal()">Để sau</button></div>';
  const tabs='<div class="dtabs" id="admTabs">'+ADM_TABS.map(([k,n])=>`<button data-at="${k}" class="${k===ADM_TAB?"on":""}">${n}</button>`).join("")+"</div>";
  let body="";
  if(ADM_TAB==="mul"){
@@ -55,20 +62,23 @@ function adminHtml(){
    +ADM_FLAG.map(([k,n])=>`<label><input type="checkbox" data-f="${k}" ${ADMV[k]?"checked":""}> ${n}</label>`).join("")
    +'<div class="btnrow">'+ADM_PRESET.map(([n],i)=>`<button class="btn sm" data-ps="${i}">${n}</button>`).join("")+"</div>";
  }else if(ADM_TAB==="tool"){
-  body='<div class="card"><b>Số liệu trực tiếp</b><div id="admLive" class="dim small">…</div></div><div class="card"><small class="dim">Đột biến hôm nay: '+esc(mutator()?mutator().n+" — "+mutator().d:"không có")+'</small></div><div class="btnrow"><button class="btn red" id="admExit">Thoát phiên (tải lại trang)</button></div>';
+  body='<div class="card"><b>Số liệu trực tiếp</b><div id="admLive" class="dim small">…</div></div><div class="card"><small class="dim">Đột biến hôm nay: '+esc(mutator()?mutator().n+" — "+mutator().d:"không có")+'</small></div>';
  }else{
   body=(ADM_ACT[ADM_TAB]||[]).map((a,i)=>`<div class="qrow"><span>${a.n}</span>${a.opts?`<select data-ao="${i}">${a.opts.map(v=>`<option value="${v}">${v>=1e6?fmt(v):v}</option>`).join("")}</select>`:"<small></small>"}<button class="btn sm" data-ar="${i}">Chạy</button></div>`).join("");
  }
- return'<h3>Bảng điều khiển <small>THỬ NGHIỆM · không lưu</small></h3>'+tabs+body;
+ return'<h3>Bảng điều khiển <small>chế độ 2.0</small></h3>'
+  +'<div class="admwarn sticky"><b>⚠ ĐANG THỬ NGHIỆM · KHÔNG LƯU</b><span>Bản lưu cuối: '+esc(admTime(ADM_CK||S.last||Date.now()))+'. Mọi tiến trình từ lúc đó sẽ mất khi tải lại hoặc đóng trang.</span>'
+  +'<button class="btn sm red" id="admExit">'+(ADM_EXIT>Date.now()?"Bấm lần nữa để tải lại":"Thoát & về bản lưu")+'</button></div>'
+  +'<p class="dim small" id="admMsg"'+(ADM_MSG?"":" hidden")+'>'+esc(ADM_MSG)+'</p>'+tabs+body;
 }
 function admBind(){
- const go=document.getElementById("admGo");if(go)go.onclick=admStart;
+ const go=document.getElementById("admGo"),ag=document.getElementById("admAgree");if(go)go.onclick=admStart;if(ag)ag.onchange=()=>{go.disabled=!ag.checked};
  document.querySelectorAll("#admTabs [data-at]").forEach(b=>b.onclick=()=>{ADM_TAB=b.dataset.at;admRefresh()});
- document.querySelectorAll("#mBody [data-m]").forEach(s=>s.onchange=()=>{ADMV[s.dataset.m]=+s.value;R.dirty=true;toast("Đã đặt "+s.dataset.m+" = "+admV(+s.value))});
+ document.querySelectorAll("#mBody [data-m]").forEach(s=>s.onchange=()=>{ADMV[s.dataset.m]=+s.value;R.dirty=true;const m=ADM_MUL.find(x=>x[0]===s.dataset.m);admSay((m?m[1]:s.dataset.m)+": "+admV(+s.value))});
  document.querySelectorAll("#mBody [data-f]").forEach(c=>c.onchange=()=>{ADMV[c.dataset.f]=c.checked?1:0});
- document.querySelectorAll("#mBody [data-ps]").forEach(b=>b.onclick=()=>{const p=ADM_PRESET[+b.dataset.ps];Object.assign(ADMV,ADM_DEF,p[1]);toast("Bộ cài sẵn: "+p[0]);admRefresh()});
+ document.querySelectorAll("#mBody [data-ps]").forEach(b=>b.onclick=()=>{const p=ADM_PRESET[+b.dataset.ps];Object.assign(ADMV,ADM_DEF,p[1]);ADM_MSG="Bộ cài sẵn: "+p[0];admRefresh()});
  document.querySelectorAll("#mBody [data-ar]").forEach(b=>b.onclick=()=>{const a=ADM_ACT[ADM_TAB][+b.dataset.ar],sel=document.querySelector(`#mBody [data-ao="${b.dataset.ar}"]`);admRun(()=>a.fn(sel?sel.value:undefined),a.n)});
- const ex=document.getElementById("admExit");if(ex)ex.onclick=()=>{R.dirty=false;location.reload()};
+ const ex=document.getElementById("admExit");if(ex)ex.onclick=()=>{if(ADM_EXIT>Date.now()){R.dirty=false;location.reload();return}ADM_EXIT=Date.now()+4e3;ex.textContent="Bấm lần nữa để tải lại";setTimeout(()=>{if(ex.isConnected&&ADM_EXIT<=Date.now())ex.textContent="Thoát & về bản lưu"},4100)};
 }
 function admRefresh(){const m=document.getElementById("mBody");if(!m)return;const y=m.scrollTop;m.innerHTML=adminHtml();admBind();m.scrollTop=y}
 function adminModal(){if(!MC().admin){toast(modeBlockMsg("Bảng điều khiển"));return}modal(adminHtml(),admBind)}

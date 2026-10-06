@@ -75,5 +75,5 @@ function statText(){
  const v=typeof gameSpeed==="function"?gameSpeed():1;if(v>1)p.push("×"+v);
  const b=typeof xpBuffLeft==="function"?xpBuffLeft():0;if(b>0)p.push("EXP +25% · "+Math.ceil(b/6e4)+"p");
  return p.join(" · ")}
-setInterval(()=>{let t=statText();const a=typeof ADMV!=="undefined"&&ADMV.sandbox;if(a&&ready())t="THỬ NGHIỆM · không lưu"+(t?" · "+t:"");if(st.textContent!==t)st.textContent=t;st.classList.toggle("adm",!!a);st.style.display=t?"":"none"},500);st.addEventListener("click",()=>{if(st.classList.contains("adm")&&typeof adminModal==="function")adminModal()});
+setInterval(()=>{const t=statText();if(st.textContent!==t)st.textContent=t;st.style.display=t?"":"none"},500);
 })();

@@ -56,7 +56,7 @@ export async function notices(req, env) {
 }
 
 /* ---- Quản trị: header x-admin-key phải khớp secret ADMIN_KEY ---- */
-function admin(req, env) {
+export function admin(req, env) {
   const k = req.headers.get("x-admin-key") || "";
   if (!env.ADMIN_KEY || k.length < 16 || k !== env.ADMIN_KEY) throw new HttpError(403, "forbidden");
 }

@@ -76,9 +76,20 @@ Ba mục Công thành, Tống Kim và Tháp được mở từ các nút riêng 
 - **Dọn đồ** (trong nút ⋯): bán rác theo chính sách an toàn và mặc đồ tốt hơn.
 - Công thành và Tống Kim hỏi xác nhận trước khi dùng lượt tuần (trừ chế độ 2.0 không giới hạn lượt).
 
+## Góp ý
+
+Nút **Góp ý** nằm trong menu ⋯ và trong Hệ thống > Góp ý & dữ liệu. Người chơi chọn loại (Lỗi, Giao diện, Cân bằng, Ý tưởng, Khác), viết nội dung (tối đa 2.000 ký tự), có thể để lại liên hệ và đính kèm thông tin kỹ thuật. Bản nháp được giữ trong trình duyệt tới khi gửi thành công. Mỗi địa chỉ IP gửi tối đa 5 góp ý mỗi giờ.
+
+Dành cho chủ host Cloudflare:
+
+- Góp ý lưu trong bảng `feedback` của D1 (tự tạo khi Worker nhận request đầu tiên).
+- Đọc: `GET /api/admin/feedback` (thêm `?status=open` để lọc) với header `x-admin-key: <ADMIN_KEY>`.
+- Đánh dấu đã xử lý: `POST /api/admin/feedback` với body `{"id": 12}` (thêm `"status":"open"` để mở lại).
+- Tùy chọn: đặt secret `FEEDBACK_WEBHOOK` là URL webhook Discord hoặc Slack để nhận tin nhắn ngay khi có góp ý mới.
+
 ## Bảng điều khiển (chỉ chế độ 2.0)
 
-Hệ thống > Bảng điều khiển > **Bật phiên thử nghiệm**. Có 6 nhóm: Hệ số (EXP, vàng, rơi đồ, máu/sát thương quái, sát thương của bạn, số quái, may mắn, tốc độ 0.5–10×, bất tử, nội lực vô hạn, bộ cài sẵn), Nhân vật, Thế giới, Đồ, Hoạt động và Công cụ (EXP/phút, quái/giây). Từ lúc bật, **tiến trình không được lưu**; tải lại trang là về đúng trạng thái đã lưu trước đó và hệ số trở về mặc định. Dải đỏ "THỬ NGHIỆM" trên màn hình bấm được để mở lại bảng.
+Hệ thống > Bảng điều khiển > **Bật phiên thử nghiệm**. Có 6 nhóm: Hệ số (EXP, vàng, rơi đồ, máu/sát thương quái, sát thương của bạn, số quái, may mắn, tốc độ 0.5–10×, bất tử, nội lực vô hạn, bộ cài sẵn), Nhân vật, Thế giới, Đồ, Hoạt động và Công cụ (EXP/phút, quái/giây). Từ lúc bật, **tiến trình không được lưu**; tải lại trang là về đúng trạng thái đã lưu trước đó và hệ số trở về mặc định. Trước khi bật phải đánh dấu ô xác nhận đã hiểu; trong bảng luôn có khung đỏ ghi giờ của bản lưu cuối và nút "Thoát & về bản lưu" (bấm hai lần). Cảnh báo chỉ nằm trong bảng, không hiện ra màn hình chơi.
 
 ## Giao diện gọn
 
