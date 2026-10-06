@@ -151,7 +151,7 @@ Bản chạy cục bộ (start_game.bat) vẫn gọi được máy chủ online,
 
 Máy chủ là Cloudflare Worker `jx-idle-final` (cấu hình trong `wrangler.jsonc`, mã trong `worker/`), phục vụ cả game lẫn API `/api/*`, dữ liệu lưu trong D1.
 
-1. `npm install`, rồi `npx wrangler deploy`. Lần đầu, Wrangler tự tạo D1 `jx-idle-final-db`. Nếu đã có D1, thêm `database_id` vào `wrangler.jsonc`.
+1. `npm install`, rồi `npx wrangler deploy`. D1 `jx-idle-final-db` đã khai báo kèm `database_id` trong `wrangler.jsonc`.
 2. Bảng dữ liệu được Worker tự tạo ở request đầu tiên. Không cần chạy migration riêng.
 3. Tùy chọn: đặt `TURNSTILE_SITEKEY` (biến) và `TURNSTILE_SECRET` (secret) để bật chống bot khi đăng ký, và `IP_SALT` (secret) làm muối băm IP.
 4. Đặt secret `ADMIN_KEY` (ít nhất 16 ký tự) để dùng API quản trị, gửi kèm header `x-admin-key`:
