@@ -607,4 +607,13 @@ body.jxland #jxOverflow{right:0;bottom:calc(100% + 5px);grid-template-columns:re
 .bbtag b{font-weight:700;color:#d8bc7c}.bbtag i{font-style:normal;font-size:.88em;color:#7f9c8a;letter-spacing:1.2px}
 .bbtag .sep{display:none;color:#5d7a68;margin:0 4px}
 #bb.touchbar .bbtag{display:flex}
+/* Đăng ký chơi online ở màn tạo nhân vật: nổi bật khi chọn Công Thành Chiến, mờ đi với chế độ khác. */
+.onlpick{margin:8px 0;padding:8px 10px;border:1px solid #d8bc7c;background:linear-gradient(90deg,rgba(216,188,124,.18),rgba(216,188,124,.04));box-shadow:0 0 10px rgba(216,188,124,.25)}
+.onlpick label{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;cursor:pointer;min-height:32px}
+.onlpick input{width:20px;height:20px;accent-color:#d8bc7c}
+.onlpick b{color:#ffe6a8;font-size:14px}.onlpick em{font-style:normal;color:#cfe3d6;font-size:12px}
+.onlpick small{display:block;margin-top:4px;color:#9fb8a8}
+.onlpick.off{opacity:.45;box-shadow:none;border-color:var(--jx-line)}.onlpick.off label{cursor:default}
+.onlcard code{user-select:all;word-break:break-all;color:#ffe6a8}
+#onlTs{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:100}
 .bbtag.one{flex-direction:row;align-items:center}.bbtag.one .sep{display:inline}.bbtag.one i{font-size:1em}
