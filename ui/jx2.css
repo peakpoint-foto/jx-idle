@@ -338,7 +338,7 @@ select{max-width:100%;min-width:0;text-overflow:ellipsis}
 .facpick .s5b{right:6px;top:auto;bottom:7px;width:20px;height:20px}   /* huy hiệu xuống ngang dòng "hệ ..." -> tên phái đủ bề ngang */
 
 /* ---------- tiêu đề cửa sổ / hộp thoại: một kiểu duy nhất (giữa tấm đá, chữ hoa, 14px) ---------- */
-#panel::before,.mbox:not(.h3t)::before,.mbox.h3t #mBody>h3:first-child{font-size:var(--t-xl);letter-spacing:.3px;text-transform:uppercase}
+#panel::before,.mbox:not(.h3t)::before,.mbox.h3t #mBody>h3:first-child{font-size:var(--t-xl);letter-spacing:.3px}
 .mbox.h3t #mBody>h3:first-child{justify-content:safe center}
 #panel::before,.mbox:not(.h3t)::before{justify-content:safe center}
 .mbox.h3t #mBody>h3:first-child{flex-wrap:nowrap;white-space:nowrap}
@@ -603,3 +603,18 @@ body.jxland #jxOverflow{right:0;bottom:calc(100% + 5px);grid-template-columns:re
 #bb.touchbar #tabs .tray i{pointer-events:none}
 /* Cỡ chữ lớn không được phóng tọa độ tab tuyệt đối đã căn theo khung footer, nếu không các ô bên phải tràn khỏi màn hình. */
 #bb.touchbar #tabs{zoom:1!important}
+.bbtag{display:none;position:absolute;z-index:1;pointer-events:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;white-space:nowrap;overflow:hidden;font:600 12px/1.3 Grenze,"Noto Sans",serif;letter-spacing:.6px;text-shadow:0 1px 2px #000}
+.bbtag b{font-weight:700;color:#d8bc7c}.bbtag i{font-style:normal;font-size:.88em;color:#7f9c8a;letter-spacing:1.2px}
+.bbtag .sep{display:none;color:#5d7a68;margin:0 4px}
+#bb.touchbar .bbtag{display:flex}
+/* Đăng ký chơi online ở màn tạo nhân vật: nổi bật khi chọn Công Thành Chiến, mờ đi với chế độ khác. */
+.onlpick{margin:8px 0;padding:8px 10px;border:1px solid #d8bc7c;background:linear-gradient(90deg,rgba(216,188,124,.18),rgba(216,188,124,.04));box-shadow:0 0 10px rgba(216,188,124,.25)}
+.onlpick label{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;cursor:pointer;min-height:32px}
+.onlpick input{width:20px;height:20px;accent-color:#d8bc7c}
+.onlpick b{color:#ffe6a8;font-size:14px}.onlpick em{font-style:normal;color:#cfe3d6;font-size:12px}
+.onlpick small{display:block;margin-top:4px;color:#9fb8a8}
+.onlpick.off{opacity:.45;box-shadow:none;border-color:var(--jx-line)}.onlpick.off label{cursor:default}
+#heroName.ctc::after{content:"";display:inline-block;width:.95em;height:.95em;margin-left:4px;vertical-align:-.12em;border-radius:50%;background:#1d9bf0 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4.6 8.3 7 10.6l4.4-5' fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/100% no-repeat;box-shadow:0 0 0 1px #000a}
+.onlcard code{user-select:all;word-break:break-all;color:#ffe6a8}
+#onlTs{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:100}
+.bbtag.one{flex-direction:row;align-items:center}.bbtag.one .sep{display:inline}.bbtag.one i{font-size:1em}

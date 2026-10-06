@@ -133,6 +133,27 @@ Trò chơi tự lưu trong trình duyệt hiện tại. Mỗi trình duyệt có
 
 Có thể chọn **Xuất mã** và **Nhập mã** thay cho tệp. Hãy sao lưu trước khi xoá dữ liệu trình duyệt, cài lại hệ điều hành hoặc đổi thư mục game. Kiểm tra dữ liệu giúp hạn chế lỗi nạp nhầm, nhưng vì game chạy cục bộ nên đây không phải dịch vụ lưu trữ trực tuyến.
 
+## Chơi Online (PvP Công Thành Chiến)
+
+Chỉ nhân vật **Công Thành Chiến** chơi online được, và online chỉ dùng cho PvP.
+
+- Ở màn tạo nhân vật, khi chọn Công Thành Chiến, ô **Đăng ký chơi Online** được tick sẵn. Giữ ô này để có tên trên bảng xếp hạng.
+- Quên tick thì vào **Hệ thống › Chơi Online** để đăng ký, nhưng chỉ khi nhân vật còn dưới cấp 40.
+- Không đăng ký vẫn PvP được, chỉ là không có tên trên bảng xếp hạng.
+- Khi đã đăng ký, game gửi tín hiệu mỗi phút để máy chủ đo giờ chơi, và đồng bộ nhân vật mỗi 5 phút. Thời gian offline được tính theo đúng giới hạn tu luyện offline của game (8 giờ mỗi lần, 12 giờ mỗi ngày).
+- **Mã khôi phục** trong Hệ thống thay cho mật khẩu. Giữ kín, không chia sẻ.
+
+Bản chạy cục bộ (start_game.bat) vẫn gọi được máy chủ online, miễn là máy có mạng.
+
+### Triển khai máy chủ (dành cho người quản trị)
+
+Máy chủ là Cloudflare Worker `jx-idle-final` (cấu hình trong `wrangler.jsonc`, mã trong `worker/`), phục vụ cả game lẫn API `/api/*`, dữ liệu lưu trong D1.
+
+1. `npm install`, rồi `npx wrangler deploy`. Lần đầu, Wrangler tự tạo D1 `jx-idle-final-db`. Nếu đã có D1, thêm `database_id` vào `wrangler.jsonc`.
+2. Bảng dữ liệu được Worker tự tạo ở request đầu tiên. Không cần chạy migration riêng.
+3. Tùy chọn: đặt `TURNSTILE_SITEKEY` (biến) và `TURNSTILE_SECRET` (secret) để bật chống bot khi đăng ký, và `IP_SALT` (secret) làm muối băm IP.
+4. Chạy thử cục bộ: `npx wrangler dev`, kiểm thử: `npm test`.
+
 ## Tốc độ, âm thanh và hiển thị
 
 Trong Hệ thống, người chơi có thể điều chỉnh tốc độ mô phỏng, hiệu ứng âm thanh, nhạc nền, cỡ chữ và tiết kiệm pin. Giảm hiệu ứng, hạ tốc độ và đóng bớt tab trình duyệt có thể giúp máy yếu ổn định hơn khi nhiều quái xuất hiện.
