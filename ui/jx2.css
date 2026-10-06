@@ -597,9 +597,9 @@ body.jxland #jxOverflow{right:0;bottom:calc(100% + 5px);grid-template-columns:re
 @media(pointer:coarse){.policy-presets .btn,.loot-rule .btn,.policy-grid select,.loot-rule select,.loot-rule input{min-height:40px;height:40px}.loot-rule{grid-template-columns:minmax(0,1fr) 76px 40px}.loot-rule .btn{width:40px}}
 @media(max-width:359px){.policy-grid{grid-template-columns:minmax(0,1fr)}}
 /* Touch toolbar uses full 44px targets instead of shrinking the original sprite slots. */
-#bb.touchbar #pad .pbtn,#bb.touchbar #tabs .tray{box-sizing:border-box;width:var(--cell,44px);height:var(--cell,44px);border:1px solid var(--jx-line);background-color:#10231a}
+#bb.touchbar #pad .pbtn,#bb.touchbar #tabs .tray{box-sizing:border-box;width:var(--cell,44px);height:var(--cell,44px);border:3px solid transparent;border-image:url(v2/cell.png) 3/3px stretch;background-color:transparent}
 #bb.touchbar #tabs .tray::before{display:none}
-#bb.touchbar #pad .pbtn i{inset:4px}
+#bb.touchbar #pad .pbtn i{inset:1px}
 #bb.touchbar #tabs .tray i{pointer-events:none}
 /* Cỡ chữ lớn không được phóng tọa độ tab tuyệt đối đã căn theo khung footer, nếu không các ô bên phải tràn khỏi màn hình. */
 #bb.touchbar #tabs{zoom:1!important}
