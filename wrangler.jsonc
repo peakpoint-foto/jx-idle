@@ -10,12 +10,11 @@
     "binding": "ASSETS",
     "run_worker_first": ["/api/*"]
   },
-  // Không ghi database_id: Wrangler tự tạo D1 "jx-idle-final-db" ở lần deploy đầu.
-  // Nếu đã có D1 sẵn, thêm "database_id": "<id>" vào đây.
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "jx-idle-final-db",
+      "database_id": "65f253d1-733b-4ab3-b1b5-7ffad08972af",
       "migrations_dir": "migrations"
     }
   ],
