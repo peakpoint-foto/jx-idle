@@ -4,6 +4,7 @@ import { HttpError, json, readJson, CORS } from "./http.js";
 import { ensureSchema } from "./db.js";
 import { register, heartbeat, sync, me } from "./account.js";
 import { ladder, notices, adminFlags, adminUnflag } from "./ladder.js";
+import { feedback, adminFeedback, adminFeedbackSet } from "./feedback.js";
 
 const ROUTES = {
   "GET /api/config": (req, env) => ({ turnstile: env.TURNSTILE_SITEKEY || "", v: 1 }),
@@ -15,10 +16,13 @@ const ROUTES = {
   "GET /api/notices": notices,
   "GET /api/admin/flags": adminFlags,
   "POST /api/admin/unflag": adminUnflag,
+  "POST /api/feedback": feedback,
+  "GET /api/admin/feedback": adminFeedback,
+  "POST /api/admin/feedback": adminFeedbackSet,
 };
 
 export default {
-  async fetch(req, env) {
+  async fetch(req, env, ctx) {
     const url = new URL(req.url);
     if (!url.pathname.startsWith("/api/")) return env.ASSETS.fetch(req);
     if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS });
@@ -28,7 +32,7 @@ export default {
       if (!env.DB) throw new HttpError(503, "no_db", "Chưa gắn cơ sở dữ liệu D1");
       await ensureSchema(env.DB);
       const body = req.method === "POST" ? await readJson(req) : null;
-      return json(await fn(req, env, body, url));
+      return json(await fn(req, env, body, url, ctx));
     } catch (e) {
       if (e instanceof HttpError) return json({ error: e.code, msg: e.message }, e.status);
       console.error("api", url.pathname, e && e.stack);

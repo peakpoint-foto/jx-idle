@@ -35,6 +35,17 @@ export const SCHEMA = [
   )`,
   `CREATE INDEX IF NOT EXISTS flags_acc ON flags(account_id, cleared_at)`,
   `CREATE INDEX IF NOT EXISTS flags_at ON flags(at)`,
+  `CREATE TABLE IF NOT EXISTS feedback(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    at INTEGER NOT NULL,
+    cat TEXT NOT NULL,
+    text TEXT NOT NULL,
+    contact TEXT,
+    ctx TEXT,
+    ip_hash TEXT,
+    status TEXT NOT NULL DEFAULT 'open'
+  )`,
+  `CREATE INDEX IF NOT EXISTS feedback_at ON feedback(status, at)`,
 ];
 
 // Cột thêm sau lần phát hành đầu: ALTER chạy riêng, bỏ qua lỗi "duplicate column" khi đã có.

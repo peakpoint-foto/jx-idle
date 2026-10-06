@@ -629,3 +629,74 @@ body.jxleft #jxOverflow{right:auto;left:calc(100% + 4px)}
 body.jxleft.jxland #jxOverflow{left:0;right:auto}
 @media (max-width:359px){body.jxthumb .acts{flex-wrap:wrap;width:148px;justify-content:flex-end}body.jxthumb.jxleft .acts{justify-content:flex-start}}
 @media (pointer:coarse){#jxR .rbtn span{font-size:10.5px;max-width:48px}#jxOverflow{gap:8px;padding:8px}}
+
+/* ---------- Gom giao diện (js/uihub.js) ---------- */
+@media (max-width:359px){
+  body.jxthumb .acts{flex-wrap:nowrap;width:auto;justify-content:flex-end;gap:0}
+  body.jxthumb.jxleft .acts{justify-content:flex-start}
+  body.jxthumb .acts .rnd{width:42px}
+  body.jxthumb .acts .rnd span{width:42px;font-size:10px}
+}
+#jxStat{position:absolute;left:var(--edge-l,2px);top:calc(50px + var(--safe-t,0px));z-index:6;max-width:calc(100% - 140px);padding:1px 7px;border:1px solid var(--jx-line2,#3b6a50);background:rgba(6,19,13,.72);color:var(--jx-gold,#e6c67a);font:600 10.5px/16px var(--font);pointer-events:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.jxland #jxStat{top:calc(100px + var(--safe-t,0px))}
+body.sv #jxStat{display:none!important}
+.mgrp{margin:6px 0;border:1px solid var(--jx-line2,#3b6a50);background:rgba(6,19,13,.35)}
+.mgrp>summary{cursor:pointer;padding:10px 12px;min-height:24px;font-weight:650;color:var(--jx-gold,#e6c67a);list-style:none}
+.mgrp>summary::-webkit-details-marker{display:none}
+.mgrp>summary::before{content:"▸";display:inline-block;width:1.1em;transition:transform .15s}
+.mgrp[open]>summary::before{transform:rotate(90deg)}
+.mgrp>*:not(summary){margin-left:8px;margin-right:8px}
+.mgrp>*:last-child{margin-bottom:8px}
+.dtabs .glab{grid-column:1/-1;margin-top:2px;font:600 10.5px/14px var(--font);color:var(--dim,#8aa79a);letter-spacing:.3px}
+.dsc{margin:4px 0 8px}
+.dsc>summary{cursor:pointer;padding:6px 0;font-size:var(--t-sm,12px);color:var(--jx-gold,#e6c67a)}
+
+/* Phiên thử nghiệm: dải đỏ bấm được để mở bảng điều khiển */
+#jxStat.adm{background:rgba(120,12,12,.88);color:#fff;border-color:#e06a5a;pointer-events:auto;cursor:pointer}
+
+/* Fade tối dưới cột nút và hàng nút để dễ nhìn trên mọi nền */
+.rcol::before,.acts::before{content:"";position:absolute;z-index:-1;pointer-events:none}
+.rcol::before{top:-14px;bottom:-28px;right:-6px;left:-14px;background:linear-gradient(to left,rgba(0,0,0,.72),rgba(0,0,0,.5) 55%,transparent);-webkit-mask-image:linear-gradient(to bottom,transparent,#000 12%,#000 82%,transparent);mask-image:linear-gradient(to bottom,transparent,#000 12%,#000 82%,transparent)}
+body.jxleft .rcol::before{left:-6px;right:-14px;background:linear-gradient(to right,rgba(0,0,0,.72),rgba(0,0,0,.5) 55%,transparent)}
+body.jxthumb .acts::before{left:-10px;right:-10px;bottom:-6px;top:-14px;background:linear-gradient(to top,rgba(0,0,0,.75),rgba(0,0,0,.5) 60%,transparent);-webkit-mask-image:linear-gradient(to right,transparent,#000 10%,#000 90%,transparent);mask-image:linear-gradient(to right,transparent,#000 10%,#000 90%,transparent)}
+body.jxland .acts::before{left:-6px;right:-6px;top:-6px;bottom:-12px;background:linear-gradient(to bottom,rgba(0,0,0,.6),transparent)}
+#mBody .row>span{flex:1;min-width:0}
+#mBody .row>select[data-m]{flex:0 0 130px}
+
+/* Bảng điều khiển: cảnh báo không lưu luôn nằm trong bảng, dính đầu khi cuộn */
+.admwarn{margin:6px 0 8px;padding:8px 10px;border:2px solid #d0503c;background:rgba(110,16,10,.92);color:#ffe9e4;font-size:var(--t-sm,12px);line-height:1.45}
+.admwarn>b{display:block;color:#fff;font-size:13px;letter-spacing:.3px}.admwarn li b{color:#fff}
+.admwarn ul{margin:6px 0;padding-left:18px}
+.admwarn .admagree{display:flex;gap:8px;align-items:flex-start;margin-top:6px;padding:6px;background:rgba(0,0,0,.3);cursor:pointer;color:#fff;font-weight:600}
+.admwarn .admagree input{flex:0 0 auto;margin-top:2px}
+.admwarn.sticky{position:sticky;top:0;z-index:3;display:grid;grid-template-columns:1fr auto;gap:2px 8px;align-items:center}
+.admwarn.sticky b{grid-column:1/-1}
+.admwarn.sticky .btn{white-space:normal;max-width:130px}
+
+/* Cột nút ngang (màn ngang thấp): fade đổ từ dưới lên */
+body.jxland .rcol::before{top:-14px;bottom:-6px;left:-10px;right:-6px;background:linear-gradient(to top,rgba(0,0,0,.72),rgba(0,0,0,.45) 60%,transparent);-webkit-mask-image:linear-gradient(to right,transparent,#000 12%,#000 100%);mask-image:linear-gradient(to right,transparent,#000 12%,#000 100%)}
+/* Thao tác nhanh: lưới đều thay vì hàng lệch */
+#t-more .btnrow.qtg{grid-template-columns:repeat(auto-fill,minmax(96px,1fr))!important}
+
+/* Hộp góp ý: không tràn ngang trên màn hẹp */
+#mBody .fbbox,#mBody .fbbox *{max-width:100%;box-sizing:border-box}
+#mBody .fbbox .row{min-width:0}
+#mBody .fbbox .row>select,#mBody .fbbox .row>input{flex:1 1 auto;min-width:0}
+#mBody .fbbox textarea{width:100%;resize:vertical;font:inherit;padding:6px;background:#0b100e;color:var(--text,#e8e2cf);border:1px solid var(--jx-line2,#3b6a50)}
+#fbCtxTxt{display:block;word-break:break-all;opacity:.7;max-height:4.5em;overflow:auto}
+
+/* ---------- Màn dọc cảm ứng: hai hàng nút căn giữa ở đáy (hoạt động trên, điều hướng dưới) ---------- */
+/* Hàng hoạt động: lên góc trên trái, ngay dưới thông báo (top do jxshell.js đặt) */
+body.jxthumb .acts,body.jxthumb.jxleft .acts{left:var(--edge-l,2px);right:auto;bottom:auto;transform:none;justify-content:flex-start}
+body.jxthumb .acts::before{display:block;left:-6px;right:-10px;top:-4px;bottom:-6px;background:linear-gradient(to right,rgba(0,0,0,.6),rgba(0,0,0,.35) 75%,transparent);-webkit-mask-image:none;mask-image:none}
+body.jxthumb .rcol::before,body.jxthumb.jxleft .rcol::before{left:-16px;right:-16px;top:-16px;bottom:-8px;background:linear-gradient(to top,rgba(0,0,0,.78),rgba(0,0,0,.55) 55%,transparent);-webkit-mask-image:linear-gradient(to right,transparent,#000 9%,#000 91%,transparent);mask-image:linear-gradient(to right,transparent,#000 9%,#000 91%,transparent)}
+body.jxthumb #jxOverflow,body.jxthumb.jxleft #jxOverflow{left:auto;right:0;bottom:calc(100% + 8px);grid-template-columns:repeat(3,44px)}
+#jxChat{max-width:250px}
+/* ---------- Màn ngang: mọi UI bên trái gói trong cột 232px ---------- */
+body.jxland #jxStat{max-width:232px}
+body.jxland .acts{max-width:232px;flex-wrap:wrap}
+
+/* Màn dọc nhỏ (rộng < 360px hoặc cao < 640px): bỏ dải trạng thái và dòng thông báo trên chiến trường cho đỡ chật; nhật ký vẫn xem ở nút Nhật ký */
+body.jxsmall #jxStat,body.jxsmall #jxChat{display:none!important}
+/* Máy tính / màn không phải cảm ứng dọc: dải trạng thái nằm dưới hàng nút hoạt động */
+body:not(.jxthumb) #jxStat{top:calc(100px + var(--safe-t,0px));max-width:232px}
