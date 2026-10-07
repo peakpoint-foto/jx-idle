@@ -60,6 +60,24 @@ if(typeof giftModal==="function"){const _gm=giftModal;giftModal=function(){_gm()
   const sm=document.createElement("summary");sm.textContent="Luật & mô tả";d.appendChild(sm);
   p.replaceWith(d);d.appendChild(p);d.addEventListener("toggle",()=>{d.open?descOpen.add(key):descOpen.delete(key)})})}}
 
+/* ---------- 2b. Chấm xanh: mục có quà / nhiệm vụ nhận được ---------- */
+function giftReadyTabs(){const t=new Set();if(!ready())return t;try{const r=RW();
+ if(!r.login.claimed)t.add("login");
+ if(lvMsReady().length)t.add("lvms");
+ if(dailyQuests().list.some(q=>!q.done&&q.have>=q.need))t.add("quest");
+ if(typeof ytState==="function"){const y=ytState();if(y.done||ytDeliverable())t.add("yt")}
+ if(r.fd>=FD_COST)t.add("chest");
+ if(typeof EVENT_SHOP!=="undefined"&&(r.stat.tokens|0)>=Math.min(...EVENT_SHOP.map(x=>x[0])))t.add("event");
+ if(unlocked(PET_LV)&&!r.pet)t.add("pet");
+ if(S.lvl>=REBORN_LV&&(r.stat.reborn|0)<REBORN_MAX||typeof tpPending==="function"&&tpPending()>0)t.add("reborn");
+}catch(e){}return t}
+window.giftReadyTabs=giftReadyTabs;
+if(typeof giftPending==="function"){const _gp=giftPending;giftPending=function(){return _gp()||giftReadyTabs().size>0}}
+function markGiftTabs(){const bar=$("#giftTabs");if(!bar)return;const rd=giftReadyTabs();bar.querySelectorAll("button[data-g]").forEach(b=>{const on=rd.has(b.dataset.g);let d=b.querySelector(".gdot");if(on&&!d){d=document.createElement("em");d.className="gdot";d.setAttribute("aria-label","có thể nhận");b.appendChild(d)}else if(!on&&d)d.remove()});
+ document.querySelectorAll("#mBody .qrow").forEach(q=>{const btn=q.querySelector("button.btn");q.classList.toggle("ready",!!(btn&&!btn.disabled&&/^(Nhận|Nộp|Vào)$/.test(btn.textContent.trim())))})}
+if(typeof giftModal==="function"){const _gm2=giftModal;giftModal=function(){_gm2();markGiftTabs()}}
+setInterval(()=>{if(!ready())return;const any=giftReadyTabs().size>0;const td=$("#jxToday");if(td)td.classList.toggle("on",any);const gb=$("#giftBtn");if(gb)gb.classList.toggle("on",any||(typeof giftPending==="function"&&giftPending()))},1000);
+
 /* ---------- 3. Dải trạng thái: đang làm gì, tốc độ, buff ---------- */
 const st=document.createElement("div");st.id="jxStat";st.setAttribute("aria-live","off");const bt=$("#battle");if(bt)bt.appendChild(st);
 function statText(){
