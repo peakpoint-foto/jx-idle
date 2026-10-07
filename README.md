@@ -195,7 +195,7 @@ Máy chủ là Cloudflare Worker `jx-idle-final` (cấu hình trong `wrangler.js
 4. Đặt secret `ADMIN_KEY` (ít nhất 16 ký tự) để dùng API quản trị, gửi kèm header `x-admin-key`:
    - `GET /api/admin/flags?name=<tên>`: xem cờ của một nhân vật (bỏ `name` để xem 200 cờ mới nhất).
    - `POST /api/admin/unflag` với `{"name":"<tên>"}`: gỡ mọi cờ đang mở. Nếu nhân vật vẫn vi phạm, lần đồng bộ sau sẽ bị gắn cờ lại.
-5. Ngưỡng cấp theo giờ chơi nằm ở `LV_TIME` trong `worker/src/validate.js`. Mặc định cố ý rộng tay: 2 quái/giây, hệ số EXP ×4, thêm 25% và 1 giờ dự phòng. Ví dụ cấp 100 cần khoảng 1,8 giờ, cấp 120 khoảng 4,8 giờ, cấp 160 khoảng 16 giờ.
+5. Ngưỡng cấp theo giờ chơi nằm ở `LV_TIME` trong `worker/src/validate.js`. Mặc định cố ý rộng tay: 3 quái/giây (đã tính Lệnh bài Triệu hồi nhân ba số quái), hệ số EXP ×4, thêm 25% và 1 giờ dự phòng. Ví dụ cấp 100 cần khoảng 0,9 giờ, cấp 120 khoảng 2,8 giờ, cấp 160 khoảng 10,5 giờ.
 6. Máy chủ dùng lại mã game: `worker/build-game.mjs` đóng gói các script cần thiết thành `worker/gen/game.js`. Wrangler tự chạy bước này trước mỗi lần dev/deploy (`build.command`).
 7. Chạy thử cục bộ: `npx wrangler dev`, kiểm thử: `npm test`.
 
