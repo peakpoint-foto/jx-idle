@@ -35,6 +35,7 @@ export function parseSave(save) {
   if (!state || typeof state !== "object" || Array.isArray(state)) throw new HttpError(400, "bad_save");
   if (state.mode !== "ctc") throw new HttpError(400, "not_ctc", "Chỉ nhân vật Công Thành Chiến được chơi online");
   if (!state.fac) throw new HttpError(400, "no_faction");
+  if (state.cid != null && !/^c_[A-Za-z0-9_-]{8,100}$/.test(String(state.cid))) throw new HttpError(400, "bad_character_id");
   const lvl = Math.floor(+state.lvl);
   if (!(lvl >= 1 && lvl <= 300)) throw new HttpError(400, "bad_level");
   return state;
@@ -75,6 +76,7 @@ export async function register(req, env, body) {
 
   const id = randomToken(9);
   const token = randomToken(24);
+  const characterId = String(state.cid || "c_" + randomToken(12));
   const now = Date.now();
   try {
     await env.DB.batch([
@@ -82,15 +84,15 @@ export async function register(req, env, body) {
         "INSERT INTO accounts(id,token_hash,name,created_at,ip_hash,last_hb) VALUES(?1,?2,?3,?4,?5,?4)"
       ).bind(id, await sha256Hex(token), name, now, ih),
       env.DB.prepare(
-        "INSERT INTO chars(account_id,fac,sex,lvl,xp,snapshot,updated_at,sync_n) VALUES(?1,?2,?3,?4,?5,?6,?7,1)"
-      ).bind(id, String(state.fac), state.sex ? 1 : 0, Math.floor(state.lvl), +state.xp || 0, JSON.stringify(state), now),
+        "INSERT INTO chars(account_id,character_id,fac,sex,lvl,xp,snapshot,updated_at,sync_n) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,1)"
+      ).bind(id, characterId, String(state.fac), state.sex ? 1 : 0, Math.floor(state.lvl), +state.xp || 0, JSON.stringify(state), now),
     ]);
   } catch (e) {
     if (/UNIQUE/i.test(String(e && e.message))) throw new HttpError(409, "name_taken", "Tên đã có người dùng");
     throw e;
   }
   const v = await applyValidation(env, id, state, 0);
-  return { id, token, name, play_sec: 0, ...v };
+  return { id, token, name, character_id: characterId, play_sec: 0, ...v };
 }
 
 // Cộng giờ chơi theo đồng hồ server. Hai tab cùng gửi cũng chỉ cộng đúng thời gian thực đã trôi.
@@ -127,6 +129,10 @@ export async function sync(req, env, body) {
     throw new HttpError(429, "rate_limited", "Đồng bộ quá nhiều, thử lại sau");
   const state = parseSave(body.save);
   const now = Date.now();
+  const current = await env.DB.prepare("SELECT character_id FROM chars WHERE account_id=?1").bind(acc.id).first();
+  if (!current) throw new HttpError(404, "character_not_found");
+  if (!state.cid || !current.character_id || String(state.cid) !== String(current.character_id))
+    throw new HttpError(409, "character_mismatch", "Mã online thuộc nhân vật khác hoặc cần liên kết lại");
   await env.DB.prepare(
     `UPDATE chars SET fac=?2,sex=?3,lvl=?4,xp=?5,snapshot=?6,updated_at=?7,sync_n=sync_n+1 WHERE account_id=?1`
   )
@@ -138,7 +144,20 @@ export async function sync(req, env, body) {
 
 export async function me(req, env) {
   const acc = await auth(req, env);
-  const ch = await env.DB.prepare("SELECT fac,lvl,updated_at,power,bracket,flagged FROM chars WHERE account_id=?1").bind(acc.id).first();
+  const ch = await env.DB.prepare("SELECT character_id,fac,lvl,updated_at,power,bracket,flagged,validation_status,validation_note FROM chars WHERE account_id=?1").bind(acc.id).first();
   const fl = await env.DB.prepare("SELECT code,detail,at FROM flags WHERE account_id=?1 AND cleared_at IS NULL ORDER BY at").bind(acc.id).all();
   return { id: acc.id, name: acc.name, created_at: acc.created_at, play_sec: Math.floor(acc.play_sec), char: ch || null, flags: fl.results };
+}
+
+// One-time migration for legacy accounts created before character_id existed.
+// It links only the authenticated account and never replaces its snapshot.
+export async function recover(req, env, body) {
+  const acc = await auth(req, env);
+  const characterId = String(body && body.character_id || "");
+  if (!/^c_[A-Za-z0-9_-]{8,100}$/.test(characterId)) throw new HttpError(400, "bad_character_id");
+  const ch = await env.DB.prepare("SELECT fac,character_id FROM chars WHERE account_id=?1").bind(acc.id).first();
+  if (!ch) throw new HttpError(404, "character_not_found");
+  if (ch.character_id && ch.character_id !== characterId) throw new HttpError(409, "character_mismatch");
+  await env.DB.prepare("UPDATE chars SET character_id=?2 WHERE account_id=?1 AND character_id IS NULL").bind(acc.id, characterId).run();
+  return { ok: true, character_id: characterId };
 }

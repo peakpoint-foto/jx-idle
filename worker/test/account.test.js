@@ -32,11 +32,12 @@ test("cửa sổ offline 24 giờ được làm mới", () => {
 });
 
 test("parseSave nhận chuỗi pack và từ chối chế độ khác ctc", () => {
-  const st = { mode: "ctc", fac: "gaibang", lvl: 12, xp: 5 };
+  const st = { mode: "ctc", fac: "gaibang", cid: "c_12345678", lvl: 12, xp: 5 };
   assert.equal(parseSave(JSON.stringify({ d: JSON.stringify(st), h: "x" })).lvl, 12);
   assert.throws(() => parseSave({ ...st, mode: "g2" }), { code: "not_ctc" });
   assert.throws(() => parseSave({ ...st, lvl: "abc" }), { code: "bad_level" });
   assert.throws(() => parseSave("{not json"), { code: "bad_save" });
+  assert.throws(() => parseSave({ ...st, cid: "other" }), { code: "bad_character_id" });
 });
 
 test("cleanName giữ tiếng Việt, chặn ký tự lạ", () => {

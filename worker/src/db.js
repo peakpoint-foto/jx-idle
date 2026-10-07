@@ -22,7 +22,10 @@ export const SCHEMA = [
     xp REAL NOT NULL DEFAULT 0,
     snapshot TEXT,
     updated_at INTEGER,
-    sync_n INTEGER NOT NULL DEFAULT 0
+    sync_n INTEGER NOT NULL DEFAULT 0,
+    character_id TEXT,
+    validation_status TEXT NOT NULL DEFAULT 'verified',
+    validation_note TEXT
   )`,
   `CREATE TABLE IF NOT EXISTS rate(k TEXT PRIMARY KEY, n INTEGER NOT NULL, t INTEGER NOT NULL)`,
   `CREATE TABLE IF NOT EXISTS flags(
@@ -53,6 +56,9 @@ const COLUMNS = [
   "ALTER TABLE chars ADD COLUMN power INTEGER NOT NULL DEFAULT 0",
   "ALTER TABLE chars ADD COLUMN bracket TEXT",
   "ALTER TABLE chars ADD COLUMN flagged INTEGER NOT NULL DEFAULT 0",
+  "ALTER TABLE chars ADD COLUMN validation_status TEXT NOT NULL DEFAULT 'verified'",
+  "ALTER TABLE chars ADD COLUMN validation_note TEXT",
+  "ALTER TABLE chars ADD COLUMN character_id TEXT",
 ];
 
 let ready = null;
@@ -66,7 +72,8 @@ export function ensureSchema(db) {
           await db.prepare(sql).run().catch((e) => {
             if (!/duplicate column/i.test(String(e && e.message))) throw e;
           });
-        await db.prepare("CREATE INDEX IF NOT EXISTS chars_ladder ON chars(bracket, flagged, power)").run();
+        await db.prepare("CREATE INDEX IF NOT EXISTS chars_ladder ON chars(validation_status, bracket, flagged, power)").run();
+        await db.prepare("CREATE UNIQUE INDEX IF NOT EXISTS chars_character_id ON chars(character_id) WHERE character_id IS NOT NULL").run();
       })
       .catch((e) => {
         ready = null;
