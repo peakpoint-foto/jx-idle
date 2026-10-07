@@ -78,3 +78,18 @@ test("điểm tiềm năng vượt xa mọi nguồn thưởng vẫn bị gắn c
   s.attrPts += 5000;
   assert.ok(codes(validateChar(s, 10 * 3600)).includes("attr_points"));
 });
+
+test("đồ Cực phẩm (6 dòng, mỗi dòng tối đa) từ trùm Hoàng Kim cuối ván không bị gắn cờ", () => {
+  for (let i = 0; i < 15; i++) {
+    const s = makeChar(60);
+    const it = G.makeItem(2, 0, 7, 6);
+    for (const m of it.mag) {
+      const row = G.J.affix.find((x) => x.a === m.a && x.n === m.n);
+      if (row) m.p = row.p.map(([mn, mx]) => (mn === -1 && mx === -1 ? -1 : Math.abs(mx) >= Math.abs(mn) ? mx : mn));
+    }
+    it.cpx = 1;
+    s.eq.armor = it;
+    const r = validateChar(s, 1e7);
+    assert.deepEqual(codes(r), [], JSON.stringify(r.flags));
+  }
+});
