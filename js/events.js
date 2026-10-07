@@ -179,8 +179,9 @@ function forgeHub() {
 }
 
 /* ---------- Thông cáo cập nhật (hiện một lần cho mỗi phiên bản) ---------- */
-const UPDATE_VER = "2026-10-07";
+const UPDATE_VER = "2026-10-07b";
 const UPDATE_NOTES = [
+  ["Luyện công: Trùm Hoàng Kim cuối ván", "Đến phút thứ 9 (sớm hơn nếu đã hạ đủ 4 trùm), mọi quái con tan biến và Trùm Hoàng Kim xuất hiện: máu gấp 3,5 lần trùm thường, sát thương gấp đôi, có đòn dậm chân báo trước. Hạ được thì chọn 1 trong 2: một món đồ Cực phẩm (6 dòng, mỗi dòng đạt giá trị tối đa) hoặc +50% EXP trên mọi bản đồ trong 30 phút. Tối đa 3 lần nhận thưởng mỗi ngày."],
   ["Sự kiện Ngũ Hành Tương Sinh (tháng 9–10)", "Thay cho sự kiện Bánh Trung Thu. Quái rơi Đèn Ngũ Hành đúng hệ của nó; đủ Kim, Mộc, Thủy, Hỏa, Thổ sẽ tự ghép thành Đèn Kéo Quân để mở quà và nhận thưởng theo mốc. Cứ khoảng 20 phút cày có Thỏ Ngọc xuất hiện, hạ nó nhận Bánh Trung Thu tăng EXP 15 phút. Xem ở Quà › Sự kiện."],
   ["Lệnh bài Triệu hồi", "Quái ở mọi bản đồ cày có 0,5% rơi Lệnh bài Triệu hồi. Dùng một lệnh bài: số quái mỗi đợt ×3 trong 30 phút (dùng thêm cộng dồn, tối đa 60 phút, giữ tối đa 5 lệnh bài). Không tác dụng ở Tháp, Tống Kim, công thành và đợt trùm. Áp dụng cho mọi chế độ."],
   ["Lò rèn ở ngoài màn hình", "Nút Rèn mới ở cột bên phải, bấm để chọn nhanh món đồ cần rèn. Chế độ Công Thành Chiến không có nút này, vẫn rèn được trong Hành trang."],
