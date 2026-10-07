@@ -700,3 +700,10 @@ body.jxland .acts{max-width:232px;flex-wrap:wrap}
 body.jxsmall #jxStat,body.jxsmall #jxChat{display:none!important}
 /* Máy tính / màn không phải cảm ứng dọc: dải trạng thái nằm dưới hàng nút hoạt động */
 body:not(.jxthumb) #jxStat{top:calc(100px + var(--safe-t,0px));max-width:232px}
+
+/* Chấm xanh: có quà / nhiệm vụ nhận được (nút Quà, Hôm nay, thẻ trong hộp Quà, dòng nhận được) */
+#giftBtn.on::after,#jxToday.on::after{content:"";position:absolute;right:8px;top:2px;width:8px;height:8px;background:#3fd16b;border:1px solid #062;border-radius:50%;box-shadow:0 0 6px #3fd16baa;animation:none}
+#jxToday{position:relative}
+#giftTabs button{position:relative}
+#giftTabs .gdot{position:absolute;right:3px;top:3px;width:7px;height:7px;border-radius:50%;background:#3fd16b;border:1px solid #062;box-shadow:0 0 5px #3fd16b99}
+#mBody .qrow.ready{border-color:#3fd16b88;box-shadow:inset 3px 0 0 #3fd16b}

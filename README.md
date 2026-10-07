@@ -100,6 +100,7 @@ Hệ thống > Bảng điều khiển > **Bật phiên thử nghiệm**. Có 6 n
 - Trên màn dọc nhỏ (rộng dưới 360px hoặc cao dưới 640px), dải trạng thái và dòng thông báo trên chiến trường được ẩn cho đỡ chật; xem nhật ký ở nút Nhật ký.
 - Dải trạng thái dưới tên nhân vật cho biết đang Tự cày, Thủ công (kèm đếm ngược tự đánh lại), trong tháp/công thành/Tống Kim, tốc độ và buff EXP.
 - Thẻ **Hệ thống** gom thành 4 nhóm gập (Chơi & tự động, Nhân vật & lưu trữ, Hiển thị & điều khiển, Dữ liệu). "Thao tác nhanh" có đủ công tắc Vượt ải, Xoay chiêu, Tự dùng thuốc, Thủ công.
+- Chấm xanh báo có thứ nhận được: trên nút Quà, nút Hôm nay, từng thẻ trong hộp Quà (điểm danh, mốc cấp, nhiệm vụ, Dã Tẩu, Phúc Duyên, sự kiện, đồng hành, chuyển sinh) và viền xanh ở dòng có nút Nhận.
 - Hộp **Quà** chia thẻ theo nhóm (Hôm nay, Hoạt động, Thưởng, Nhân vật, Cộng đồng); phần luật dài được gập lại.
 - Màn dọc thấp (dưới 640px cao) tự ẩn bản đồ nhỏ và đưa nút Hôm nay vào menu ⋯ để không chồng nút; chạm nút bản đồ để mở lại.
 
@@ -155,7 +156,7 @@ Khi túi gần đầy, món không được bảo vệ có thể bị dọn theo
 
 Điểm tiềm năng được phân phối trong thẻ Nhân vật; mỗi lần bấm **+** cộng 5 điểm (còn ít hơn 5 thì cộng hết), nút **−** vẫn rút lại 1 điểm. Điểm võ công được quản lý trong thẻ Võ công. Nút **Gợi ý** xem phân phối đề xuất; **Tẩy** hoặc nút trừ điểm dùng để phân bổ lại khi điều kiện cho phép.
 
-Trang bị tăng cấp kỹ năng được tính cho kỹ năng đã học và thể hiện ngay cạnh cấp kỹ năng. Nếu tổng điểm cộng vượt giới hạn, giao diện cho biết phần nhận được và phần bị giới hạn. Kỹ năng bổ trợ đủ điều kiện được đưa vào chỉ số nhân vật và danh sách giao diện; mở thông tin kỹ năng để xem hiệu ứng cụ thể. Một số kỹ năng kiểu bùa chú không có tác dụng trong chế độ idle.
+Kỹ năng phụ trợ có dòng «nội công sát thương» theo hệ (ví dụ Nga Mi Chưởng pháp, Võ Đang Quyền Pháp, Cái Bang Chưởng Pháp) cộng 50% giá trị đó vào chiêu nội công (dòng độc tính theo tổng 3 giây độc). Kỹ năng phụ trợ theo loại vũ khí (Đao pháp, Kiếm pháp, Côn pháp…) chỉ có tác dụng khi cầm đúng loại vũ khí. Trang bị tăng cấp kỹ năng được tính cho kỹ năng đã học và thể hiện ngay cạnh cấp kỹ năng. Nếu tổng điểm cộng vượt giới hạn, giao diện cho biết phần nhận được và phần bị giới hạn. Kỹ năng bổ trợ đủ điều kiện được đưa vào chỉ số nhân vật và danh sách giao diện; mở thông tin kỹ năng để xem hiệu ứng cụ thể. Một số kỹ năng kiểu bùa chú không có tác dụng trong chế độ idle.
 
 Ô kỹ năng nhanh ở thanh phía dưới cho phép gán kỹ năng để sử dụng. Chọn kỹ năng trong thẻ Võ công rồi chọn ô nhanh mong muốn.
 
