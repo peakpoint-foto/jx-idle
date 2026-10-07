@@ -1,6 +1,6 @@
 // Mang truoc, cache du phong: luon lay ban moi khi co mang, choi offline khi mat mang
 // QA-021: truoc day ten cache co dinh 'jxidle-v1' va khong precache -> co the phuc vu HTML cu tro toi JS moi.
-const C = 'jxidle-v22';   // v22: su kien Ngu Hanh Tuong Sinh, lenh bai Trieu hoi, Lo ren, thong cao cap nhat
+const C = 'jxidle-v23';   // v23: Luyen cong co Trum Hoang Kim cuoi van
 const CORE = ['./index.html', './style.css', './ui/jx2.css', './js/jxshell.js', './manifest.json', './js/core.js', './js/main.js', './ref.js', './data.js', './world.js'];
 self.addEventListener('install', e => e.waitUntil(
   caches.open(C).then(c => c.addAll(CORE)).catch(() => caches.open(C))
