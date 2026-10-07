@@ -136,7 +136,7 @@ Trong Hành trang, nút **Mặc đồ tốt** chọn lần lượt các món tă
 
 ## Hành trang, lọc và tự nhặt
 
-Hành trang gồm túi đồ, đồ rơi trên sân và bộ lọc. Từ khoá tên áp dụng cho việc tự nhặt, kiểm tra đồ trên đất và bán hàng loạt. Bộ lọc hỗ trợ:
+Hành trang gồm túi đồ, đồ rơi trên sân và bộ lọc. Mỗi món đồ chiếm đúng một ô (lưới 6×10, tối đa 60 món), kể cả áo, vũ khí, ngựa. Từ khoá tên áp dụng cho việc tự nhặt, kiểm tra đồ trên đất và bán hàng loạt. Bộ lọc hỗ trợ:
 
 - Cách nhặt: theo bộ lọc, ưu tiên nâng cấp hoặc nhặt tất cả trang bị.
 - Độ hiếm tối thiểu và cấp trang bị.
