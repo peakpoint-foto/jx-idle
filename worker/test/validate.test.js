@@ -79,6 +79,31 @@ test("điểm tiềm năng vượt xa mọi nguồn thưởng vẫn bị gắn c
   assert.ok(codes(validateChar(s, 10 * 3600)).includes("attr_points"));
 });
 
+test("chuyển sinh hợp lệ thiếu lịch sử server thì chờ xác minh, không bị gắn cờ", () => {
+  const s = makeChar(1);
+  s.rw = { stat: { reborn: 1 } };
+  s.skPts = 180;
+  const r = validateChar(s, 1e7);
+  assert.deepEqual(r.flags, []);
+  assert.equal(r.pending.length, 1);
+  assert.equal(r.pending[0][0], "rebirth_skill_history");
+  assert.equal(r.bracket, null);
+});
+
+test("nhân vật không chuyển sinh vẫn bị gắn cờ khi vượt ngân sách kỹ năng", () => {
+  const s = makeChar(1);
+  s.skPts = 180;
+  const r = validateChar(s, 1e7);
+  assert.ok(r.flags.some(([code]) => code === "skill_points"));
+  assert.deepEqual(r.pending, []);
+});
+
+test("chỉ số máy chủ dùng cùng công thức lực chiến của game", () => {
+  const s = makeChar(60);
+  const r = validateChar(s, 1e7);
+  assert.equal(r.power, Math.round(G.power(r.P)));
+});
+
 test("đồ Cực phẩm (6 dòng, mỗi dòng tối đa) từ trùm Hoàng Kim cuối ván không bị gắn cờ", () => {
   for (let i = 0; i < 15; i++) {
     const s = makeChar(60);

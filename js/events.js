@@ -185,7 +185,7 @@ const UPDATE_NOTES = [
   ["Sự kiện Ngũ Hành Tương Sinh (tháng 9–10)", "Thay cho sự kiện Bánh Trung Thu. Quái rơi Đèn Ngũ Hành đúng hệ của nó; đủ Kim, Mộc, Thủy, Hỏa, Thổ sẽ tự ghép thành Đèn Kéo Quân để mở quà và nhận thưởng theo mốc. Cứ khoảng 20 phút cày có Thỏ Ngọc xuất hiện, hạ nó nhận Bánh Trung Thu tăng EXP 15 phút. Xem ở Quà › Sự kiện."],
   ["Lệnh bài Triệu hồi", "Quái ở mọi bản đồ cày có 0,5% rơi Lệnh bài Triệu hồi. Dùng một lệnh bài: số quái mỗi đợt ×3 trong 30 phút (dùng thêm cộng dồn, tối đa 60 phút, giữ tối đa 5 lệnh bài). Không tác dụng ở Tháp, Tống Kim, công thành và đợt trùm. Áp dụng cho mọi chế độ."],
   ["Lò rèn ở ngoài màn hình", "Nút Rèn mới ở cột bên phải, bấm để chọn nhanh món đồ cần rèn. Chế độ Công Thành Chiến không có nút này, vẫn rèn được trong Hành trang."],
-  ["Tick xanh Công Thành Chiến", "Nhân vật Công Thành Chiến có dấu tick xanh cạnh tên. Từ cấp 40 vào bậc PvP, đăng ký chơi Online để có tên trên bảng xếp hạng."],
+  ["Chế độ Công Thành Chiến", "Dấu chế độ không phải xác minh online. Từ cấp 40 vào bậc xếp hạng; đăng ký Online để đồng bộ. Hiện chưa có luồng giao chiến PvP."],
   ["Hiển thị và hiệu năng", "Sửa lỗi nhân vật không hiện đúng sprite, ra chiêu mượt hơn, thêm icon ngũ hành và màu tên quái, trùm rơi đồ xịn gấp đôi, tải trò chơi nhanh hơn."],
 ];
 function updateNotice() {

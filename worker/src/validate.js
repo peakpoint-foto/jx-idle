@@ -46,10 +46,11 @@ function checkItem(it, slot, flags) {
   const group = G.J.items[it.d];
   const row = group && group.list.find((r) => r.k === it.k && r.lvl === it.lvl);
   if (!row) return flags.push(["item_base", `${where} không có trong dữ liệu game`]);
-  for (const [id, , mx] of it.base || []) {
+  for (const [id, mn, mx] of it.base || []) {
     const rb = row.base.find((b) => b[0] === id);
     if (!rb) flags.push(["item_base", `${where} có chỉ số gốc lạ (${id})`]);
-    else if (Math.abs(mx) > Math.abs(rb[2]) + 0.5) flags.push(["item_base", `${where} chỉ số gốc ${id} = ${mx} > ${rb[2]}`]);
+    else if (Math.abs(mn) > Math.abs(rb[1]) + 0.5 || Math.abs(mx) > Math.abs(rb[2]) + 0.5)
+      flags.push(["item_base", `${where} chỉ số gốc ${id} vượt khoảng ${rb[1]}–${rb[2]}`]);
   }
   const mag = Array.isArray(it.mag) ? it.mag : [];
   if (mag.length > MAG_MAX) flags.push(["item_affix", `${where} có ${mag.length} dòng thuộc tính`]);
@@ -80,6 +81,7 @@ export function attrBudget(state, playSec) {
 // Trả về { flags: [[code, detail]], power, bracket, P } . playSec: giờ chơi máy chủ đã đo (null với khách).
 export function validateChar(state, playSec) {
   const flags = [];
+  const pending = [];
   const lvl = Math.floor(state.lvl);
   for (const [slot, it] of Object.entries(state.eq || {})) if (it) checkItem(it, slot, flags);
 
@@ -89,14 +91,26 @@ export function validateChar(state, playSec) {
   if (attrUsed > attrMax) flags.push(["attr_points", `Điểm tiềm năng ${attrUsed} > ${attrMax}`]);
 
   let skUsed = Math.max(0, +state.skPts || 0);
+  const ownSkills = G.FAC[state.fac] ? new Set(G.FAC[state.fac].skills.map(String)) : null;
   for (const [id, v] of Object.entries(state.sk || {})) {
     const lv = Math.max(0, +v || 0), sk = G.SK[id];
     skUsed += lv;
     if (!sk) flags.push(["skill", `Kỹ năng lạ (${id})`]);
+    else if (ownSkills && !ownSkills.has(String(id))) flags.push(["skill", `${sk.n} không thuộc môn phái ${state.fac}`]);
     else if (lv > (sk.max || 20) + 5) flags.push(["skill", `${sk.n} cấp ${lv} > ${sk.max}`]);
   }
   const skMax = (lvl - 1) * G.SKILL_PTS_PER_LEVEL + 1 + SKILL_SLACK;
-  if (skUsed > skMax) flags.push(["skill_points", `Điểm kỹ năng ${skUsed} > ${skMax}`]);
+  const reborn = Math.max(0, +(state.rw && state.rw.stat && state.rw.stat.reborn) || 0);
+  if (reborn > 5) flags.push(["rebirth_count", `Số lần chuyển sinh ${reborn} vượt giới hạn 5`]);
+  if (reborn > 0) {
+    // The client legitimately keeps skill points after rebirth, but the current
+    // server has no signed level-180 checkpoint/history to prove the allowance.
+    // Do not call this cheating: keep the character out of the ladder pending
+    // verification instead of creating a sticky false-positive flag.
+    pending.push(["rebirth_skill_history", `Có ${reborn} lần chuyển sinh nhưng chưa có lịch sử cấp server để xác minh ngân sách kỹ năng`]);
+  } else if (skUsed > skMax) {
+    flags.push(["skill_points", `Điểm kỹ năng ${skUsed} > ${skMax}`]);
+  }
 
   if (playSec != null && lvl > levelCapForTime(playSec))
     flags.push(["level_time", `Cấp ${lvl} sau ${(playSec / 3600).toFixed(1)} giờ chơi (tối đa ${levelCapForTime(playSec)})`]);
@@ -109,12 +123,11 @@ export function validateChar(state, playSec) {
     s.mode = "ctc";
     G.setS(s);
     P = G.calc();
-    const dps = (P.main && P.main.dps) || 0;
-    power = Math.round(Math.sqrt(Math.max(1, P.life) * Math.max(1, dps)) * 10);
+    power = Math.round(G.power(P));
   } catch (e) {
     flags.push(["calc", "Không tính được chỉ số nhân vật"]);
   }
-  return { flags, power, bracket: bracketOf(lvl), P };
+  return { flags, pending, power, bracket: bracketOf(lvl), P };
 }
 
 export const FLAG_TEXT = {

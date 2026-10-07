@@ -64,9 +64,9 @@ Các nút **Vượt ải**, **Luyện công**, **Công thành**, **Tống Kim** 
 
 - **Vượt ải:** tự đi tiếp khi hạ đủ quái ở ải hiện tại.
 - **Luyện công:** bật chế độ sinh tồn theo quy tắc riêng.
-- **Công thành:** mở bảng thành, tham gia trận và đổi phần thưởng. Chế độ 2.0 và các chế độ khác áp dụng số lượt theo luật hiển thị trong bảng hoạt động. Cửa hàng hoạt động giới hạn mua mỗi vật phẩm một lần mỗi tuần.
-- **Tống Kim:** mở chiến trường và phần thưởng. Số trận được giới hạn theo tuần như nội dung ghi trong bảng.
-- **Leo tháp:** mở Tháp thử thách. Ở 2.0, lượt vào và số tầng đều không giới hạn; chế độ khác có số lượt theo ngày và chinh phục tối đa 50 tầng. Cấp nhân vật tối thiểu và tầng đang tiến triển được hiển thị trong bảng.
+- **Công thành:** mở bảng thành, tham gia trận và đổi phần thưởng. CTC/PHLT có một lượt mỗi tuần; 2.0 không giới hạn lượt vào nhưng chỉ thưởng theo đóng góp thực tế. Cửa hàng giới hạn mua mỗi vật phẩm một lần mỗi tuần.
+- **Tống Kim:** mở chiến trường và phần thưởng. CTC/PHLT có một trận mỗi tuần; 2.0 không giới hạn lượt vào và giới hạn mua từng mặt hàng mỗi tuần.
+- **Leo tháp:** mở Tháp thử thách. Ở 2.0, lượt vào và số tầng đều không giới hạn; chế độ khác có số lượt theo ngày và chinh phục tối đa 50 tầng. Sau tầng 50 ở 2.0, cấp quái theo cấp nhân vật (tối đa 180), không tăng vô hạn theo số tầng.
 
 Trong tháp, mỗi tầng có một đợt quái tinh anh; tầng chia hết cho năm là tầng trùm. Qua tầng mới lần đầu sẽ nhận thưởng tiến trình. Mọi chế độ đều tiếp tục leo vô tận ngay trong lượt hiện tại sau khi qua tầng 50 (không tự thoát); chỉ chế độ 2.0 không giới hạn lượt vào, các chế độ khác vẫn có số lượt theo ngày và lần vào sau khi đã chinh phục tháp bắt đầu lại từ tầng 40. Phần thưởng lần đầu chỉ trao khi đạt tầng cao hơn kỷ lục trước đó.
 
@@ -78,7 +78,7 @@ Ba mục Công thành, Tống Kim và Tháp được mở từ các nút riêng 
 - **Tự cày:** bật hoặc tắt cùng lúc Vượt ải, Tự nhặt và Xoay chiêu.
 - **Hôm nay:** danh sách điểm danh, nhiệm vụ, công thành, Tống Kim, tháp còn lượt; chạm để vào thẳng mục tương ứng.
 - **Dọn đồ** (trong nút ⋯): bán rác theo chính sách an toàn và mặc đồ tốt hơn.
-- Công thành và Tống Kim hỏi xác nhận trước khi dùng lượt tuần (trừ chế độ 2.0 không giới hạn lượt).
+- Công thành và Tống Kim hỏi xác nhận trước khi dùng lượt tuần ở CTC/PHLT; 2.0 không hỏi quota lượt nhưng vẫn áp giới hạn mua tuần.
 
 ## Góp ý
 
@@ -171,19 +171,19 @@ Trò chơi tự lưu trong trình duyệt hiện tại. Mỗi trình duyệt có
 
 Có thể chọn **Xuất mã** và **Nhập mã** thay cho tệp. Hãy sao lưu trước khi xoá dữ liệu trình duyệt, cài lại hệ điều hành hoặc đổi thư mục game. Kiểm tra dữ liệu giúp hạn chế lỗi nạp nhầm, nhưng vì game chạy cục bộ nên đây không phải dịch vụ lưu trữ trực tuyến.
 
-## Chơi Online (PvP Công Thành Chiến)
+## Đồng bộ / xếp hạng Công Thành Chiến
 
-Chỉ nhân vật **Công Thành Chiến** chơi online được, và online chỉ dùng cho PvP.
+Chỉ nhân vật **Công Thành Chiến** được đồng bộ và đưa vào bảng xếp hạng. Gameplay PvP đối kháng chưa được triển khai trong repository này; Công thành/Tống Kim hiện là hoạt động NPC trong game.
 
 - Ở màn tạo nhân vật, khi chọn Công Thành Chiến, ô **Đăng ký chơi Online** được tick sẵn. Giữ ô này để có tên trên bảng xếp hạng.
 - Quên tick thì vào **Hệ thống › Chơi Online** để đăng ký, nhưng chỉ khi nhân vật còn dưới cấp 40.
-- Không đăng ký vẫn PvP được, chỉ là không có tên trên bảng xếp hạng.
+- Không đăng ký vẫn chơi CTC cục bộ được, chỉ là không có tên trên bảng xếp hạng.
 - Khi đã đăng ký, game gửi tín hiệu mỗi phút để máy chủ đo giờ chơi, và đồng bộ nhân vật mỗi 5 phút. Thời gian offline được tính theo đúng giới hạn tu luyện offline của game (8 giờ mỗi lần, 12 giờ mỗi ngày).
-- **Mã khôi phục** trong Hệ thống thay cho mật khẩu. Giữ kín, không chia sẻ.
-- Từ cấp 40, nhân vật vào bậc PvP: **Sơ cấp** 40–79, **Trung cấp** 80–99, **Cao cấp** 100–119, **Thượng thừa** 120 trở lên. Bảng xếp hạng mỗi bậc xếp theo lực chiến do máy chủ tự tính.
-- Mỗi lần đồng bộ, máy chủ kiểm tra trang bị (chỉ số gốc, thuộc tính, cường hóa, trần đồ của chế độ), điểm tiềm năng, điểm kỹ năng và cấp so với giờ chơi đã đo. Vi phạm thì nhân vật bị **loại khỏi bảng xếp hạng** và hiện trên **bảng thông báo** kèm lý do, nhưng vẫn chơi bình thường. Cờ chỉ được gỡ bởi quản trị.
+- **Mã khôi phục** trong Hệ thống thay cho mật khẩu. Có thể nhập lại mã để liên kết với slot mới; game kiểm tra ID nhân vật trước khi đồng bộ. Giữ kín, không chia sẻ.
+- Từ cấp 40, nhân vật vào bậc xếp hạng: **Sơ cấp** 40–79, **Trung cấp** 80–99, **Cao cấp** 100–119, **Thượng thừa** 120 trở lên. Bảng xếp hạng mỗi bậc xếp theo lực chiến do máy chủ tự tính.
+- Mỗi lần đồng bộ, máy chủ kiểm tra trang bị (chỉ số gốc, thuộc tính, cường hóa, trần đồ của chế độ), điểm tiềm năng, điểm kỹ năng và cấp so với giờ chơi đã đo. Vi phạm độc lập thì nhân vật bị **loại khỏi bảng xếp hạng** và hiện trên **bảng thông báo** kèm lý do, nhưng vẫn chơi bình thường. Nhân vật có chuyển sinh nhưng chưa đủ lịch sử server sẽ ở trạng thái **chờ xác minh**, không bị gắn cờ gian lận và chưa được xếp hạng.
 
-Bản chạy cục bộ (start_game.bat) vẫn gọi được máy chủ online, miễn là máy có mạng.
+Bản Wrangler local gọi API local cùng origin. Bản static `start_game.bat` không tự gọi production; muốn thử API phải cấu hình `window.JX_API` tới staging/dev rõ ràng.
 
 ### Triển khai máy chủ (dành cho người quản trị)
 

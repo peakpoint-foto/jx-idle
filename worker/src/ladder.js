@@ -2,7 +2,7 @@
 import { HttpError } from "./http.js";
 import { validateChar, BRACKETS, FLAG_TEXT } from "./validate.js";
 
-// Kiểm định rồi lưu lực chiến, bậc và cờ. Cờ giữ nguyên cho tới khi quản trị gỡ,
+  // Kiểm định rồi lưu lực chiến, bậc và trạng thái. Cờ giữ nguyên cho tới khi quản trị gỡ,
 // để không thể gian lận rồi xóa dấu vết bằng một lần đồng bộ sạch.
 export async function applyValidation(env, accId, state, playSec) {
   const r = validateChar(state, playSec);
@@ -15,12 +15,24 @@ export async function applyValidation(env, accId, state, playSec) {
     env.DB.prepare("INSERT INTO flags(account_id,code,detail,at) VALUES(?1,?2,?3,?4)").bind(accId, code, String(detail).slice(0, 300), now)
   );
   stmts.push(
-    env.DB.prepare("UPDATE chars SET power=?2,bracket=?3,flagged=?4 WHERE account_id=?1").bind(
-      accId, r.power, r.bracket ? r.bracket.k : null, have.size ? 1 : 0
+    env.DB.prepare("UPDATE chars SET power=?2,bracket=?3,flagged=?4,validation_status=?5,validation_note=?6 WHERE account_id=?1").bind(
+      accId,
+      r.power,
+      r.pending.length || have.size ? null : r.bracket ? r.bracket.k : null,
+      have.size ? 1 : 0,
+      have.size ? "flagged" : r.pending.length ? "pending_verification" : "verified",
+      r.pending.map(([, detail]) => detail).join("; ") || null
     )
   );
   await env.DB.batch(stmts);
-  return { power: r.power, bracket: r.bracket ? r.bracket.k : null, flagged: have.size > 0, flags: [...have] };
+  return {
+    power: r.power,
+    bracket: r.pending.length || have.size ? null : r.bracket ? r.bracket.k : null,
+    flagged: have.size > 0,
+    validation_status: have.size ? "flagged" : r.pending.length ? "pending_verification" : "verified",
+    validation_note: r.pending.map(([, detail]) => detail).join("; ") || null,
+    flags: [...have],
+  };
 }
 
 export async function ladder(req, env, body, url) {
@@ -28,7 +40,7 @@ export async function ladder(req, env, body, url) {
   if (!BRACKETS.some((x) => x.k === b)) throw new HttpError(400, "bad_bracket");
   const rows = await env.DB.prepare(
     `SELECT a.name, c.fac, c.lvl, c.power FROM chars c JOIN accounts a ON a.id=c.account_id
-     WHERE c.bracket=?1 AND c.flagged=0 ORDER BY c.power DESC, c.lvl DESC LIMIT 100`
+     WHERE c.bracket=?1 AND c.flagged=0 AND c.validation_status='verified' ORDER BY c.power DESC, c.lvl DESC LIMIT 100`
   ).bind(b).all();
   return {
     bracket: b,
@@ -79,7 +91,7 @@ export async function adminUnflag(req, env, body) {
   const now = Date.now();
   const r = await env.DB.batch([
     env.DB.prepare("UPDATE flags SET cleared_at=?2 WHERE account_id=?1 AND cleared_at IS NULL").bind(acc.id, now),
-    env.DB.prepare("UPDATE chars SET flagged=0 WHERE account_id=?1").bind(acc.id),
+    env.DB.prepare("UPDATE chars SET flagged=0,validation_status=CASE WHEN validation_status='pending_verification' THEN 'pending_verification' ELSE 'verified' END WHERE account_id=?1").bind(acc.id),
   ]);
   return { ok: true, cleared: r[0].meta.changes };
 }

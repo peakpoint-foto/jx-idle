@@ -20,7 +20,10 @@ CREATE TABLE IF NOT EXISTS chars(
   xp REAL NOT NULL DEFAULT 0,
   snapshot TEXT,
   updated_at INTEGER,
-  sync_n INTEGER NOT NULL DEFAULT 0
+  sync_n INTEGER NOT NULL DEFAULT 0,
+  character_id TEXT,
+  validation_status TEXT NOT NULL DEFAULT 'verified',
+  validation_note TEXT
 );
 CREATE TABLE IF NOT EXISTS rate(k TEXT PRIMARY KEY, n INTEGER NOT NULL, t INTEGER NOT NULL);
 CREATE TABLE IF NOT EXISTS feedback(
@@ -34,3 +37,4 @@ CREATE TABLE IF NOT EXISTS feedback(
   status TEXT NOT NULL DEFAULT 'open'
 );
 CREATE INDEX IF NOT EXISTS feedback_at ON feedback(status, at);
+CREATE UNIQUE INDEX IF NOT EXISTS chars_character_id ON chars(character_id) WHERE character_id IS NOT NULL;

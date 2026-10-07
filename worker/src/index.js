@@ -2,7 +2,7 @@
 // Chỉ đường dẫn /api/* chạy qua Worker (assets.run_worker_first trong wrangler.jsonc).
 import { HttpError, json, readJson, CORS } from "./http.js";
 import { ensureSchema } from "./db.js";
-import { register, heartbeat, sync, me } from "./account.js";
+import { register, heartbeat, sync, me, recover } from "./account.js";
 import { ladder, notices, adminFlags, adminUnflag } from "./ladder.js";
 import { feedback, adminFeedback, adminFeedbackSet } from "./feedback.js";
 
@@ -12,6 +12,7 @@ const ROUTES = {
   "POST /api/hb": (req, env) => heartbeat(req, env),
   "POST /api/sync": (req, env, body) => sync(req, env, body),
   "GET /api/me": (req, env) => me(req, env),
+  "POST /api/recover": (req, env, body) => recover(req, env, body),
   "GET /api/ladder": ladder,
   "GET /api/notices": notices,
   "GET /api/admin/flags": adminFlags,

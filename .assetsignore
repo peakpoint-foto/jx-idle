@@ -12,6 +12,8 @@ package.json
 package-lock.json
 worker
 worker/**
+test
+test/**
 migrations
 migrations/**
 .wrangler

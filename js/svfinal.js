@@ -94,6 +94,11 @@ function svCpItem() {
     DROP_BOSS = true;                        // may mắn ×2 như trùm thường
     try { it = makeItem(d, part, tier, 6) } finally { DROP_BOSS = false }
     if (it && !sexOk(it)) it = null;
+    if (it) {
+      const lines = maximumMagicLines(it);
+      if (lines) it.mag = lines;
+      else it = null; // never advertise a shorter roll as a six-line reward
+    }
   }
   if (!it) return null;
   for (const m of it.mag) {                  // mỗi dòng đạt giá trị tối đa của thuộc tính
