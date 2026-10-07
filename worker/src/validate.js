@@ -12,9 +12,9 @@ export const bracketOf = (lvl) => BRACKETS.find((b) => lvl >= b.lo && lvl <= b.h
 
 /* ---- Ngưỡng cấp theo giờ chơi ----
    Mỗi cấp L cần (10 + 1.4L) × xpSlow(L) lần hạ quái cùng cấp (xem expFor/gainXp trong combat.js).
-   Ước lượng cố ý rộng tay: tối đa 2 quái/giây và hệ số EXP ×4 (tinh anh, boss, quái cao cấp hơn, đồ cộng EXP),
+   Ước lượng cố ý rộng tay: tối đa 3 quái/giây (đã tính Lệnh bài Triệu hồi nhân ba số quái) và hệ số EXP ×4 (tinh anh, boss, quái cao cấp hơn, đồ cộng EXP),
    cộng thêm 25% và 1 giờ dự phòng. Chỉ nhân vật vượt xa mức này mới bị gắn cờ. */
-export const LV_TIME = { kps: 2, xpMul: 4, slack: 1.25, graceSec: 3600 };
+export const LV_TIME = { kps: 3, xpMul: 4, slack: 1.25, graceSec: 3600 };
 const LV_SEC = [0, 0];
 for (let L = 1; L <= G.MAX_LEVEL; L++)
   LV_SEC[L + 1] = LV_SEC[L] + ((10 + 1.4 * L) * G.xpSlow(L)) / (LV_TIME.kps * LV_TIME.xpMul);
