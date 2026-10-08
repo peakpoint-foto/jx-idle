@@ -1,10 +1,11 @@
 // Tiện ích HTTP dùng chung cho các route /api/*.
 
 export class HttpError extends Error {
-  constructor(status, code, message) {
+  constructor(status, code, message, data = null) {
     super(message || code);
     this.status = status;
     this.code = code;
+    this.data = data;
   }
 }
 

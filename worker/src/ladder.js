@@ -38,14 +38,35 @@ export async function applyValidation(env, accId, state, playSec) {
 export async function ladder(req, env, body, url) {
   const b = url.searchParams.get("b") || "so";
   if (!BRACKETS.some((x) => x.k === b)) throw new HttpError(400, "bad_bracket");
+  const cutoff = Date.now() - 30 * 864e5;
   const rows = await env.DB.prepare(
-    `SELECT a.name, c.fac, c.lvl, c.power FROM chars c JOIN accounts a ON a.id=c.account_id
-     WHERE c.bracket=?1 AND c.flagged=0 AND c.validation_status='verified' ORDER BY c.power DESC, c.lvl DESC LIMIT 100`
-  ).bind(b).all();
+    `SELECT a.name, c.fac, c.lvl, c.power, c.updated_at AS last_sync FROM chars c JOIN accounts a ON a.id=c.account_id
+     WHERE c.bracket=?1 AND c.flagged=0 AND c.validation_status='verified' AND (c.updated_at IS NULL OR c.updated_at>?2)
+     ORDER BY c.power DESC, c.lvl DESC LIMIT 100`
+  ).bind(b, cutoff).all();
   return {
     bracket: b,
     brackets: BRACKETS.map((x) => ({ k: x.k, n: x.n, lo: x.lo, hi: Number.isFinite(x.hi) ? x.hi : null })),
     rows: rows.results.map((x, i) => ({ rank: i + 1, ...x })),
+  };
+}
+
+export async function profile(req, env, body, url) {
+  const name = String(url.searchParams.get("name") || "").trim();
+  if (!name) throw new HttpError(400, "missing_name");
+  const row = await env.DB.prepare(
+    `SELECT a.name,c.fac,c.lvl,c.power,c.bracket,c.flagged,c.updated_at AS last_sync
+     FROM accounts a JOIN chars c ON c.account_id=a.id WHERE a.name=?1 COLLATE NOCASE`
+  ).bind(name).first();
+  if (!row) throw new HttpError(404, "not_found");
+  return {
+    name: row.name,
+    fac: row.fac,
+    lvl: row.lvl,
+    power: row.power,
+    bracket: row.bracket,
+    ranked: !row.flagged,
+    last_sync: row.last_sync,
   };
 }
 
