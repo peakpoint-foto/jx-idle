@@ -38,7 +38,7 @@ Tiến độ thực thi: 30/43 task (F01–F07, B01–B05, G01/G02/G03/G05, E01/
 - [x] **G03** Mã chia sẻ build và thư viện — P1, g2; phụ thuộc: G01,B02,F05. Evidence: BUILD_LIBRARY.md, 4 case, Chromium mobile/desktop; no item/token import.
 - [x] **E01** Cẩm nang nguồn rơi và mục tiêu săn đồ — P1, shared; phụ thuộc: F01,F07,B03. Evidence: LOOT_CODEX.md, 4 case và browser sáu mode/viewport; AND/OR/hidden/stale guards.
 - [x] **R01** Onboarding và gợi ý việc tiếp theo — P1, shared UI khác mode; phụ thuộc: F03,B03,E01. Evidence: CONTEXT_GUIDE.md, 4 case và browser sáu mode/viewport; namespace riêng, không popup.
-- [ ] **O01** UX mobile và giảm thao tác — P1, shared layout riêng; phụ thuộc: F03,B04,R01. IN_PROGRESS — Codex / feat/online-multiplayer; tìm nhanh skill/item/activity theo mode, shortcut `/`, filter Hành trang, activity route, target 44px; browser kiểm tra ba mode × portrait/mobile landscape/desktop và reduced-motion. Receipt CTC queue tối đa 16, retry tuần tự theo event key idempotent; browser hai client+D1 đã xác minh offline→online. Mô phỏng 20 phút trên cả 9 mode/viewport hoàn tất 19–59ms; log bounded (0 trong fixture). Còn kiểm tra thiết bị thật/accessibility rộng.
+- [x] **O01** UX mobile và giảm thao tác — P1, shared layout riêng; phụ thuộc: F03,B04,R01. DONE local — tìm skill/item/activity theo mode, shortcut `/`, filter Hành trang, activity route, target 44px; browser ba mode × portrait/mobile landscape/desktop, tay thuận và reduced-motion. Receipt CTC queue tối đa 16, retry tuần tự theo event key idempotent; hai client+D1 kiểm chứng offline→online. Mô phỏng 20 phút trên cả 9 mode/viewport: 19–59ms, log bounded (0 trong fixture). Evidence: browser smoke và session browser smoke; không tuyên bố đo trên thiết bị thật.
 - [x] **O02** Góp ý và telemetry có ngữ cảnh — P1, shared opt-in; phụ thuộc: F05,F07,B04. Evidence: FEEDBACK_DIAGNOSTICS.md, client/server tests và Chromium consent/offline flows; rate/retention local.
 
 ### Đợt 2 — MVP riêng từng mode
@@ -109,7 +109,7 @@ O04 local gates đã được chạy trong source archive; task còn remote stag
 
 ## Nhật ký nhận việc
 
-30 task DONE local — Codex / feat/online-multiplayer: F01–F07, B01–B05, G01/G02/G03/G05, E01/E02/E04, R01/O02, C01–C05, P01–P04. O01 IN_PROGRESS: `js/field_search.js`, index/styles/browser smoke; CTC activity receipt queue/retry added and unit checked; long-session performance and browser offline/online receipt check remain. O04 requires remote staging/rollback evidence; do not close with local CI alone.
+31 task DONE local — Codex / feat/online-multiplayer: F01–F07, B01–B05, G01/G02/G03/G05, E01/E02/E04, R01/O01/O02, C01–C05, P01–P04. O04 requires remote staging/rollback evidence; do not close with local CI alone.
 
 | Task | Trạng thái | Agent / nhánh | File sở hữu | Evidence / blocker |
 |---|---|---|---|---|
