@@ -2,7 +2,8 @@
 // Uses Node's built-in WebSocket; no browser package or external service needed.
 const origin = process.env.JX_TEST_ORIGIN || "http://127.0.0.1:8088";
 const debuggerOrigin = process.env.JX_DEBUG_ORIGIN || "http://127.0.0.1:9229";
-const response = await fetch(`${debuggerOrigin}/json/new?${encodeURIComponent(origin)}`, { method: "PUT" });
+// Start blank so readiness can never come from an old document being reloaded.
+const response = await fetch(`${debuggerOrigin}/json/new?about:blank`, { method: "PUT" });
 if (!response.ok) throw new Error("Cannot create local browser page");
 const page = await response.json();
 const ws = new WebSocket(page.webSocketDebuggerUrl), pending = new Map();
@@ -29,16 +30,19 @@ async function evaluate(expression) {
 }
 try {
   await command("Runtime.enable");
+  await command("Page.enable");
   await command("Network.enable");
   await command("Network.setCacheDisabled",{cacheDisabled:true});
-  await command("Page.reload",{ignoreCache:true});
+  const navigation = await command("Page.navigate",{url:origin});
+  if (navigation.errorText) throw new Error("Cannot navigate to game: " + navigation.errorText);
   let ready = false;
   for (let i = 0; i < 100; i++) {
-    ready = await evaluate("typeof skillGraphHTML==='function' && typeof buildCandidate==='function' && typeof trainingPanelHTML==='function' && typeof combatReportsModal==='function' && typeof expeditionModal==='function' && typeof R!=='undefined' && !!document.getElementById('t-skill')");
+    ready = await evaluate(`location.origin===${JSON.stringify(new URL(origin).origin)} && document.readyState==='complete' && typeof closeModal==='function' && typeof skillGraphHTML==='function' && typeof buildCandidate==='function' && typeof trainingPanelHTML==='function' && typeof combatReportsModal==='function' && typeof expeditionModal==='function' && typeof onlEconomyModal==='function' && typeof R!=='undefined' && !!document.getElementById('t-skill')`);
     if (ready) break;
     await new Promise(resolve => setTimeout(resolve, 100));
   }
   if (!ready) throw new Error("Game scripts did not load");
+  await evaluate("document.fonts.ready.then(()=>true)");
   const results = [];
   for (const width of [360, 1280]) {
     await command("Emulation.setDeviceMetricsOverride", { width, height: 800, deviceScaleFactor: 1, mobile: width < 600 });
