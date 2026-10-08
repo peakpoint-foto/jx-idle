@@ -14,7 +14,11 @@ function lobbyRoomHTML(room){
     <div class="btnrow"><button class="btn sm" data-lobby="leave">Rời phòng</button>${leader?`<label>Mục tiêu<select id="lobbyObjective">${Object.entries(goals).map(([k,n])=>`<option value="${k}" ${k===room.objective?'selected':''}>${n}</option>`).join('')}</select></label><button class="btn sm" data-lobby="objective">Đặt mục tiêu</button>`:`<span>Mục tiêu: ${esc(goals[room.objective]||room.objective)}</span>`}</div>
     ${room.members.map(m=>`<div class="qrow"><span><b>${esc(m.name)} ${m.account_id===room.owner_id?'· Chủ phòng':''}</b><small>${m.online?'Online':'Mất kết nối'} · ${esc(roles[m.role]||m.role)} · ${m.ready?'Sẵn sàng':'Chưa sẵn sàng'}</small></span>${leader&&m.account_id!==me?`<button class="btn sm" data-lobby="transfer" data-target="${esc(m.account_id)}" ${m.online?'':'disabled'}>Chuyển chủ</button><button class="btn sm" data-lobby="kick" data-target="${esc(m.account_id)}">Mời rời phòng</button>`:''}</div>`).join('')}
     ${own?`<div class="btnrow"><label>Vai trò<select id="lobbyRole">${Object.entries(roles).map(([k,n])=>`<option value="${k}" ${own.role===k?'selected':''}>${n}</option>`).join('')}</select></label><button class="btn sm" data-lobby="role">Đổi vai trò</button><button class="btn sm" data-lobby="ready" data-ready="${own.ready?'false':'true'}">${own.ready?'Bỏ sẵn sàng':'Sẵn sàng'}</button></div>`:''}
-    <p>${room.all_ready?'Mọi người sẵn sàng trong sảnh.':'Chờ thành viên sẵn sàng.'} Lượt và phần thưởng hoạt động chưa thay đổi.</p><div class="btnrow"><input id="lobbyInviteName" maxlength="16" aria-label="Tên người được mời" placeholder="Tên bạn/người cùng bang"><button class="btn sm" data-lobby="invite">Mời vào phòng</button></div><small>Lời mời có hạn 10 phút, chỉ người nhận dùng được; không giữ chỗ.</small>`;
+    <p>${room.all_ready?'Mọi người sẵn sàng trong sảnh.':'Chờ thành viên sẵn sàng.'} Lượt và phần thưởng hoạt động chưa thay đổi.</p><div class="btnrow"><input id="lobbyInviteName" maxlength="16" aria-label="Tên người được mời" placeholder="Tên bạn/người cùng bang"><button class="btn sm" data-lobby="invite">Mời vào phòng</button></div><small>Lời mời có hạn 10 phút, chỉ người nhận dùng được; không giữ chỗ.</small><section class="room-chat"><h4>Chat phòng · lưu 7 ngày</h4><div id="roomChatMessages" aria-live="polite"></div><div class="btnrow"><textarea id="roomChatInput" maxlength="280" aria-label="Tin nhắn trong phòng" placeholder="Tin nhắn tối đa 280 ký tự"></textarea><button class="btn" id="roomChatSend">Gửi</button></div></section>`;
+}
+function lobbyChatFill(data){
+  const list=document.getElementById('roomChatMessages');if(!list)return;list.replaceChildren();
+  for(const item of data?.messages||[]){const row=document.createElement('p');row.className='room-chat-message';const name=document.createElement('b');name.textContent=item.sender+': ';const text=document.createElement('span');text.textContent=item.body;row.append(name,text);list.append(row);}
 }
 async function onlLobbyWrite(path,body){
   if(ONL.lobbyBusy)return;ONL.lobbyBusy=true;
@@ -25,6 +29,11 @@ async function onlLobbyWrite(path,body){
 function lobbyBind(box){
   box.querySelectorAll('[data-friend]').forEach(b=>b.onclick=()=>onlLobbyWrite('/friends',{action:b.dataset.friend,target_id:b.dataset.target,name:box.querySelector('#lobbyFriendName')?.value}));
   box.querySelectorAll('[data-invite-name]').forEach(b=>b.onclick=()=>onlLobbyWrite('/room',{action:'invite',name:b.dataset.inviteName,room_id:ONL.room?.id}));
+  const chatButton=box.querySelector('#roomChatSend');if(chatButton)chatButton.onclick=async()=>{
+    const input=box.querySelector('#roomChatInput'),text=input?.value||'';if(!text.trim())return;chatButton.disabled=true;
+    try{await onlApi('/chat',{body:{room_id:ONL.room?.id,client_id:crypto.randomUUID().replaceAll('-',''),text}});input.value='';await onlRenderRoom(true);}
+    catch(e){chatButton.disabled=false;toast(e.msg||'Không gửi được tin nhắn');}
+  };
   box.querySelectorAll('[data-moderate]').forEach(b=>b.onclick=async()=>{
     const action=b.dataset.moderate,target_id=b.dataset.target;let body={action,target_id};
     if(action==='report'){body.reason=prompt('Lý do: harassment, spam, cheat, impersonation hoặc other','spam');if(!body.reason)return;body.details=prompt('Mô tả ngắn (tối đa 500 ký tự)','')||'';}
@@ -43,16 +52,17 @@ onlRenderRoom=async function(force=false){
   const box=document.getElementById('onlRoomPanel');if(!box||!onlGet()||!featureEnabled('room_presence'))return;
   if(ONL.lobbyReading){await ONL.lobbyReadPromise;if(force)return onlRenderRoom(true);return;}
   // Polling never replaces a field while the player is typing.
-  if(!force&&box.contains(document.activeElement)&&['INPUT','SELECT'].includes(document.activeElement.tagName))return;
+  if(!force&&box.contains(document.activeElement)&&['INPUT','SELECT','TEXTAREA'].includes(document.activeElement.tagName))return;
   ONL.lobbyReading=true;
   const identity=onlGet()?.token,mode=S.mode;
   ONL.lobbyReadPromise=(async()=>{try{
     let data=await onlApi('/room');if(data.room)data=await onlApi('/room',{body:{action:'heartbeat',room_id:data.room.id}});
     const [people,moderation]=await Promise.all([onlApi('/friends'),onlApi('/moderation')]);people.moderation=moderation;
+    const chatData=data.room?await onlApi('/chat?room_id='+encodeURIComponent(data.room.id)):{messages:[]};
     if(onlGet()?.token!==identity||S.mode!==mode||!featureEnabled('party_lobby')||!box.isConnected)return;
     ONL.room=data.room;const open=box.querySelector('.lobby-friends')?.open;
     box.innerHTML=lobbyRoomHTML(data.room)+lobbyFriendsHTML(people);box.hidden=false;
-    box.querySelector('.lobby-friends').open=!!open;lobbyBind(box);
+    lobbyChatFill(chatData);box.querySelector('.lobby-friends').open=!!open;lobbyBind(box);
   }catch(e){box.innerHTML=`<small class="bad">${esc(e.msg||'Không tải được sảnh')}</small>`;box.hidden=false;}
   finally{ONL.lobbyReading=false;}})();
   await ONL.lobbyReadPromise;

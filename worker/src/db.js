@@ -5,6 +5,8 @@ export const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS player_blocks(blocker_id TEXT NOT NULL,target_id TEXT NOT NULL,created_at INTEGER NOT NULL,PRIMARY KEY(blocker_id,target_id),CHECK(blocker_id<>target_id))`,
   `CREATE TABLE IF NOT EXISTS player_mutes(muter_id TEXT NOT NULL,target_id TEXT NOT NULL,created_at INTEGER NOT NULL,expires_at INTEGER NOT NULL,PRIMARY KEY(muter_id,target_id),CHECK(muter_id<>target_id))`,
   `CREATE INDEX IF NOT EXISTS player_mutes_expiry ON player_mutes(expires_at)`,
+  `CREATE TABLE IF NOT EXISTS room_chat(id TEXT PRIMARY KEY,scope TEXT NOT NULL DEFAULT 'room',room_id TEXT NOT NULL,sender_id TEXT NOT NULL,client_id TEXT NOT NULL,body TEXT NOT NULL,created_at INTEGER NOT NULL,UNIQUE(sender_id,client_id))`,
+  `CREATE INDEX IF NOT EXISTS room_chat_scope_room_time ON room_chat(scope,room_id,created_at DESC)`,
   `CREATE INDEX IF NOT EXISTS player_blocks_target ON player_blocks(target_id,blocker_id)`,
   `CREATE TABLE IF NOT EXISTS player_reports(id INTEGER PRIMARY KEY AUTOINCREMENT,reporter_id TEXT NOT NULL,target_id TEXT NOT NULL,reason TEXT NOT NULL,details TEXT NOT NULL DEFAULT '',created_at INTEGER NOT NULL,status TEXT NOT NULL DEFAULT 'open')`,
   `CREATE INDEX IF NOT EXISTS player_reports_status_created ON player_reports(status,created_at)`,

@@ -13,7 +13,7 @@ for(const [a,b] of [
   ['js/modes.js','js/stats.js'],['js/capabilities.js','js/combat.js'],['js/combat_contract.js','js/combat.js'],
   ['js/potion_policy.js','js/combat_policy.js'],['js/potion_policy.js','js/combat_reports.js'],['js/potion_policy.js','js/expedition_travel.js'],
   ['js/combat.js','js/save.js'],['js/save.js','js/save_schema.js'],['js/save_schema.js','js/main.js'],
-  ['js/build_profiles.js','js/training.js'],['js/online.js','js/online_lobby.js'],['js/ui.js','js/main.js'],
+  ['js/build_profiles.js','js/training.js'],['js/online.js','js/online_lobby.js'],['js/online_guild.js','js/guild_chat.js'],['js/ui.js','js/main.js'],
   ['js/jxorig.js','js/combat_reports.js'],['js/combat_reports.js','js/boss_phases.js'],['js/boss_phases.js','js/expedition.js'],
   ['js/expedition.js','js/expedition_travel.js'],['js/expedition_travel.js','js/expedition_ui.js'],['js/expedition_ui.js','js/expedition_travel_ui.js'],
   ['js/expedition_travel.js','js/expedition_routes.js'],['js/expedition_routes.js','js/expedition_ui.js'],['js/expedition_travel_ui.js','js/expedition_routes_ui.js'],
