@@ -120,7 +120,7 @@ export async function heartbeat(req, env) {
   await env.DB.prepare("UPDATE accounts SET play_sec=?2,off_t0=?3,off_sec=?4,last_hb=?5 WHERE id=?1")
     .bind(acc.id, t.play_sec, t.off_t0, t.off_sec, t.last_hb)
     .run();
-  return { play_sec: Math.floor(t.play_sec) };
+  return { play_sec: Math.floor(t.play_sec), server_now: Date.now(), utc_week: Math.floor((Date.now() / 864e5 + 3) / 7) };
 }
 
 export async function sync(req, env, body) {

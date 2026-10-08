@@ -5,12 +5,14 @@ import { ensureSchema } from "./db.js";
 import { register, heartbeat, sync, me, recover } from "./account.js";
 import { ladder, notices, adminFlags, adminUnflag } from "./ladder.js";
 import { feedback, adminFeedback, adminFeedbackSet } from "./feedback.js";
+import { activityClaim } from "./activity.js";
 
 const ROUTES = {
   "GET /api/config": (req, env) => ({ turnstile: env.TURNSTILE_SITEKEY || "", v: 1 }),
   "POST /api/register": (req, env, body) => register(req, env, body),
   "POST /api/hb": (req, env) => heartbeat(req, env),
   "POST /api/sync": (req, env, body) => sync(req, env, body),
+  "POST /api/activity/claim": (req, env, body) => activityClaim(req, env, body),
   "GET /api/me": (req, env) => me(req, env),
   "POST /api/recover": (req, env, body) => recover(req, env, body),
   "GET /api/ladder": ladder,

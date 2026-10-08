@@ -68,7 +68,7 @@ Các nút **Vượt ải**, **Luyện công**, **Công thành**, **Tống Kim** 
 - **Tống Kim:** mở chiến trường và phần thưởng. CTC/PHLT có một trận mỗi tuần; 2.0 không giới hạn lượt vào và giới hạn mua từng mặt hàng mỗi tuần.
 - **Leo tháp:** mở Tháp thử thách. Ở 2.0, lượt vào và số tầng đều không giới hạn; chế độ khác có số lượt theo ngày và chinh phục tối đa 50 tầng. Sau tầng 50 ở 2.0, cấp quái theo cấp nhân vật (tối đa 180), không tăng vô hạn theo số tầng.
 
-Trong tháp, mỗi tầng có một đợt quái tinh anh; tầng chia hết cho năm là tầng trùm. Qua tầng mới lần đầu sẽ nhận thưởng tiến trình. Mọi chế độ đều tiếp tục leo vô tận ngay trong lượt hiện tại sau khi qua tầng 50 (không tự thoát); chỉ chế độ 2.0 không giới hạn lượt vào, các chế độ khác vẫn có số lượt theo ngày và lần vào sau khi đã chinh phục tháp bắt đầu lại từ tầng 40. Phần thưởng lần đầu chỉ trao khi đạt tầng cao hơn kỷ lục trước đó.
+Trong tháp, mỗi tầng có một đợt quái tinh anh; tầng chia hết cho năm là tầng trùm. Qua tầng mới lần đầu sẽ nhận thưởng tiến trình. Mọi chế độ đều tiếp tục leo vô tận ngay trong lượt hiện tại sau khi qua tầng 50 (không tự thoát); chỉ chế độ 2.0 không giới hạn lượt vào, các chế độ khác vẫn có số lượt theo ngày và lần vào sau khi đã chinh phục tháp bắt đầu lại từ tầng 40. Ở 2.0, độ khó hữu hiệu tiếp tục tăng theo từng tầng sau tầng 50 bằng hệ số HP, sát thương, phòng thủ và né tránh; không có trần gameplay theo cấp quái. Phần thưởng lần đầu chỉ trao khi đạt tầng cao hơn kỷ lục trước đó.
 
 Ba mục Công thành, Tống Kim và Tháp được mở từ các nút riêng trên chiến trường, không còn nằm trong dãy tab Hệ thống/Phần thưởng. Cửa hàng, trạng thái hoạt động và các mục thưởng khác vẫn hiển thị trong bảng hoạt động tương ứng.
 

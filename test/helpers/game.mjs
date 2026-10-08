@@ -9,7 +9,7 @@ const files = [
   "js/recipes.js", "js/combat.js", "js/save.js", "js/ui.js", "js/shop.js",
   "js/rewards.js", "js/siege.js", "js/activities.js", "js/depth.js",
   "js/forge.js", "js/auto.js", "js/survival.js", "js/svfinal.js",
-  "js/modes_play.js", "js/online.js", "js/workflow_overrides.js",
+  "js/modes_play.js", "js/online.js", "js/workflow_overrides.js", "js/activity_hardening.js",
 ];
 const sources = files.map(file => [file, fs.readFileSync(root + file, "utf8")]);
 
