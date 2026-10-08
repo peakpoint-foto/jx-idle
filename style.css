@@ -358,3 +358,4 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 #moderationAdminPanel input,#moderationAdminPanel .btn{box-sizing:border-box;min-height:44px!important;max-width:100%}.moderation-report{overflow-wrap:anywhere}
 .room-chat textarea,.room-chat .btn{box-sizing:border-box;min-height:44px!important;max-width:100%}.room-chat textarea{flex:1;resize:vertical}.room-chat-message{overflow-wrap:anywhere;padding:4px;border-bottom:1px solid var(--line2)}
+.weekly-task-card button.btn{box-sizing:border-box;min-height:44px!important;max-width:100%}.weekly-task-card .qrow{gap:8px;flex-wrap:wrap}

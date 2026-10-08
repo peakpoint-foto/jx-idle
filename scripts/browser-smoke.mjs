@@ -77,8 +77,12 @@ try {
         showTab('skill');document.dispatchEvent(new KeyboardEvent('keydown',{key:'/',bubbles:true}));
         if(curTab!=='more'||document.activeElement!==document.getElementById('fieldSearchInput'))throw Error('Global search keyboard shortcut failed');
         setUiPref({hand:'left'});if(!document.body.classList.contains('jxleft'))throw Error('Left-hand preference failed');setUiPref({hand:'right'});
+        showTab('more');renderMore();const weekly=document.getElementById('weeklyTaskCard');if(!weekly)throw Error('Weekly task panel missing '+S.mode);
+        const firstTask=WEEKLY_TASKS[S.mode][0],choose=weekly.querySelector('[data-week-select="'+firstTask.id+'"]');if(!choose||choose.getBoundingClientRect().height<43.9)throw Error('Weekly task touch target missing');
+        choose.click();weeklyRecord(firstTask.event,firstTask.need);weeklyRenderCard();const weeklyClaimButton=document.querySelector('#weeklyTaskCard [data-week-claim]');
+        if(!weeklyClaimButton)throw Error('Weekly claim unavailable '+S.mode);weeklyClaimButton.click();if(weeklyRead().claims.length!==1)throw Error('Weekly receipt missing '+S.mode);
         showTab('skill');
-        return {mode:S.mode,width:${width},graphWidth:Math.round(rect.width),linkedModal:true,unsupportedVisible:true,fieldSearch:true};
+        return {mode:S.mode,width:${width},graphWidth:Math.round(rect.width),linkedModal:true,unsupportedVisible:true,fieldSearch:true,weeklyTask:true};
       })()`);
       if (result.graphWidth <= 0) throw new Error("Graph is not laid out: " + JSON.stringify(result));
       results.push(result);

@@ -67,12 +67,12 @@ Tiến độ thực thi: 30/43 task (F01–F07, B01–B05, G01/G02/G03/G05, E01/
 - [ ] **P06** Thử thách tuần đồng điều kiện — P2, phlt; phụ thuộc: P04,C05.
 - [ ] **G04** Giao hữu chuẩn hóa và thử thách cộng đồng — P2, g2; phụ thuộc: C05,G02,G03.
 - [ ] **E03** Hiệu ứng trang bị theo lối chơi — P2, phlt/g2; ctc chỉ đồ hợp lệ; phụ thuộc: F02,F04,E02.
-- [ ] **R02** Nhiệm vụ linh hoạt và thưởng người quay lại — P2, shared luật riêng; phụ thuộc: F01,F05,E04.
+- [ ] **R02** Nhiệm vụ linh hoạt và thưởng người quay lại — P2, shared luật riêng; phụ thuộc: F01,F05,E04. IN_PROGRESS — [WEEKLY_TASKS.md](WEEKLY_TASKS.md), mode-specific selectable tasks, one-mode lock, UTC rollover/rollback guard, 3 weekly claims and one-shot return receipt; 5 unit tests + 6 browser mode/viewport smoke. Còn server-trusted time để chặn forward-clock farming và offline return summary; hiện là progression client-side, không dùng cạnh tranh.
 - [ ] **R03** Thành tựu, ngoại hình và chuyển sinh — P2, shared tách progression; phụ thuộc: F05,C08,P04,G05.
 
 ### Đợt 4 — giao dịch sau xác thực quyền sở hữu
 
-- [ ] **E05** Spike và MVP giao dịch có escrow — P3 gated, ctc trước; mode khác quyết định riêng; phụ thuộc: C05,E04,O03.
+- [ ] **E05** Spike và MVP giao dịch có escrow — P3 gated, ctc trước; mode khác quyết định riêng; phụ thuộc: C05,E04,O03. SPIKE DONE — [TRADE_ESCROW_ADR.md](TRADE_ESCROW_ADR.md) chốt ownership model, atomic accept/cancel/expiry, receipts, fraud cases và rollback. IMPLEMENTATION BLOCKED: chưa có server-owned inventory hoặc policy backfill legacy; không bật trade từ snapshot client.
 
 ## Thứ tự nhận việc từ trạng thái hiện tại
 
@@ -86,7 +86,7 @@ Các hàng dưới là lớp phụ thuộc, không phải yêu cầu chạy nhi�
 | 4 | C08 | Mùa ranked và hậu cần có server xác thực |
 | 5 | R03 | Thành tựu/ngoại hình/chuyển sinh sau tiến trình của cả ba mode |
 
-O04 có thể chuẩn bị CI local ngay; trạng thái hoàn tất toàn task vẫn cần O02 và evidence release/rollback. C05/E05 phải tách spike/ADR, prototype, implementation và kiểm chứng; không đóng task bằng ADR hoặc UI placeholder.
+O04 local gates đã được chạy trong source archive; task còn remote staging/rollback. C05/E05 phải tách spike/ADR, prototype, implementation và kiểm chứng; E05 ADR xong nhưng thiếu server-owned inventory, không đóng task bằng ADR hoặc UI placeholder.
 
 ## Checklist cho từng ticket được nhận
 
