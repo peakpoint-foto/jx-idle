@@ -1,0 +1,7 @@
+CREATE TABLE IF NOT EXISTS combat_sessions(id TEXT PRIMARY KEY,room_id TEXT NOT NULL,creator_id TEXT NOT NULL,created_at INTEGER NOT NULL,expires_at INTEGER NOT NULL,state TEXT NOT NULL,status TEXT NOT NULL,revision INTEGER NOT NULL DEFAULT 1,ended_at INTEGER);
+CREATE UNIQUE INDEX IF NOT EXISTS combat_sessions_room_active ON combat_sessions(room_id) WHERE status='active';
+CREATE TABLE IF NOT EXISTS session_members(session_id TEXT NOT NULL,account_id TEXT NOT NULL,active INTEGER NOT NULL DEFAULT 1,withdrawn INTEGER NOT NULL DEFAULT 0,last_seen INTEGER NOT NULL,connected_from INTEGER NOT NULL,last_seq INTEGER NOT NULL DEFAULT 0,PRIMARY KEY(session_id,account_id));
+CREATE UNIQUE INDEX IF NOT EXISTS session_members_active ON session_members(account_id) WHERE active=1;
+CREATE TABLE IF NOT EXISTS session_actions(id TEXT PRIMARY KEY,session_id TEXT NOT NULL,account_id TEXT NOT NULL,seq INTEGER NOT NULL,scheduled_tick INTEGER NOT NULL,kind TEXT NOT NULL,target TEXT NOT NULL,payload TEXT NOT NULL,created_at INTEGER NOT NULL,applied INTEGER NOT NULL DEFAULT 0,UNIQUE(session_id,account_id,seq),UNIQUE(session_id,account_id,scheduled_tick));
+CREATE INDEX IF NOT EXISTS session_actions_pending ON session_actions(session_id,applied,scheduled_tick);
+CREATE TABLE IF NOT EXISTS session_rewards(session_id TEXT NOT NULL,account_id TEXT NOT NULL,amount INTEGER NOT NULL,day TEXT NOT NULL,created_at INTEGER NOT NULL,PRIMARY KEY(session_id,account_id));

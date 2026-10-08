@@ -12,8 +12,8 @@ const OUT = path.join(ROOT, "worker/gen/game.js");
 
 // Đúng thứ tự trong index.html. Chỉ những file calc() và kiểm định cần.
 const FILES = [
-  "data.js", "world.js", "js/core.js", "js/modes.js", "js/stats.js", "js/loot.js",
-  "js/sets.js", "js/combat.js", "js/save.js", "js/rewards.js", "js/depth.js",
+  "data.js", "world.js", "js/core.js", "js/skill_graph.js", "js/modes.js", "js/capabilities.js", "js/stats.js", "js/combat_contract.js", "js/session_combat.js", "js/feedback_context.js", "js/loot.js",
+  "js/sets.js", "js/combat.js", "js/save.js", "js/save_schema.js", "js/rewards.js", "js/depth.js",
 ];
 // File chỉ chứa một object dữ liệu lớn: nhúng dạng chuỗi JSON (JSON.parse nhanh hơn literal JS).
 const DATA = { "data.js": "JX", "world.js": "JW" };
@@ -23,6 +23,13 @@ const EXPORTS = [
   "calc", "power", "newSave", "makeItem", "modeItemOk", "itemPower", "baseRow", "lineScale", "reqOk", "isMode",
   "expNeed", "xpSlow", "J", "FAC", "SK", "MAX_LEVEL", "PTS_PER_LEVEL", "SKILL_PTS_PER_LEVEL", "ENH_MAX",
   "LV_MS", "ACH", "LOGIN30",
+  "skillSupportLinks", "factionSkillGraph",
+  "COMBAT_MODEL_VERSION", "combatModelDescriptor", "combatEvent",
+  "applyPart", "hitPercent", "heroGuard",
+  "tickEnemyStatuses",
+  "SESSION_COMBAT", "sessionActor", "sessionCombatNew", "sessionCombatStep",
+  "featureEnabled", "featureConfigSnapshot", "parseFeatureFlags",
+  "redactFeedbackText", "cleanFeedbackDiagnostics", "cleanFeedbackContext",
 ];
 
 function dataFile(file, key) {

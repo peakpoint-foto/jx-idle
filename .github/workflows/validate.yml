@@ -1,0 +1,46 @@
+name: Validate game contracts
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  local-validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.19.0'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run check:contracts
+      - run: npm test
+      - run: npm run test:d1
+      - run: npm run audit:skills
+      - run: git diff --exit-code -- package-lock.json data.js
+      - name: Browser smoke in all three modes
+        run: |
+          python3 -m http.server 8088 --bind 127.0.0.1 > /tmp/jx-static.log 2>&1 &
+          static_pid=$!
+          browser_bin="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          "$browser_bin" --headless --no-sandbox --disable-dev-shm-usage --remote-debugging-address=127.0.0.1 --remote-debugging-port=9229 --user-data-dir=/tmp/jx-browser-ci > /tmp/jx-browser.log 2>&1 &
+          browser_pid=$!
+          trap 'kill "$static_pid" "$browser_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:9229/json/version > /dev/null && curl -fsS http://127.0.0.1:8088/ > /dev/null; then break; fi
+            sleep 1
+          done
+          node scripts/browser-smoke.mjs > /tmp/jx-browser-results.json
+        env:
+          WRANGLER_SEND_METRICS: 'false'
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: local-smoke-failure
+          path: |
+            /tmp/jx-static.log
+            /tmp/jx-browser.log
+            /tmp/jx-browser-results.json
+          if-no-files-found: ignore

@@ -39,12 +39,16 @@
 {
   const legacyWriteSlot = writeSlot;
   writeSlot = function (slot, state) {
+    let previousId = null;
     try {
       const old = localStorage.getItem(slotKey(slot));
       const previous = old && unpack(old).state;
-      if (previous && previous.cid && state && state.cid && previous.cid !== state.cid) unlinkSlotOnline(slot);
+      previousId = previous && previous.cid;
     } catch (e) {}
-    return legacyWriteSlot(slot, state);
+    const written = legacyWriteSlot(slot, state);
+    // Validation or storage failures must leave the old account link intact.
+    if (previousId && written && written.cid && previousId !== written.cid) unlinkSlotOnline(slot);
+    return written;
   };
   const legacyImportSave = importSave;
   importSave = function (text) {

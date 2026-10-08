@@ -4,12 +4,12 @@ import { fileURLToPath } from "node:url";
 
 const root = fileURLToPath(new URL("../../", import.meta.url));
 const files = [
-  "data.js", "world.js", "js/core.js", "js/workflow_rules.js", "js/modes.js", "js/stats.js",
-  "js/loot.js", "js/gear_policy.js", "rdata.js", "js/sets.js", "ref.js",
-  "js/recipes.js", "js/combat.js", "js/save.js", "js/ui.js", "js/shop.js",
+  "data.js", "world.js", "js/core.js", "js/skill_graph.js", "js/workflow_rules.js", "js/modes.js", "js/capabilities.js", "js/stats.js",
+  "js/combat_contract.js", "js/session_combat.js", "js/loot.js", "js/gear_policy.js", "rdata.js", "js/sets.js", "ref.js",
+  "js/recipes.js", "js/combat.js", "js/save.js", "js/save_schema.js", "js/ui.js", "js/shop.js",
   "js/rewards.js", "js/siege.js", "js/activities.js", "js/depth.js",
-  "js/forge.js", "js/auto.js", "js/survival.js", "js/svfinal.js",
-  "js/modes_play.js", "js/online.js", "js/workflow_overrides.js",
+  "js/builds.js", "js/build_profiles.js", "js/training.js", "js/build_compare.js", "js/build_advice.js", "js/build_library.js", "js/loot_codex.js", "js/combat_policy.js", "js/journal.js", "js/forge.js", "js/auto.js", "js/survival.js", "js/svfinal.js",
+  "js/modes_play.js", "js/online.js", "js/context_guide.js", "js/feedback_context.js", "js/workflow_overrides.js", "js/skill_graph_ui.js", "js/combat_reports.js", "js/boss_phases.js", "js/expedition.js", "js/expedition_travel.js", "js/expedition_routes.js", "js/expedition_knowledge.js", "js/workbench.js", "js/resource_summary.js",
 ];
 const sources = files.map(file => [file, fs.readFileSync(root + file, "utf8")]);
 
@@ -35,7 +35,7 @@ export function game(seed = 42) {
     static now() { return now; }
   }
   const context = {
-    console, Date: Clock, Math: math, Map, Set, JSON, performance,
+    console, Date: Clock, Math: math, Map, Set, JSON, performance, TextEncoder,
     setInterval: noop, setTimeout: fn => { timers.push(fn); return timers.length; },
     clearInterval: noop, clearTimeout: noop, requestAnimationFrame: noop,
     localStorage: {

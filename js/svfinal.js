@@ -74,7 +74,10 @@ function svFbTick(dt) {
       const w = fb.wave; fb.wave = null;
       SV.shake = .4; burst(w.x, w.y, "#ff4a3a");
       if (Math.hypot(H.x - w.x, H.y - w.y) < SV_FB_WAVE.r + 10) {
-        SV.hp -= SV.maxhp * SV_FB_WAVE.pct * (1 - Math.min(.6, R.P.absorb || 0));
+        const waveDamage = SV.maxhp * SV_FB_WAVE.pct * (1 - Math.min(.6, R.P.absorb || 0));
+        const hpBefore = Math.max(0, SV.hp);
+        SV.hp -= waveDamage;
+        if (typeof combatRecord === "function") combatRecord("damage", {sourceId:"final_boss_wave",targetId:"player",raw:waveDamage,capacity:hpBefore,reason:"boss_wave"+(SV.hp<=0?"_fatal":"")});
         SV.hurtT = .3;
       }
     }
