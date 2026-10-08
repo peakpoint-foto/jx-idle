@@ -2,10 +2,12 @@
 // Chỉ đường dẫn /api/* chạy qua Worker (assets.run_worker_first trong wrangler.jsonc).
 import { HttpError, json, readJson, CORS } from "./http.js";
 import { ensureSchema } from "./db.js";
-import { register, heartbeat, sync, me, recover } from "./account.js";
+import { register, heartbeat, sync, me, recover, recoverSnapshot } from "./account.js";
 import { ladder, notices, adminFlags, adminUnflag } from "./ladder.js";
 import { feedback, adminFeedback, adminFeedbackSet } from "./feedback.js";
 import { activityClaim } from "./activity.js";
+import { profile } from "./ladder.js";
+import { duels, guild, room } from "./social.js";
 
 const ROUTES = {
   "GET /api/config": (req, env) => ({ turnstile: env.TURNSTILE_SITEKEY || "", v: 1 }),
@@ -17,6 +19,14 @@ const ROUTES = {
   "POST /api/recover": (req, env, body) => recover(req, env, body),
   "GET /api/ladder": ladder,
   "GET /api/notices": notices,
+  "GET /api/profile": profile,
+  "GET /api/recover": recoverSnapshot,
+  "GET /api/duels": duels,
+  "POST /api/duel": duels,
+  "GET /api/guild": guild,
+  "POST /api/guild": guild,
+  "GET /api/room": room,
+  "POST /api/room": room,
   "GET /api/admin/flags": adminFlags,
   "POST /api/admin/unflag": adminUnflag,
   "POST /api/feedback": feedback,
@@ -37,7 +47,7 @@ export default {
       const body = req.method === "POST" ? await readJson(req) : null;
       return json(await fn(req, env, body, url, ctx));
     } catch (e) {
-      if (e instanceof HttpError) return json({ error: e.code, msg: e.message }, e.status);
+      if (e instanceof HttpError) return json({ error: e.code, msg: e.message, ...(e.data || {}) }, e.status);
       console.error("api", url.pathname, e && e.stack);
       return json({ error: "server", msg: "Lỗi máy chủ" }, 500);
     }

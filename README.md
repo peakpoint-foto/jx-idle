@@ -182,6 +182,12 @@ Chỉ nhân vật **Công Thành Chiến** được đồng bộ và đưa vào 
 - **Mã khôi phục** trong Hệ thống thay cho mật khẩu. Có thể nhập lại mã để liên kết với slot mới; game kiểm tra ID nhân vật trước khi đồng bộ. Giữ kín, không chia sẻ.
 - Từ cấp 40, nhân vật vào bậc xếp hạng: **Sơ cấp** 40–79, **Trung cấp** 80–99, **Cao cấp** 100–119, **Thượng thừa** 120 trở lên. Bảng xếp hạng mỗi bậc xếp theo lực chiến do máy chủ tự tính.
 - Mỗi lần đồng bộ, máy chủ kiểm tra trang bị (chỉ số gốc, thuộc tính, cường hóa, trần đồ của chế độ), điểm tiềm năng, điểm kỹ năng và cấp so với giờ chơi đã đo. Vi phạm độc lập thì nhân vật bị **loại khỏi bảng xếp hạng** và hiện trên **bảng thông báo** kèm lý do, nhưng vẫn chơi bình thường. Nhân vật có chuyển sinh nhưng chưa đủ lịch sử server sẽ ở trạng thái **chờ xác minh**, không bị gắn cờ gian lận và chưa được xếp hạng.
+- Bảng **Xếp hạng** hiển thị người chơi cùng bậc còn hoạt động trong 30 ngày; bấm vào tên để xem hồ sơ công khai.
+- Nếu bản lưu trên máy khác đã thay đổi, game báo xung đột và cho chọn nạp bản máy chủ hoặc ghi đè bằng bản đang mở. Mỗi lần đồng bộ có số phiên bản riêng.
+- **PvP bất đồng bộ** cho phép thách đấu người cùng bậc. Máy chủ giữ snapshot đã kiểm định, phân xử bằng lực chiến và biến thiên nhỏ, rồi cộng điểm mùa, thắng và thua.
+- **Bang hội online** có tạo/tham gia bang, đóng góp, thành viên và boss tuần. Mỗi thành viên được đánh boss tối đa 3 lần mỗi ngày; sát thương được tính từ lực chiến phía máy chủ.
+- **Phòng chơi** hỗ trợ tối đa 4 người, hiển thị presence và hành động gần nhất bằng polling. Đây là nền cho tổ đội; trận đánh thời gian thực vẫn cần lớp mô phỏng đồng bộ riêng.
+- Mỗi lần đồng bộ, máy chủ kiểm tra trang bị (chỉ số gốc, thuộc tính, cường hóa, trần đồ của chế độ), điểm tiềm năng, điểm kỹ năng và cấp so với giờ chơi đã đo. Vi phạm thì nhân vật bị **loại khỏi bảng xếp hạng** và hiện trên **bảng thông báo** kèm lý do, nhưng vẫn chơi bình thường. Cờ chỉ được gỡ bởi quản trị.
 
 Bản Wrangler local gọi API local cùng origin. Bản static `start_game.bat` không tự gọi production; muốn thử API phải cấu hình `window.JX_API` tới staging/dev rõ ràng.
 
