@@ -4,9 +4,10 @@ import {localD1} from './helpers/d1.js';
 import {sha256Hex} from '../src/http.js';
 import {moderation,adminModeration} from '../src/moderation.js';
 import {friends} from '../src/lobby.js';
+import {room} from '../src/social.js';
 
 async function fixture(t){
-  const DB=await localD1();t.after(()=>DB.close());const env={DB,ADMIN_KEY:'moderation-local-test-secret-012345'};
+  const DB=await localD1();t.after(()=>DB.close());const env={DB,ADMIN_KEY:'moderation-local-test-secret-012345',FEATURE_FLAGS:{party_lobby:true}};
   for(const [id,name] of [['reporter','Reporter'],['target','Target']]){
     const token='moderation-local-test-token-0123456789-'+id;
     await DB.batch([
@@ -20,6 +21,19 @@ async function fixture(t){
 
 test('moderation: bounded report, duplicate collapse, block removes friend access and admin action is audited',async t=>{
   const {DB,env,req}=await fixture(t);
+  await friends(req('target'),env,{action:'request',target_id:'reporter'});
+  await friends(req('reporter'),env,{action:'accept',target_id:'target'});
+  await room(req('target'),env,{action:'create'});
+  await room(req('target'),env,{action:'invite',name:'Reporter'});
+  await moderation(req('reporter'),env,{action:'mute',target_id:'target',duration_ms:3600e3});
+  assert.equal((await friends(req('reporter','GET'),env)).friends.length,1,'mute preserves accepted friendship');
+  assert.equal((await friends(req('reporter','GET'),env)).invites.length,0,'muted invite hidden');
+  const invite=await DB.prepare('SELECT id FROM room_invites WHERE recipient_id=?1').bind('reporter').first();
+  await assert.rejects(()=>room(req('reporter'),env,{action:'invite_accept',invite_id:invite.id}),{code:'player_muted'});
+  assert.equal((await moderation(req('reporter','GET'),env)).mutes.length,1);
+  await DB.prepare('UPDATE player_mutes SET expires_at=0 WHERE muter_id=?1').bind('reporter').run();
+  assert.equal((await friends(req('reporter','GET'),env)).friends.length,1,'expired mute no longer hides requests');
+  await moderation(req('reporter'),env,{action:'unmute',target_id:'target'});
   const report={action:'report',target_id:'target',reason:'spam',details:'repeat message'};
   const first=await moderation(req('reporter'),env,report),again=await moderation(req('reporter'),env,report);
   assert.equal(first.report_id,again.report_id);assert.equal(again.duplicate,true);

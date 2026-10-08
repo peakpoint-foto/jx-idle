@@ -12,8 +12,10 @@ async function currentPlayer(db,id){
 export async function moderation(req,env,body,url){
   const account=await auth(req,env),db=env.DB,actor=await currentPlayer(db,account.id);
   if(req.method==='GET'){
-    const rows=await db.prepare('SELECT target_id,created_at FROM player_blocks WHERE blocker_id=?1 ORDER BY created_at DESC LIMIT 200').bind(actor.id).all();
-    return {blocks:rows.results};
+    const [blocks,mutes]=await Promise.all([
+      db.prepare('SELECT target_id,created_at FROM player_blocks WHERE blocker_id=?1 ORDER BY created_at DESC LIMIT 200').bind(actor.id).all(),
+      db.prepare('SELECT target_id,created_at,expires_at FROM player_mutes WHERE muter_id=?1 AND expires_at>?2 ORDER BY created_at DESC LIMIT 200').bind(actor.id,Date.now()).all(),
+    ]);return {blocks:blocks.results,mutes:mutes.results};
   }
   if(!await rateLimit(db,'moderation:'+actor.id,20,3600))throw new HttpError(429,'rate_limited');
   const action=String(body?.action||''),targetId=String(body?.target_id||'');
@@ -27,6 +29,13 @@ export async function moderation(req,env,body,url){
       db.prepare("UPDATE room_invites SET status='declined' WHERE sender_id=?2 AND recipient_id=?1 AND status='pending'").bind(actor.id,target.id),
     ]);
     else await db.prepare('DELETE FROM player_blocks WHERE blocker_id=?1 AND target_id=?2').bind(actor.id,target.id).run();
+    return {ok:true,action,target_id:target.id};
+  }
+  if(action==='mute'||action==='unmute'){
+    if(action==='mute'){
+      const duration=[3600e3,864e5,7*864e5].includes(+body.duration_ms)?+body.duration_ms:864e5;
+      await db.prepare('INSERT INTO player_mutes(muter_id,target_id,created_at,expires_at) VALUES(?1,?2,?3,?4) ON CONFLICT(muter_id,target_id) DO UPDATE SET created_at=excluded.created_at,expires_at=excluded.expires_at').bind(actor.id,target.id,now,now+duration).run();
+    }else await db.prepare('DELETE FROM player_mutes WHERE muter_id=?1 AND target_id=?2').bind(actor.id,target.id).run();
     return {ok:true,action,target_id:target.id};
   }
   if(action==='report'){

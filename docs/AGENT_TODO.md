@@ -55,7 +55,7 @@ Tiến độ thực thi: 30/43 task (F01–F07, B01–B05, G01/G02/G03/G05, E01/
 - [x] **G05** Tiến trình thử nhiều build — P2, g2; phụ thuộc: G02,G03,F05. Evidence: test/build_progression.test.mjs (4 pass), Chromium mobile/desktop; bộ sưu tập hữu hạn, cosmetic local, claim retry/rollback và reset giữ bộ sưu tập.
 - [x] **E02** Tái chế, chế tạo và chỉnh thuộc tính — P1, shared capability riêng; phụ thuộc: E01,F05. Evidence: SAFE_WORKBENCH.md; 7 case, Chromium PHLT/g2 mobile/desktop, CTC denied; pure preview/native caps/receipt/atomic retry/locked/equipped guards.
 - [x] **E04** Ledger tài nguyên và cân bằng sink/source — P1, shared; online economy riêng; phụ thuộc: F06,F07,E02. Evidence: RESOURCE_ECONOMY.md; 3 client +4 SQLite/D1 cases; ledger/wallet/donation/rollback/UTC/rejoin quota and browser ack-loss nonce.
-- [ ] **O03** Quản trị và moderation — P1 trước public online, shared; online theo mode được bật; phụ thuộc: F06,C02,C04,O02. IN_PROGRESS — Codex / feat/online-multiplayer; migration 0008, report/block/admin moderation, audit trail, chặn friend/invite và review UI dùng khóa nhập theo phiên; còn report-abuse/privacy review và release gate.
+- [ ] **O03** Quản trị và moderation — P1 trước public online, shared; online theo mode được bật; phụ thuộc: F06,C02,C04,O02. IN_PROGRESS — Codex / feat/online-multiplayer; migration 0008/0009, report/block/mute, enforcement friend/invite, self-service + admin review UI/audit; còn report-abuse/privacy review và release gate.
 
 ### Đợt 3 — chơi chung và tiến trình dài hạn
 

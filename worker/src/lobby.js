@@ -10,8 +10,11 @@ async function named(db,name){const row=await db.prepare('SELECT a.id,a.name,c.s
 async function friendView(db,id){
   const now=Date.now();
   await db.prepare("DELETE FROM friendships WHERE status='pending' AND expires_at<=?1").bind(now).run();
-  const rows=await db.prepare(`SELECT f.*,a.id AS account_id,a.name,a.last_hb FROM friendships f JOIN accounts a ON a.id=CASE WHEN f.a=?1 THEN f.b ELSE f.a END WHERE f.a=?1 OR f.b=?1 ORDER BY f.status='pending' DESC,f.created_at DESC LIMIT 120`).bind(id).all();
-  const invites=await db.prepare(`SELECT i.id,i.room_id,i.expires_at,a.name AS sender FROM room_invites i JOIN accounts a ON a.id=i.sender_id JOIN rooms r ON r.id=i.room_id WHERE i.recipient_id=?1 AND i.status='pending' AND i.expires_at>?2 AND r.status='open' AND r.expires_at>?2 ORDER BY i.created_at DESC LIMIT 20`).bind(id,now).all();
+  const rows=await db.prepare(`SELECT f.*,a.id AS account_id,a.name,a.last_hb FROM friendships f JOIN accounts a ON a.id=CASE WHEN f.a=?1 THEN f.b ELSE f.a END WHERE (f.a=?1 OR f.b=?1)
+    AND (f.status='accepted' OR NOT EXISTS(SELECT 1 FROM player_mutes pm WHERE pm.muter_id=?1 AND pm.target_id=CASE WHEN f.a=?1 THEN f.b ELSE f.a END AND pm.expires_at>?2))
+    ORDER BY f.status='pending' DESC,f.created_at DESC LIMIT 120`).bind(id,now).all();
+  const invites=await db.prepare(`SELECT i.id,i.room_id,i.expires_at,a.name AS sender FROM room_invites i JOIN accounts a ON a.id=i.sender_id JOIN rooms r ON r.id=i.room_id WHERE i.recipient_id=?1 AND i.status='pending' AND i.expires_at>?2 AND r.status='open' AND r.expires_at>?2
+    AND NOT EXISTS(SELECT 1 FROM player_mutes pm WHERE pm.muter_id=?1 AND pm.target_id=i.sender_id AND pm.expires_at>?2) ORDER BY i.created_at DESC LIMIT 20`).bind(id,now).all();
   return {friends:rows.results.map(r=>({account_id:r.account_id,name:r.name,status:r.status,direction:r.requester===id?'outgoing':'incoming',expires_at:r.status==='pending'?r.expires_at:null,online:r.last_hb>=now-90000})),invites:invites.results};
 }
 export async function friends(req,env,body){
@@ -89,6 +92,7 @@ export async function partyRoom(req,env,body,acc,me){
     if(!invite||invite.recipient_id!==acc.id)throw new HttpError(403,'invite_forbidden');
     if(action==='invite_decline'){await db.prepare("UPDATE room_invites SET status='declined' WHERE id=?1 AND status='pending'").bind(invite.id).run();return lobbyView(db,acc.id);}
     if(await db.prepare('SELECT 1 FROM player_blocks WHERE (blocker_id=?1 AND target_id=?2) OR (blocker_id=?2 AND target_id=?1)').bind(acc.id,invite.sender_id).first())throw new HttpError(403,'player_blocked');
+    if(await db.prepare('SELECT 1 FROM player_mutes WHERE muter_id=?1 AND target_id=?2 AND expires_at>?3').bind(acc.id,invite.sender_id,now).first())throw new HttpError(403,'player_muted');
     if(invite.status==='accepted'&&current?.id===invite.room_id)return lobbyView(db,acc.id);
     if(invite.status!=='pending'||invite.expires_at<=now)throw new HttpError(409,'invite_expired');
     if(current)throw new HttpError(409,'already_in_room');

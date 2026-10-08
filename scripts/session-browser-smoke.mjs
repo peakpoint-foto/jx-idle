@@ -44,6 +44,13 @@ try{
     let ready=false;for(let n=0;n<100;n++){ready=await evaluate(c,"document.readyState==='complete'&&typeof partyPoll==='function'&&typeof closeModal==='function'");if(ready)break;await new Promise(r=>setTimeout(r,100));}assert.ok(ready);
     await evaluate(c,`closeModal(true);S=${JSON.stringify(f.players[i].state)};onlSet(${JSON.stringify({id:f.players[i].id,token:f.players[i].token,name:'Smoke'+i})});ONL.lastSync=Date.now();setFeatureFlags(${JSON.stringify(f.env.FEATURE_FLAGS)});recalc();document.querySelector('#tabs [data-t="more"]').click();renderMore();partyRender();partyPoll(true)`);
   }
+  await DB.prepare("INSERT INTO friendships(a,b,requester,status,created_at,expires_at) VALUES(?1,?2,?1,'accepted',?3,?4)").bind(f.players[0].id,f.players[1].id,Date.now(),Date.now()+864e5).run();
+  for(const [i,c] of clients.entries()){
+    const ui=await evaluate(c,`(async()=>{await onlRenderRoom(true);const b=document.querySelector('#onlRoomPanel [data-moderate="mute"]');return {admin:!!document.querySelector('#moderationAdminPanel input[type=password]'),selfService:!!b,safeText:!!b&&b.innerHTML===b.textContent}})()`);
+    assert.ok(ui.admin&&ui.selfService&&ui.safeText,JSON.stringify({i,ui}));
+  }
+  await evaluate(clients[0],`(async()=>{await onlApi('/moderation',{body:{action:'mute',target_id:${JSON.stringify(f.players[1].id)},duration_ms:3600000}});await onlRenderRoom(true);if(!document.querySelector('#onlRoomPanel [data-moderate="unmute"]'))throw Error('mute state not reflected in lobby UI');await onlApi('/moderation',{body:{action:'unmute',target_id:${JSON.stringify(f.players[1].id)}}});await onlApi('/moderation',{body:{action:'report',target_id:${JSON.stringify(f.players[1].id)},reason:'spam',details:'browser moderation smoke'}})})()`);
+  assert.equal((await DB.prepare("SELECT COUNT(*) n FROM player_reports WHERE reporter_id=?1 AND target_id=?2").bind(f.players[0].id,f.players[1].id).first()).n,1);
   await evaluate(clients[0],"partyWrite('create')");const created=await evaluate(clients[0],'({session:PARTY_CLIENT.session,error:PARTY_CLIENT.error,pending:PARTY_CLIENT.pending?.body})');assert.ok(created.session,JSON.stringify(created));const id=created.session.id;await evaluate(clients[1],'partyPoll(true)');
   assert.equal(await evaluate(clients[1],'PARTY_CLIENT.session.id'),id);
   for(let n=0;n<6;n++){clock+=500;for(const c of clients)await evaluate(c,'partyPoll(true)');}
@@ -63,7 +70,7 @@ try{
   assert.equal((await DB.prepare('SELECT COUNT(*) n FROM session_rewards WHERE session_id=?1').bind(id).first()).n,2);
   const amounts=(await DB.prepare('SELECT amount FROM session_rewards WHERE session_id=?1').bind(id).all()).results;assert.ok(amounts.every(r=>r.amount===1));
   const touch=await evaluate(clients[0],"[...document.querySelectorAll('#onlineSessionPanel button')].every(b=>b.getBoundingClientRect().height>=44)");assert.ok(touch);
-  console.log(JSON.stringify({runtime:process.env.JX_D1_RUNTIME==='1'?'D1 local':'SQLite local',clients:2,isolatedContexts:true,viewports:[360,1280],sharedState:true,ackLossRetry:true,reloadReconnect:true,realBossCompletion:true,receiptsOnce:true,touch:true},null,2));
+  console.log(JSON.stringify({runtime:process.env.JX_D1_RUNTIME==='1'?'D1 local':'SQLite local',clients:2,isolatedContexts:true,viewports:[360,1280],sharedState:true,ackLossRetry:true,reloadReconnect:true,realBossCompletion:true,receiptsOnce:true,moderationUI:true,muteReportServerRoundtrip:true,touch:true},null,2));
 }finally{
   for(const c of clients)c.close();if(browser){for(const id of contexts)await browser.command('Target.disposeBrowserContext',{browserContextId:id}).catch(()=>{});browser.close();}
   if(server)await new Promise(r=>server.close(r));while(inFlight)await new Promise(r=>setTimeout(r,20));Date.now=realNow;await DB.close();
