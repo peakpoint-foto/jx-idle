@@ -43,6 +43,9 @@ try {
   }
   if (!ready) throw new Error("Game scripts did not load");
   await evaluate("document.fonts.ready.then(()=>true)");
+  await command("Emulation.setEmulatedMedia",{features:[{name:"prefers-reduced-motion",value:"reduce"}]});
+  const motion=await evaluate("(() => {const b=document.getElementById('giftBtn');b.classList.add('on');const animation=getComputedStyle(b,'::after').animationName;b.classList.remove('on');return animation})()");
+  if(motion!=='none')throw new Error('Reduced-motion preference not respected: '+motion);
   const results = [];
   for (const width of [360, 1280]) {
     await command("Emulation.setDeviceMetricsOverride", { width, height: 800, deviceScaleFactor: 1, mobile: width < 600 });

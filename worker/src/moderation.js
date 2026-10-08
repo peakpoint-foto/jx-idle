@@ -32,6 +32,9 @@ export async function moderation(req,env,body,url){
   if(action==='report'){
     const reason=String(body.reason||'');if(!REASONS.has(reason))throw new HttpError(400,'bad_reason');
     const details=String(body.details||'').replace(/[\u0000-\u001f\u007f]/g,' ').trim().slice(0,500);
+    await db.prepare('DELETE FROM player_reports WHERE created_at<?1').bind(now-180*864e5).run();
+    const submitted=await db.prepare('SELECT COUNT(*) AS n FROM player_reports WHERE reporter_id=?1 AND created_at>=?2').bind(actor.id,now-864e5).first();
+    if(submitted.n>=5)throw new HttpError(429,'report_limit');
     const prior=await db.prepare("SELECT id FROM player_reports WHERE reporter_id=?1 AND target_id=?2 AND status='open' AND created_at>?3").bind(actor.id,target.id,now-864e5).first();
     if(prior)return {ok:true,duplicate:true,report_id:prior.id};
     const row=await db.prepare("INSERT INTO player_reports(reporter_id,target_id,reason,details,created_at) VALUES(?1,?2,?3,?4,?5) RETURNING id").bind(actor.id,target.id,reason,details,now).first();
@@ -42,6 +45,10 @@ export async function moderation(req,env,body,url){
 export async function adminModeration(req,env,body,url){
   admin(req,env);const db=env.DB,now=Date.now();
   if(!await rateLimit(db,'admin:moderation',120,60))throw new HttpError(429,'rate_limited');
+  await db.batch([
+    db.prepare('DELETE FROM player_reports WHERE created_at<?1').bind(now-180*864e5),
+    db.prepare('DELETE FROM admin_audit WHERE created_at<?1').bind(now-365*864e5),
+  ]);
   if(req.method==='GET'){
     const status=['open','reviewing','closed'].includes(url.searchParams.get('status'))?url.searchParams.get('status'):'open';
     const rows=await db.prepare(`SELECT r.id,r.reason,r.details,r.created_at,r.status,ra.name AS reporter,ta.name AS target

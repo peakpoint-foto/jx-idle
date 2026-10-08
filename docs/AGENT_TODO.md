@@ -38,7 +38,7 @@ Tiến độ thực thi: 30/43 task (F01–F07, B01–B05, G01/G02/G03/G05, E01/
 - [x] **G03** Mã chia sẻ build và thư viện — P1, g2; phụ thuộc: G01,B02,F05. Evidence: BUILD_LIBRARY.md, 4 case, Chromium mobile/desktop; no item/token import.
 - [x] **E01** Cẩm nang nguồn rơi và mục tiêu săn đồ — P1, shared; phụ thuộc: F01,F07,B03. Evidence: LOOT_CODEX.md, 4 case và browser sáu mode/viewport; AND/OR/hidden/stale guards.
 - [x] **R01** Onboarding và gợi ý việc tiếp theo — P1, shared UI khác mode; phụ thuộc: F03,B03,E01. Evidence: CONTEXT_GUIDE.md, 4 case và browser sáu mode/viewport; namespace riêng, không popup.
-- [ ] **O01** UX mobile và giảm thao tác — P1, shared layout riêng; phụ thuộc: F03,B04,R01. IN_PROGRESS — Codex / feat/online-multiplayer; thêm tìm nhanh kỹ năng/vật phẩm/hoạt động trong tab Khác, shortcut `/`, điều hướng skill và touch target 44px; đang hoàn thiện kiểm chứng hoạt động/item và accessibility.
+- [ ] **O01** UX mobile và giảm thao tác — P1, shared layout riêng; phụ thuộc: F03,B04,R01. IN_PROGRESS — Codex / feat/online-multiplayer; tìm nhanh skill/item/activity theo mode, shortcut `/`, filter Hành trang, activity route, target 44px; browser kiểm tra ba mode × hai viewport, tay thuận và reduced-motion. Còn batch receipt/retry và phiên dài.
 - [x] **O02** Góp ý và telemetry có ngữ cảnh — P1, shared opt-in; phụ thuộc: F05,F07,B04. Evidence: FEEDBACK_DIAGNOSTICS.md, client/server tests và Chromium consent/offline flows; rate/retention local.
 
 ### Đợt 2 — MVP riêng từng mode
@@ -55,7 +55,7 @@ Tiến độ thực thi: 30/43 task (F01–F07, B01–B05, G01/G02/G03/G05, E01/
 - [x] **G05** Tiến trình thử nhiều build — P2, g2; phụ thuộc: G02,G03,F05. Evidence: test/build_progression.test.mjs (4 pass), Chromium mobile/desktop; bộ sưu tập hữu hạn, cosmetic local, claim retry/rollback và reset giữ bộ sưu tập.
 - [x] **E02** Tái chế, chế tạo và chỉnh thuộc tính — P1, shared capability riêng; phụ thuộc: E01,F05. Evidence: SAFE_WORKBENCH.md; 7 case, Chromium PHLT/g2 mobile/desktop, CTC denied; pure preview/native caps/receipt/atomic retry/locked/equipped guards.
 - [x] **E04** Ledger tài nguyên và cân bằng sink/source — P1, shared; online economy riêng; phụ thuộc: F06,F07,E02. Evidence: RESOURCE_ECONOMY.md; 3 client +4 SQLite/D1 cases; ledger/wallet/donation/rollback/UTC/rejoin quota and browser ack-loss nonce.
-- [ ] **O03** Quản trị và moderation — P1 trước public online, shared; online theo mode được bật; phụ thuộc: F06,C02,C04,O02. IN_PROGRESS — Codex / feat/online-multiplayer; migration 0008, report/block/admin moderation, audit trail, chặn friend/invite và review UI dùng khóa nhập theo phiên; retention/report-abuse/privacy tests và release gate còn mở.
+- [ ] **O03** Quản trị và moderation — P1 trước public online, shared; online theo mode được bật; phụ thuộc: F06,C02,C04,O02. IN_PROGRESS — Codex / feat/online-multiplayer; migration 0008, report/block/admin moderation, audit trail, chặn friend/invite và review UI dùng khóa nhập theo phiên; còn report-abuse/privacy review và release gate.
 
 ### Đợt 3 — chơi chung và tiến trình dài hạn
 

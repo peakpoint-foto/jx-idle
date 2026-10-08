@@ -30,5 +30,10 @@ test('moderation: bounded report, duplicate collapse, block removes friend acces
   assert.equal(rows.rows.length,1);assert.equal(rows.rows[0].details,'repeat message');
   await adminModeration(req('reporter','POST',env.ADMIN_KEY),env,{report_id:first.report_id,status:'closed'},new URL('https://game.test/api/admin/moderation'));
   assert.equal((await DB.prepare('SELECT action FROM admin_audit').first()).action,'report_closed');
+  for(let n=0;n<4;n++){
+    const next=await moderation(req('reporter'),env,{...report,reason:'other',details:'report '+n});
+    await adminModeration(req('reporter','POST',env.ADMIN_KEY),env,{report_id:next.report_id,status:'closed'},new URL('https://game.test/api/admin/moderation'));
+  }
+  await assert.rejects(()=>moderation(req('reporter'),env,{...report,reason:'other'}),{code:'report_limit'});
   await assert.rejects(()=>adminModeration(req('reporter','GET','wrong'),env,null,new URL('https://game.test/api/admin/moderation')),{code:'forbidden'});
 });
