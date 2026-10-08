@@ -12,6 +12,7 @@ import { featureConfig, guardedFeature } from "./capabilities.js";
 import {friends} from './lobby.js';
 import {economy} from './economy.js';
 import {sessions} from './sessions.js';
+import {moderation,adminModeration} from './moderation.js';
 
 const ROUTES = {
   "GET /api/sessions": sessions,
@@ -43,6 +44,10 @@ const ROUTES = {
   "GET /api/admin/feedback": adminFeedback,
   "GET /api/admin/feedback/metrics": adminFeedbackMetrics,
   "POST /api/admin/feedback": adminFeedbackSet,
+  "GET /api/moderation": moderation,
+  "POST /api/moderation": moderation,
+  "GET /api/admin/moderation": adminModeration,
+  "POST /api/admin/moderation": adminModeration,
 };
 
 export default {

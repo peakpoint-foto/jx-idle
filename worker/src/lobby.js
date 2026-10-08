@@ -22,6 +22,7 @@ export async function friends(req,env,body){
   if(target.id===acc.id)throw new HttpError(400,'self_friend');
   const [a,b]=[acc.id,target.id].sort(),now=Date.now();
   if(action==='request'){
+    if(await db.prepare('SELECT 1 FROM player_blocks WHERE (blocker_id=?1 AND target_id=?2) OR (blocker_id=?2 AND target_id=?1)').bind(acc.id,target.id).first())throw new HttpError(403,'player_blocked');
     const existing=await db.prepare('SELECT * FROM friendships WHERE a=?1 AND b=?2').bind(a,b).first();
     if(existing&&(existing.status==='accepted'||existing.expires_at>now)){
       if(existing.requester!==acc.id&&existing.status==='pending')throw new HttpError(409,'friend_pending');
@@ -36,6 +37,7 @@ export async function friends(req,env,body){
     if(!result.meta.changes)throw new HttpError(409,'friend_limit');
   }else if(action==='accept'){
     const result=await db.prepare(`UPDATE friendships SET status='accepted' WHERE a=?1 AND b=?2 AND status='pending' AND requester<>?3 AND expires_at>?4
+      AND NOT EXISTS(SELECT 1 FROM player_blocks WHERE (blocker_id=?3 AND target_id=CASE WHEN ?3=?1 THEN ?2 ELSE ?1 END) OR (target_id=?3 AND blocker_id=CASE WHEN ?3=?1 THEN ?2 ELSE ?1 END))
       AND (SELECT COUNT(*) FROM friendships WHERE (a=?1 OR b=?1) AND status='accepted')<100
       AND (SELECT COUNT(*) FROM friendships WHERE (a=?2 OR b=?2) AND status='accepted')<100`).bind(a,b,acc.id,now).run();
     if(!result.meta.changes){const row=await db.prepare('SELECT status FROM friendships WHERE a=?1 AND b=?2').bind(a,b).first();if(row?.status!=='accepted')throw new HttpError(409,'friend_unavailable');}
@@ -86,6 +88,7 @@ export async function partyRoom(req,env,body,acc,me){
     const invite=await db.prepare('SELECT * FROM room_invites WHERE id=?1').bind(String(body.invite_id||'')).first();
     if(!invite||invite.recipient_id!==acc.id)throw new HttpError(403,'invite_forbidden');
     if(action==='invite_decline'){await db.prepare("UPDATE room_invites SET status='declined' WHERE id=?1 AND status='pending'").bind(invite.id).run();return lobbyView(db,acc.id);}
+    if(await db.prepare('SELECT 1 FROM player_blocks WHERE (blocker_id=?1 AND target_id=?2) OR (blocker_id=?2 AND target_id=?1)').bind(acc.id,invite.sender_id).first())throw new HttpError(403,'player_blocked');
     if(invite.status==='accepted'&&current?.id===invite.room_id)return lobbyView(db,acc.id);
     if(invite.status!=='pending'||invite.expires_at<=now)throw new HttpError(409,'invite_expired');
     if(current)throw new HttpError(409,'already_in_room');
@@ -167,6 +170,7 @@ export async function partyRoom(req,env,body,acc,me){
       SELECT ?1,?2,?3,?4,?5,?6 WHERE EXISTS(SELECT 1 FROM room_members WHERE room_id=?2 AND account_id=?3)
       AND EXISTS(SELECT 1 FROM rooms WHERE id=?2 AND status='open' AND expires_at>?5)
       AND (EXISTS(SELECT 1 FROM friendships WHERE a=?7 AND b=?8 AND status='accepted') OR EXISTS(SELECT 1 FROM guild_members x JOIN guild_members y ON y.guild_id=x.guild_id WHERE x.account_id=?3 AND y.account_id=?4))
+      AND NOT EXISTS(SELECT 1 FROM player_blocks WHERE (blocker_id=?3 AND target_id=?4) OR (blocker_id=?4 AND target_id=?3))
       AND NOT EXISTS(SELECT 1 FROM room_invites WHERE room_id=?2 AND recipient_id=?4 AND status='pending' AND expires_at>?5)
       AND (SELECT COUNT(*) FROM room_invites WHERE recipient_id=?4 AND status='pending' AND expires_at>?5)<20`).bind(randomToken(12),roomId,acc.id,target.id,now,now+INVITE_TTL,a,b).run();
     if(!result.meta.changes)throw new HttpError(409,'invite_unavailable','Chỉ mời bạn hoặc người cùng bang; có thể lời mời đang chờ hoặc đã hết chỗ lời mời');

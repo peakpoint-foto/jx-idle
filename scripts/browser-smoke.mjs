@@ -58,9 +58,24 @@ try {
         if(!text.includes('ID 1083')||!text.includes('chưa được hỗ trợ')||!text.includes('Hoành Tảo Thiên Quân'))throw Error('Wrong graph text');
         const button=graph.querySelector('[data-graph-skill="10"]');if(!button)throw Error('Missing skill link');button.click();
         if(!document.getElementById('mBody').textContent.includes('Bổ trợ Hoành Tảo Thiên Quân'))throw Error('Missing support modal');
-        closeModal(true);
-        const rect=graph.getBoundingClientRect();
-        return {mode:S.mode,width:${width},graphWidth:Math.round(rect.width),linkedModal:true,unsupportedVisible:true};
+        closeModal(true);const rect=graph.getBoundingClientRect();
+        showTab('more');renderMore();const search=document.getElementById('fieldSearchInput');if(!search)throw Error('Field search missing');
+        search.value='Hoành Tảo';search.dispatchEvent(new Event('input',{bubbles:true}));
+        const searchButton=document.querySelector('#fieldSearchResults button');if(!searchButton||!searchButton.textContent.includes('Hoành Tảo'))throw Error('Skill search result missing');
+        if(search.getBoundingClientRect().height<43.9||searchButton.getBoundingClientRect().height<43.9)throw Error('Field search touch target '+search.getBoundingClientRect().height+'/'+searchButton.getBoundingClientRect().height+' '+S.mode+'/'+innerWidth);
+        searchButton.click();if(curTab!=='skill')throw Error('Skill search navigation failed');
+        showTab('more');setFeatureFlags(${mode==='phlt'?'{expedition:true}':mode==='g2'?'{skill_mutators:true,training_lab:true}':'{resource_summary:true}'});renderMore();
+        const search2=document.getElementById('fieldSearchInput'),itemName=J.items[0].list[0].n;search2.value=itemName;search2.dispatchEvent(new Event('input',{bubbles:true}));
+        if(!document.querySelector('#fieldSearchResults button')?.textContent.includes(itemName))throw Error('Item search result missing');
+        document.querySelector('#fieldSearchResults button').click();if(curTab!=='inv'||lootFilter().kw!==itemName.slice(0,20))throw Error('Item search navigation/filter failed');
+        showTab('more');renderMore();
+        const search3=document.getElementById('fieldSearchInput');${mode==='ctc'?"":`search3.value=${mode==='phlt'?"'Hành trình'":"'Bí cảnh'"};search3.dispatchEvent(new Event('input',{bubbles:true}));if(!document.querySelector('#fieldSearchResults button')?.textContent.includes(${mode==='phlt'?"'Hành trình'":"'Bí cảnh'"}))throw Error('Activity search result missing ${mode} '+modeId()+' button:'+!!document.getElementById('${mode==='phlt'?'expeditionOpen':'riftOpen'}'));`}
+        showTab('skill');
+        showTab('more');renderMore();document.dispatchEvent(new KeyboardEvent('keydown',{key:'/',bubbles:true}));
+        if(document.activeElement!==document.getElementById('fieldSearchInput'))throw Error('Search keyboard shortcut failed');
+        setUiPref({hand:'left'});if(!document.body.classList.contains('jxleft'))throw Error('Left-hand preference failed');setUiPref({hand:'right'});
+        showTab('skill');
+        return {mode:S.mode,width:${width},graphWidth:Math.round(rect.width),linkedModal:true,unsupportedVisible:true,fieldSearch:true};
       })()`);
       if (result.graphWidth <= 0) throw new Error("Graph is not laid out: " + JSON.stringify(result));
       results.push(result);
