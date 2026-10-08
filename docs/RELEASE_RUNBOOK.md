@@ -2,7 +2,7 @@
 
 Gate local dùng Node24.19.0 + npm ci (lockfile), check:contracts → npm test → npm run test:d1 → audit:skills → Chromium smoke. Hai lệnh test regenerate cùng worker/gen/game.js nên chạy tuần tự trong một checkout. Bundle không commit. CI checkout từ GitHub sẽ chạy .github/workflows/validate.yml; workflow chưa được push/run trên GitHub nên không coi host CI đã pass.
 
-check:contracts xác minh88script classic tồn tại/không trùng/syntax/load dependencies, shared helpers có trong Worker, provenance skill.data106/76/15/15 và43task dependency không cycle. Strict skill audit vẫn expected failure do15unsupported target; không dùng strict để tuyên bố skill data hoàn chỉnh. Schema test tạo pre-CAS chars rồi ensureSchema/additive migrations0001–0006 lặp2lần, giữ account/rawsave; chạy cả SQLite và D1 runtime. Migration0007 thuộc C05 đang tạm dừng: backend tests chạy SQLite/D1 riêng, chưa nghiệm thu migration lặp/rollback trong suite chuẩn.
+check:contracts xác minh102script classic tồn tại/không trùng/syntax/load dependencies, shared helpers có trong Worker, provenance skill.data106/76/15/15 và43task dependency không cycle. Strict skill audit vẫn expected failure do15unsupported target; không dùng strict để tuyên bố skill data hoàn chỉnh. Release contract tạo pre-CAS account/save rồi chạy migrations0001–0010 lặp2lần, giữ nguyên account/rawsave và xác nhận các bảng session/moderation/chat; chạy trong SQLite và D1 runtime. D1 suite bao gồm session CAS/retry, moderation cap/audit và các migration.
 
 Asset build bỏ worker/test/migrations/.github/scripts/docs và dev config khỏi public files. Không đưa khóa admin, .dev.vars, logs hoặc fixture bearer vào assets.
 
@@ -28,6 +28,6 @@ Config request lỗi: defaults fallback đóng advanced; client không giả m�
 
 Local Worker8787 đã kiểm tra HTTP200 index và configphlt/v1; XDG_CONFIG_HOME/WRANGLER_LOG_PATH trong/tmp giải quyết lỗi home của lần thử trước. Request.cf bị chặn có warning/fallback nhưng local API/ASSETS chạy. Startup instructions đã lưu draft môi trường (không phải đã publish snapshot).
 
-Archive candidate sạch /tmp/jx-idle-validation.tBAbLD không có node_modules/.git/generated bundle được npm ci--offline bằng lockfile/cached tarballs (40packages); npm test199/199, D1 runtime28/28, check:contracts, regular audit và Chromium smoke sáu mode/viewport pass. Package-lock hash không đổi. Không thay kết quả này cho CI trên GitHub sau push.
+Checkpoint 08/10/2026, commit `4cc74d8`: Git archive sạch tại `/tmp/jx-backlog-clean` (không `.git`, `node_modules`, bundle sinh) được cài 40 packages bằng `npm ci` theo lockfile. `check:contracts` 102 scripts/43 task, `npm test` 266/266, `npm run test:d1` 41/41, regular skill audit và Chromium smoke sáu mode/viewport pass. Release contract lặp migrations 0001–0010 hai lần đang được bổ sung ở worktree sau checkpoint này; cần chạy lại clean archive sau commit. Không thay kết quả này cho CI GitHub sau push.
 
 Chưa có Worker/D1 staging được cấp, chưa chạy rollout/rollback remote hoặc benchmark production; chưa có PR URL xác nhận. O04 vẫn mở tới khi release gate được nghiệm thu, không đánh dấu hoàn thành100%.

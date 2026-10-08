@@ -25,7 +25,7 @@ Tiến độ thực thi: 30/43 task (F01–F07, B01–B05, G01/G02/G03/G05, E01/
 - [x] **F05** Save có phiên bản, migration và phục hồi — P0, shared; phụ thuộc: F01. Evidence: SAVE_SCHEMA.md và test/save_schema.test.mjs; session mới phải bổ sung migration/resume trong task tạo session.
 - [x] **F06** Gia cố nền online hiện có — P0, ctc; phlt/g2 opt-in sau; phụ thuộc: F01,F04,F05. Evidence: ONLINE_INVARIANTS.md; 11 integration case trên SQLite và D1 runtime local; chưa benchmark production.
 - [x] **F07** Capability và feature flags theo mode — P0, shared; phụ thuộc: F01,F04. Evidence: CAPABILITIES.md, worker/test/capabilities.test.js; tính năng mới vẫn tắt.
-- [ ] **O04** CI, release flags và rollback — P0 release gate, shared; online theo mode được bật; phụ thuộc: F05,F07,O02.
+- [ ] **O04** CI, release flags và rollback — P0 release gate, shared; online theo mode được bật; phụ thuộc: F05,F07,O02. IN_PROGRESS — local clean archive: contracts, full unit/D1 suites, regular audit, Chromium 6 mode/viewport; release contract lặp migration 0001–0010 hai lần trên schema cũ. BLOCKED: chưa có Worker/D1 staging, credential, CI run trên host hoặc rollout/rollback remote; cần cấp staging riêng và thực hiện theo RELEASE_RUNBOOK.md.
 
 ### Đợt 1 — công cụ build và chất lượng trải nghiệm
 
