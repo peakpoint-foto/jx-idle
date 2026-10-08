@@ -32,10 +32,10 @@ function trainingContext(session,operation) {
   }
 }
 
-function trainingCreate(input={},state=S) {
+function trainingCreate(input={},state=S,options={}) {
   if(!state||!FAC[state.fac]||!featureEnabled("training_lab",state.mode))throw new Error("Phòng luyện chỉ mở cho 2.0 khi tính năng được bật");
   const parameters=trainingParameters(input),session={version:COMBAT_MODEL_VERSION,parameters,state:JSON.parse(JSON.stringify(state)),
-    random:parameters.seed,time:0,step:0,paused:false,status:"running",runtime:{rotI:0,training:true},attackTime:0,incomingTime:1,
+    random:parameters.seed,time:0,step:0,paused:false,status:"running",runtime:{rotI:0,training:true,riftModifiers:options.riftModifiers?.slice()||[]},attackTime:0,incomingTime:1,
     raw:0,useful:0,dot:0,manaSpent:0,manaRecovered:0,incomingManaSpent:0,healthRecovered:0,mainStarvedSec:0,basicFallbacks:0,
     outgoingBySkill:{},attacks:0,healthLost:0};
   trainingContext(session,()=>{

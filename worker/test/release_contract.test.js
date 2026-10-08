@@ -15,13 +15,13 @@ test('old pre-CAS schema upgrades additively, preserves account/save and migrati
   const saved=await DB.prepare('SELECT snapshot,sync_rev,validation_status FROM chars WHERE account_id=?1').bind('legacy').first();
   assert.deepEqual(JSON.parse(saved.snapshot),{v:1,mode:'ctc',cid:'c_legacy_character',gold:42});
   assert.equal(saved.sync_rev,1);assert.equal(saved.validation_status,'verified');
-  for(let pass=0;pass<2;pass++)for(const name of ['0001_init','0002_boss_receipts','0003_guild_management','0004_duel_modes','0005_party_lobby','0006_resource_ledger']){
+  for(let pass=0;pass<2;pass++)for(const name of ['0001_init','0002_boss_receipts','0003_guild_management','0004_duel_modes','0005_party_lobby','0006_resource_ledger','0007_combat_sessions']){
     const sql=readFileSync(new URL('../../migrations/'+name+'.sql',import.meta.url),'utf8');
     await DB.batch(sql.replace(/^\s*--.*$/gm,'').split(';').map(s=>s.trim()).filter(Boolean).map(s=>DB.prepare(s)));
   }
   assert.equal((await DB.prepare('SELECT snapshot FROM chars WHERE account_id=?1').bind('legacy').first()).snapshot,saved.snapshot);
   assert.equal((await DB.prepare('SELECT COUNT(*) AS n FROM accounts').first()).n,1);
-  for(const table of ['boss_receipts','guild_receipts','duel_meta','friendships','room_invites','lobby_rooms','lobby_members'])assert.ok(await DB.prepare('SELECT name FROM sqlite_master WHERE name=?1').bind(table).first());
+  for(const table of ['boss_receipts','guild_receipts','duel_meta','friendships','room_invites','lobby_rooms','lobby_members','combat_sessions','session_members','session_actions','session_rewards'])assert.ok(await DB.prepare('SELECT name FROM sqlite_master WHERE name=?1').bind(table).first());
 });
 test('release flag rollback preserves local social data, config is mode scoped and re-enable restores access',async t=>{
   const DB=await localD1();t.after(()=>DB.close());const token='local-release-test-token-0123456789';

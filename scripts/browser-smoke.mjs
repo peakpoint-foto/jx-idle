@@ -369,6 +369,31 @@ try {
           return {wallet:true,nonceRetry:true,touch:true};
         }finally{closeModal(true);onlApi=api;onlSet(account);ONL.guildId=guild;setFeatureFlags({});ECONOMY_REQUEST=null;}
       })()`);
+      result.rift=await evaluate(`(()=>{
+        setFeatureFlags({skill_mutators:true,training_lab:true});document.querySelector('#tabs [data-t="more"]').click();renderMore();
+        if(S.mode!=='g2'){if(document.getElementById('riftOpen'))throw Error('Rift escaped mode');setFeatureFlags({});return {denied:true};}
+        const assets=JSON.stringify([S.sk,S.eq,S.inv,S.gold,S.xp,S.stage,S.wave]),skills=JSON.stringify(SK);
+        document.getElementById('riftOpen').click();document.querySelector('[data-rift="start"]').click();
+        if(document.querySelectorAll('[data-rift="choose"]').length!==3)throw Error('Rift choices missing');
+        const button=document.querySelector('[data-rift="choose"]');if(button.getBoundingClientRect().height<44)throw Error('Rift touch target: '+button.getBoundingClientRect().height+' min:'+getComputedStyle(button).minHeight);button.click();
+        if(riftState().phase!=='combat'||!R.riftRun)throw Error('Rift did not start native combat');
+        document.querySelector('[data-rift="pause"]').click();const elapsed=R.riftRun.time;tick(.05);if(R.riftRun.time!==elapsed)throw Error('Rift pause failed');
+        document.querySelector('[data-rift="pause"]').click();tick(.05);if(R.riftRun.time<=elapsed)throw Error('Rift resume failed');
+        document.querySelector('[data-rift="exit"]').click();if(riftState().outcome!=='withdrawn'||R.riftRun)throw Error('Rift exit failed');
+        if(JSON.stringify([S.sk,S.eq,S.inv,S.gold,S.xp,S.stage,S.wave])!==assets||JSON.stringify(SK)!==skills)throw Error('Rift mutated assets');
+        closeModal(true);setFeatureFlags({});renderMore();if(document.getElementById('riftOpen'))throw Error('Rift flag-off UI survived');return {choices:true,nativeCombat:true,pause:true,resume:true,exit:true,assets:true,touch:true};
+      })()`);
+      result.buildProgression=await evaluate(`(()=>{
+        setFeatureFlags({build_progression:true,skill_mutators:true,training_lab:true,build_library:true});renderMore();
+        if(S.mode!=='g2'){if(document.getElementById('buildProgressionOpen'))throw Error('Build progression escaped mode');setFeatureFlags({});return {denied:true};}
+        const assets=JSON.stringify([S.attr,S.sk,S.eq,S.inv,S.gold,S.xp]);
+        document.getElementById('buildProgressionOpen').click();if(!document.getElementById('mBody').textContent.includes('9thành tựu hữu hạn'))throw Error('Build progression rules missing');
+        for(const b of document.querySelectorAll('[data-build-ach]'))if(b.getBoundingClientRect().height<44)throw Error('Build progression touch target: '+b.getBoundingClientRect().height);
+        const claims=JSON.stringify(buildProgressionState().claims);document.querySelector('[data-build-route="training"]').click();
+        if(!document.getElementById('trainingPanel').open)throw Error('Build progress guide training route failed');
+        if(JSON.stringify([S.attr,S.sk,S.eq,S.inv,S.gold,S.xp])!==assets||JSON.stringify(buildProgressionState().claims)!==claims)throw Error('Guide granted reward');
+        setFeatureFlags({});renderMore();if(document.getElementById('buildProgressionOpen'))throw Error('Build progress flag off failed');return {finiteRules:true,touch:true,guide:true,noReward:true,flagOff:true};
+      })()`);
       const labCheck=await evaluate(`(() => {
         setFeatureFlags({training_lab:true});renderSkill();
         if(S.mode!=='g2') {if(document.getElementById('trainingPanel'))throw Error('Lab escaped mode guard');return {denied:true};}

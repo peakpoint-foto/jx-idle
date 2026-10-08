@@ -20,6 +20,9 @@ for(const [a,b] of [
   ['js/expedition_routes.js','js/expedition_knowledge.js'],['js/expedition_knowledge.js','js/expedition_ui.js'],['js/expedition_routes_ui.js','js/expedition_knowledge_ui.js'],
   ['js/forge.js','js/workbench.js'],['js/auto.js','js/workbench_ui.js'],['js/workbench.js','js/workbench_ui.js'],
   ['js/workbench.js','js/resource_summary.js'],['js/resource_summary.js','js/economy_ui.js'],['js/online.js','js/economy_ui.js'],
+  ['js/session_combat.js','js/online_sessions.js'],['js/online_lobby.js','js/online_sessions.js'],['js/economy_ui.js','js/online_sessions.js'],
+  ['js/stats.js','js/rift_rules.js'],['js/rift_rules.js','js/training.js'],['js/online_sessions.js','js/rift.js'],['js/rift.js','js/rift_ui.js'],
+  ['js/rift.js','js/build_progression.js'],['js/build_library.js','js/build_progression.js'],['js/workbench.js','js/build_progression.js'],['js/build_progression.js','js/build_progression_ui.js'],
 ])before(a,b);
 const workerFiles=read('worker/build-game.mjs').match(/const FILES = \[([\s\S]*?)\];/)[1].match(/"[^"]+"/g).map(x=>JSON.parse(x));
 for(const path of workerFiles)assert.ok(scripts.includes(path),'Worker-only gameplay source '+path);

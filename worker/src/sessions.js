@@ -42,8 +42,13 @@ async function publicView(db,row,account){
       connected:members.some(m=>m.account_id===a.id&&m.active&&m.last_seen>Date.now()-IDLE)})),events:state.events.slice(-32),next_seq:(self?.last_seq||0)+1,
     reward,transport:'polling',step_ms:STEP,catchup_max:MAX_CATCHUP,loot_policy:'Server merit only; no offline gold/items. Shared earned cap3/day UTC, wallet30; contribution required, withdrawn ineligible.'}};
 }
-async function create(env,acc,now){
+async function create(env,acc,now,requestId){
   const db=env.DB;
+  if(requestId!=null){
+    if(typeof requestId!=='string'||!/^[A-Za-z0-9_-]{8,80}$/.test(requestId))throw new HttpError(400,'bad_session_id');
+    const previous=await db.prepare('SELECT * FROM combat_sessions WHERE id=?1').bind(requestId).first();
+    if(previous){if(previous.creator_id!==acc.id)throw new HttpError(403,'session_leader_required');return previous;}
+  }
   if(!GAME.featureEnabled('party_lobby','ctc',env.FEATURE_FLAGS,false))throw new HttpError(403,'lobby_required');
   const room=await db.prepare("SELECT r.* FROM rooms r JOIN room_members m ON m.room_id=r.id WHERE m.account_id=?1 AND r.status='open' AND r.expires_at>?2").bind(acc.id,now).first();
   if(!room||room.owner_id!==acc.id)throw new HttpError(403,'session_leader_required');
@@ -52,7 +57,7 @@ async function create(env,acc,now){
   const actors=roster.map(r=>{
     duelProfile(r);const previous=GAME.getS();try{GAME.setS(JSON.parse(r.snapshot));return GAME.sessionActor(r.id,r.name,GAME.calc(),r.role);}finally{GAME.setS(previous);}
   });
-  const seed=crypto.getRandomValues(new Uint32Array(1))[0],id=randomToken(12),state=GAME.sessionCombatNew('ctc',actors,seed);
+  const seed=crypto.getRandomValues(new Uint32Array(1))[0],id=requestId||randomToken(12),state=GAME.sessionCombatNew('ctc',actors,seed);
   const values=[id,room.id,acc.id,now,now+TTL,JSON.stringify(state),roster.length,now-35000,now-30*864e5];
   let revisionChecks='';for(const r of roster){values.push(r.id,r.sync_rev);revisionChecks+=` AND EXISTS(SELECT 1 FROM chars WHERE account_id=?${values.length-1} AND sync_rev=?${values.length})`;}
   const statements=[db.prepare(`INSERT INTO combat_sessions(id,room_id,creator_id,created_at,expires_at,state,status)
@@ -64,7 +69,7 @@ async function create(env,acc,now){
     ${revisionChecks}`).bind(...values)];
   for(const r of roster)statements.push(db.prepare('INSERT INTO session_members(session_id,account_id,active,last_seen,connected_from) SELECT ?1,?2,1,?3,?3 WHERE EXISTS(SELECT 1 FROM combat_sessions WHERE id=?1)').bind(id,r.id,now));
   try{const result=await db.batch(statements);if(!result[0].meta.changes)throw new HttpError(409,'session_not_ready');}
-  catch(e){const current=await db.prepare("SELECT s.* FROM combat_sessions s JOIN session_members m ON m.session_id=s.id WHERE m.account_id=?1 AND m.active=1 AND s.status='active'").bind(acc.id).first();if(current&&current.room_id===room.id)return current;if(e instanceof HttpError)throw e;throw new HttpError(409,'session_member_busy');}
+  catch(e){if(requestId){const previous=await db.prepare('SELECT * FROM combat_sessions WHERE id=?1 AND creator_id=?2').bind(requestId,acc.id).first();if(previous)return previous;}const current=await db.prepare("SELECT s.* FROM combat_sessions s JOIN session_members m ON m.session_id=s.id WHERE m.account_id=?1 AND m.active=1 AND s.status='active'").bind(acc.id).first();if(current&&current.room_id===room.id)return current;if(e instanceof HttpError)throw e;throw new HttpError(409,'session_member_busy');}
   return await db.prepare('SELECT * FROM combat_sessions WHERE id=?1').bind(id).first();
 }
 async function claim(db,row,account,now){
@@ -93,14 +98,15 @@ export async function sessions(req,env,body,url=new URL(req.url)){
   const enabled=GAME.featureEnabled('party_combat','ctc',env.FEATURE_FLAGS,false);
   // Expiry and flag rollback release active locks, without deleting frozen state/receipts.
   await db.prepare("UPDATE combat_sessions SET status='aborted',ended_at=?2,revision=revision+1 WHERE status='active' AND (expires_at<=?2 OR ?3=0) AND EXISTS(SELECT 1 FROM session_members WHERE session_id=combat_sessions.id AND account_id=?1)").bind(acc.id,now,enabled?1:0).run();
-  await db.prepare("UPDATE session_members SET active=0 WHERE account_id=?1 AND EXISTS(SELECT 1 FROM combat_sessions WHERE id=session_members.session_id AND status<>'active')").bind(acc.id).run();
+  await db.prepare("UPDATE session_members SET active=0 WHERE active=1 AND EXISTS(SELECT 1 FROM combat_sessions s JOIN session_members own ON own.session_id=s.id WHERE s.id=session_members.session_id AND s.status<>'active' AND own.account_id=?1)").bind(acc.id).run();
   if(!enabled)throw new HttpError(403,'feature_disabled');
   if(character.flagged||character.validation_status!=='verified'||!character.updated_at||character.updated_at<now-30*864e5)throw new HttpError(403,'session_locked');
   if(req.method==='POST'&&!await rateLimit(db,'sessions:'+acc.id,60,60))throw new HttpError(429,'rate_limited');
+  if(req.method==='GET'&&!await rateLimit(db,'sessions-read:'+acc.id,180,60))throw new HttpError(429,'rate_limited');
   const action=body?.action;
   if(req.method==='POST'&&action!=='command'&&Object.keys(body||{}).some(k=>!['action','id'].includes(k)))throw new HttpError(400,'forged_session_action');
   let id=req.method==='GET'?url.searchParams.get('id'):body?.id,row;
-  if(action==='create')row=await create(env,acc,now);
+  if(action==='create')row=await create(env,acc,now,id);
   else if(id){if(typeof id!=='string'||!/^[A-Za-z0-9_-]{8,80}$/.test(id))throw new HttpError(400,'bad_session_id');row=await rowFor(db,id,acc.id);}
   else if(req.method==='GET')row=await db.prepare("SELECT s.* FROM combat_sessions s JOIN session_members m ON m.session_id=s.id WHERE m.account_id=?1 AND m.active=1 ORDER BY s.created_at DESC LIMIT 1").bind(acc.id).first();
   else throw new HttpError(400,'bad_session_action');

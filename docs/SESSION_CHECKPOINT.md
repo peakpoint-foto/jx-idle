@@ -1,4 +1,8 @@
-# C05 — Checkpoint tạm dừng, chưa nghiệm thu
+# Checkpoint — trạng thái mới và lịch sử C05
+
+Ngày 08/10/2026: C05/G02/G05 DONE local, 30/43 task. Đã push `51c1905`, đồng bộ main không xung đột; PR #19 đã merge. Bản sửa reload smoke đã kiểm chứng hai client D1. Full suite 260/260, D1 38/38 và browser ba mode/mobile/desktop pass. CI remote mới: https://github.com/peakpoint-foto/jx-idle/actions/runs/37784364781 (đang chạy lúc ghi). GitHub API Forbidden, chưa tạo được PR mới. Chưa deploy production. Các đoạn bên dưới là checkpoint lịch sử.
+
+**Lệnh mới ngày08/10/2026 (Asia/Saigon): tiếp tục triển khai từ27task đến toàn backlog. C05 IN_PROGRESS; đoạn PAUSED dưới đây là lịch sử.** CI push37764665755 và PR37764672297 đã xanh tại9e54e66 sau sửa navigation smoke. Không tự deploy production.
 
 Ngày 08/10/2026 (Asia/Saigon). Người dùng yêu cầu **dừng triển khai, cập nhật Markdown, commit và push**. Không tiếp tục tính năng cho tới lệnh mới.
 

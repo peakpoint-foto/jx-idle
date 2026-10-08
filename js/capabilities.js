@@ -13,6 +13,7 @@ const FEATURE_REGISTRY = Object.freeze({
   combat_reports: { modes: ["ctc","phlt","g2"], enabled: false, online: false },
   training_lab: { modes: ["g2"], enabled: false, online: false },
   build_library: { modes: ["g2"], enabled: false, online: false },
+  build_progression: { modes: ["g2"], enabled: false, online: false },
   expedition: { modes: ["phlt"], enabled: false, online: false },
   expedition_travel: { modes: ["phlt"], enabled: false, online: false },
   expedition_routes: { modes: ["phlt"], enabled: false, online: false },
