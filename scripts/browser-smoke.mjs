@@ -72,10 +72,10 @@ try {
         if(!document.querySelector('#fieldSearchResults button')?.textContent.includes(itemName))throw Error('Item search result missing');
         document.querySelector('#fieldSearchResults button').click();if(curTab!=='inv'||lootFilter().kw!==itemName.slice(0,20))throw Error('Item search navigation/filter failed');
         showTab('more');renderMore();
-        const search3=document.getElementById('fieldSearchInput');${mode==='ctc'?"":`search3.value=${mode==='phlt'?"'Hành trình'":"'Bí cảnh'"};search3.dispatchEvent(new Event('input',{bubbles:true}));if(!document.querySelector('#fieldSearchResults button')?.textContent.includes(${mode==='phlt'?"'Hành trình'":"'Bí cảnh'"}))throw Error('Activity search result missing ${mode} '+modeId()+' button:'+!!document.getElementById('${mode==='phlt'?'expeditionOpen':'riftOpen'}'));`}
+        const search3=document.getElementById('fieldSearchInput');${mode==='ctc'?`search3.value='Công thành';search3.dispatchEvent(new Event('input',{bubbles:true}));const activity=document.querySelector('#fieldSearchResults button');if(!activity?.textContent.includes('Công thành'))throw Error('CTC activity search result missing');activity.click();if(!document.getElementById('giftTabs'))throw Error('CTC activity route failed '+typeof giftModal+' '+giftTab);closeModal(true);`:`search3.value=${mode==='phlt'?"'Hành trình'":"'Bí cảnh'"};search3.dispatchEvent(new Event('input',{bubbles:true}));if(!document.querySelector('#fieldSearchResults button')?.textContent.includes(${mode==='phlt'?"'Hành trình'":"'Bí cảnh'"}))throw Error('Activity search result missing ${mode} '+modeId()+' button:'+!!document.getElementById('${mode==='phlt'?'expeditionOpen':'riftOpen'}'));`}
         showTab('skill');
-        showTab('more');renderMore();document.dispatchEvent(new KeyboardEvent('keydown',{key:'/',bubbles:true}));
-        if(document.activeElement!==document.getElementById('fieldSearchInput'))throw Error('Search keyboard shortcut failed');
+        showTab('skill');document.dispatchEvent(new KeyboardEvent('keydown',{key:'/',bubbles:true}));
+        if(curTab!=='more'||document.activeElement!==document.getElementById('fieldSearchInput'))throw Error('Global search keyboard shortcut failed');
         setUiPref({hand:'left'});if(!document.body.classList.contains('jxleft'))throw Error('Left-hand preference failed');setUiPref({hand:'right'});
         showTab('skill');
         return {mode:S.mode,width:${width},graphWidth:Math.round(rect.width),linkedModal:true,unsupportedVisible:true,fieldSearch:true};
