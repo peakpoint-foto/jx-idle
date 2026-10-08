@@ -39,28 +39,47 @@ for (const a of G.J.affix) {
 const LINE_SCALE_MAX = 1.18; // lineScale() trong loot.js tối đa 1 + 0.18
 const MAG_MAX = 6;
 
-function checkItem(it, slot, flags) {
+function checkItem(it, slot, flags, pending) {
   const where = `${slot}: ${String(it && it.n || "?").slice(0, 40)}`;
   if (!it || typeof it !== "object") return flags.push(["item_bad", where]);
   if (!G.modeItemOk(it, "ctc")) flags.push(["item_mode", `${where} vượt trần đồ Công Thành Chiến`]);
   const group = G.J.items[it.d];
   const row = group && group.list.find((r) => r.k === it.k && r.lvl === it.lvl);
   if (!row) return flags.push(["item_base", `${where} không có trong dữ liệu game`]);
-  for (const [id, mn, mx] of it.base || []) {
+  if (!Array.isArray(it.base)) return flags.push(["item_base", `${where} thiếu chỉ số gốc hợp lệ`]);
+  for (const b of it.base) {
+    if (!Array.isArray(b) || b.length < 3 || !Number.isFinite(+b[1]) || !Number.isFinite(+b[2])) {
+      flags.push(["item_base", `${where} có chỉ số gốc không phải số hữu hạn`]);
+      continue;
+    }
+    const [id, mn, mx] = b;
     const rb = row.base.find((b) => b[0] === id);
     if (!rb) flags.push(["item_base", `${where} có chỉ số gốc lạ (${id})`]);
     else if (Math.abs(mn) > Math.abs(rb[1]) + 0.5 || Math.abs(mx) > Math.abs(rb[2]) + 0.5)
       flags.push(["item_base", `${where} chỉ số gốc ${id} vượt khoảng ${rb[1]}–${rb[2]}`]);
   }
+  if (it.req != null && !Array.isArray(it.req)) flags.push(["item_base", `${where} có yêu cầu trang bị hỏng`]);
+  if ((it.mag != null && !Array.isArray(it.mag)) || (it.ext != null && !Array.isArray(it.ext)))
+    flags.push(["item_affix", `${where} có danh sách thuộc tính hỏng`]);
   const mag = Array.isArray(it.mag) ? it.mag : [];
   if (mag.length > MAG_MAX) flags.push(["item_affix", `${where} có ${mag.length} dòng thuộc tính`]);
-  for (const m of mag) {
+  const seen = new Set();
+  for (const m of mag.concat(Array.isArray(it.ext) ? it.ext : [])) {
+    if (!m || typeof m !== "object" || !Array.isArray(m.p) || !m.p.every(v => v === -1 || Number.isFinite(+v))) {
+      flags.push(["item_affix", `${where} có dòng thuộc tính không phải số hữu hạn`]);
+      continue;
+    }
+    if (seen.has(m.a)) flags.push(["item_affix", `${where} lặp thuộc tính ${m.a}`]);
+    seen.add(m.a);
+    if (G.isElementSkillAttr(G.attrName(m?.a)) && (!Number.isInteger(m?.p?.[0]) || m.p[0] < 0 || m.p[0] > 1))
+      pending.push(["item_policy_pending", `${where} có dòng cộng cấp kỹ năng hệ vượt +1; cần chuẩn hóa dữ liệu trước khi xếp hạng`]);
     const cap = AFFIX_MAX.get(m && m.a);
     const v = Math.abs(+(m && m.p && m.p[0]) || 0);
     if (cap === undefined) flags.push(["item_affix", `${where} có thuộc tính lạ (${m && m.a})`]);
     else if (v > cap * LINE_SCALE_MAX + 1) flags.push(["item_affix", `${where} thuộc tính ${m.a} = ${v} > ${Math.round(cap * LINE_SCALE_MAX)}`]);
   }
-  if ((it.enh | 0) > G.ENH_MAX) flags.push(["item_enh", `${where} cường hóa +${it.enh} > +${G.ENH_MAX}`]);
+  if (!Number.isInteger(it.enh || 0) || (it.enh | 0) < 0 || (it.enh | 0) > G.ENH_MAX)
+    flags.push(["item_enh", `${where} cường hóa +${it.enh} vượt giới hạn`]);
 }
 
 /* ---- Toàn bộ nhân vật ---- */
@@ -86,7 +105,11 @@ export function validateChar(state, playSec) {
   const flags = [];
   const pending = [];
   const lvl = Math.floor(state.lvl);
-  for (const [slot, it] of Object.entries(state.eq || {})) if (it) checkItem(it, slot, flags);
+  for (const [slot, it] of Object.entries(state.eq || {})) if (it) checkItem(it, slot, flags, pending);
+  if (!Array.isArray(state.inv)) flags.push(["item_container", "Hành trang không phải danh sách"]);
+  else state.inv.forEach((it, i) => checkItem(it, `inv[${i}]`, flags, pending));
+  if (state.ground != null && !Array.isArray(state.ground)) flags.push(["item_container", "Đồ trên đất không phải danh sách"]);
+  else if (Array.isArray(state.ground)) state.ground.forEach((drop, i) => checkItem(drop && drop.it, `ground[${i}]`, flags, pending));
 
   const attr = state.attr || {};
   const attrUsed = ["str", "dex", "vit", "eng"].reduce((s, k) => s + Math.max(0, +attr[k] || 0), 0) + Math.max(0, +state.attrPts || 0);
@@ -139,6 +162,7 @@ export const FLAG_TEXT = {
   item_base: "Trang bị vượt giới hạn",
   item_affix: "Thuộc tính trang bị vượt giới hạn",
   item_enh: "Cường hóa vượt giới hạn",
+  item_container: "Kho đồ không hợp lệ",
   attr_points: "Điểm tiềm năng vượt giới hạn",
   skill: "Kỹ năng vượt giới hạn",
   skill_points: "Điểm kỹ năng vượt giới hạn",

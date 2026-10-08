@@ -3,7 +3,7 @@
    Dữ liệu lưu trong RW() (S.rw): nh = sự kiện, sm = lệnh bài Triệu hồi. */
 
 /* ---------- Lệnh bài Triệu hồi: x3 số quái trong 30 phút ---------- */
-const SUMMON_P = .005;            // xác suất rơi mỗi quái hạ được (mọi loại quái)
+const SUMMON_P = .0005;           // 0,05% mỗi quái đủ điều kiện (1/2000)
 const SUMMON_MAX = 5;             // giữ tối đa 5 lệnh bài
 const SUMMON_MIN = 30, SUMMON_CAP_MIN = 60;   // mỗi lần dùng +30 phút, cộng dồn tối đa 60 phút
 const SUMMON_MUL = 3;
