@@ -72,3 +72,12 @@ test('CAS batch rollback leaves deterministic step/actions retryable; model/mode
   await f.DB.prepare("UPDATE chars SET snapshot=?1 WHERE account_id='party1'").bind(JSON.stringify({mode:'phlt'})).run();await assert.rejects(()=>q.get(id),{code:'session_mode_denied'});
   const s=JSON.parse((await f.DB.prepare('SELECT state FROM combat_sessions WHERE id=?1').bind(id).first()).state);s.model='future';await f.DB.prepare('UPDATE combat_sessions SET state=?2 WHERE id=?1').bind(id,JSON.stringify(s)).run();f.tick(250);await assert.rejects(()=>p.get(id),{code:'session_model_changed'});
 });
+test('create receipt survives terminal state and expiry releases all roster locks before a new session',async t=>{
+  const f=await fixture(t),[p,q]=f.players,key='retryable_create_0123456';
+  const first=await p.post({action:'create',id:key});await f.forceBoss(first.session.id,1);f.tick(250);assert.equal((await p.get(key)).session.status,'completed');
+  const retried=await p.post({action:'create',id:key});assert.equal(retried.session.id,key);assert.equal(retried.session.status,'completed');
+  await assert.rejects(()=>q.post({action:'create',id:key}),{code:'session_leader_required'});
+  const second=await f.start();f.tick(301000);await p.get(second.session.id);
+  assert.equal((await f.DB.prepare('SELECT COUNT(*) n FROM session_members WHERE active=1').first()).n,0);
+  await p.lobby({action:'heartbeat'});await q.lobby({action:'heartbeat'});await p.lobby({action:'ready',ready:true});await q.lobby({action:'ready',ready:true});const third=await f.start();assert.notEqual(third.session.id,second.session.id);
+});

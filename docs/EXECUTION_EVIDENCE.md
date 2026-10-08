@@ -1,6 +1,10 @@
 # Evidence thực thi
 
-Baseline HEAD 68124fe, nhánh feat/online-multiplayer. Ngày08/10/2026 (Asia/Saigon), người dùng yêu cầu dừng triển khai và commit/push checkpoint với tiến độ27/43task DONE local,16task còn mở. Xem SESSION_CHECKPOINT.md; SHA/kết quả push đối chiếu lịch sử Git và báo cáo cuối. Chưa deploy, chưa có PR URL xác nhận.
+Baseline HEAD68124fe, nhánh feat/online-multiplayer. Lệnh mới08/10/2026 (Asia/Saigon) tiếp tục toàn backlog từ27task; hiện29/43 DONE local sau C05/G02. PR https://github.com/peakpoint-foto/jx-idle/pull/19; CI push37764665755/PR37764672297 xanh tại9e54e66. Chưa deploy production. Đoạn checkpoint/historical phía dưới giữ số liệu đúng thời điểm, không thay snapshot mới.
+
+C05 DONE local:250/250 full tests,38/38 D1,6mode/viewport browser regression và demo hai context browser tách storage dùng D1/HTTP thật. Boss thật hoàn thành, lost-ack command retry1row, reload reconnect và mỗi người1receipt khi claim lặp. Party engine parity10phái ×2/4actor, DOT attribution/useful clip; migration0001–0007 lặp2lần. PARTY_SESSIONS.md ghi load120s/2và4người, SQL/rows/bytes/p50/p95 thực đo và budget units; SESSION_TRANSPORT_ADR.md chọn polling1s/D1, ghi rõ chưa đo DO/production. C05 chưa mở PHLT/g2 account hoặc deploy.
+
+G02 DONE local:256/256 full tests,38/38 D1 regression; RIFT.md và6test riêng, bao gồm native5stage completion với build phân bổ điểm hợp lệ và pure stats/damage parity10phái. Browser6mode/viewport kiểm tra UIchoice/native step/pause/resume/exit/assets/touch/flag/mode; không dùng forced kill để chứng minh native full run. Combat/eq/skill/world/shop/quota không bị đổi bởi modifiers sau exit, storage/reload/future guard đã kiểm chứng.
 
 ## F01–F07
 

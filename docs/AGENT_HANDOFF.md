@@ -2,11 +2,11 @@
 
 Đọc [backlog](AGENT_BACKLOG.md) và [TODO](AGENT_TODO.md) trước khi nhận task. Đây là kế hoạch, không phải lệnh làm mọi tính năng ngay hoặc tự deploy.
 
-**Người dùng đã yêu cầu DỪNG ngày08/10/2026 (Asia/Saigon), cập nhật Markdown và commit/push checkpoint.** Không tiếp tục triển khai tự động. Tiến độ27/43 nghiệm thu local; C05 đang dở, O04 thiếu release gates. [SESSION_CHECKPOINT.md](SESSION_CHECKPOINT.md) ghi phần đã có và phần thiếu; chỉ tiếp tục khi có lệnh mới.
+**Người dùng đã giao lệnh mới tiếp tục từ27task đến toàn backlog ngày08/10/2026 (Asia/Saigon).** Trạng thái ACTIVE; C05 đang triển khai, O04 thiếu release gates remote. [SESSION_CHECKPOINT.md](SESSION_CHECKPOINT.md) giữ lịch sử checkpoint và PR. Thực hiện theo phụ thuộc; không tự deploy production.
 
 ## Bối cảnh cần giữ
 
-Baseline tài liệu: `68124fe`, branch `feat/online-multiplayer`. Agent kiểm tra trạng thái mới thay vì reset về baseline. PR chưa có URL xác nhận.
+Baseline tài liệu: `68124fe`, branch `feat/online-multiplayer`; checkpoint hiện tại `9e54e66`, PR https://github.com/peakpoint-foto/jx-idle/pull/19. Agent kiểm tra trạng thái mới thay vì reset về baseline.
 Game dùng script cổ điển và state global; nhiều file bị minify thành một dòng. Không format/rewrite toàn bộ file để sửa một hàm. Tách module chỉ khi cần, giữ thứ tự load.
 Nguồn luật mode: `js/modes.js`; gameplay: `js/stats.js`, `js/combat.js`; UI: `js/ui.js`, `js/jxorig.js`, `js/uihub.js`; save: `js/save.js`; online: `worker/src/`, `js/online.js`.
 Fixture hiện có: `test/helpers/game.mjs`. Worker build có danh sách script riêng trong `worker/build-game.mjs`; thêm helper gameplay phải kiểm tra cả browser và Worker.

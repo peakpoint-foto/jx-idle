@@ -1,11 +1,11 @@
 # TODO bàn giao agent — Võ Lâm Idle
 
 Nguồn đặc tả: [AGENT_BACKLOG.md](AGENT_BACKLOG.md). Ngày: 08/10/2026 (Asia/Saigon).
-Tiến độ thực thi: 27/43 task (F01–F07, B01–B05, G01/G03, E01/E02/E04, R01, O02, C01–C04, P01/P02/P03/P04) đã nghiệm thu local; 16 task còn lại chưa hoàn thành. F02 dùng nhánh unsupported được backlog cho phép, không tuyên bố khôi phục 15 target thiếu. Không ghi nhận mục tiêu 100% hoặc đủ điều kiện public online. Xem [evidence](EXECUTION_EVIDENCE.md) và [mapping còn thiếu](SKILL_AUDIT.md). Các đợt là nhóm phạm vi, không phải cam kết thời gian; phụ thuộc quyết định thứ tự thực tế.
+Tiến độ thực thi: 29/43 task (F01–F07, B01–B05, G01/G02/G03, E01/E02/E04, R01, O02, C01–C05, P01/P02/P03/P04) đã nghiệm thu local; 14 task còn lại chưa hoàn thành. F02 dùng nhánh unsupported được backlog cho phép, không tuyên bố khôi phục 15 target thiếu. Không ghi nhận mục tiêu 100% hoặc đủ điều kiện public online. Xem [evidence](EXECUTION_EVIDENCE.md) và [mapping còn thiếu](SKILL_AUDIT.md). Các đợt là nhóm phạm vi, không phải cam kết thời gian; phụ thuộc quyết định thứ tự thực tế.
 
 ## Trạng thái và cách nhận
 
-**PAUSED theo yêu cầu người dùng ngày08/10/2026 (Asia/Saigon): dừng triển khai và chốt commit/push.** Không tự nhận task mới hoặc tiếp tục C05/O04. Xem [SESSION_CHECKPOINT.md](SESSION_CHECKPOINT.md); 27/43 DONE local,16task còn mở.
+**ACTIVE theo lệnh mới ngày08/10/2026 (Asia/Saigon): tiếp tục từ27task để thực hiện toàn backlog.** C05/G02 DONE local; 29/43 DONE local,14task còn mở. Lệnh mới thay trạng thái PAUSED trước đó; rollout production vẫn cần lệnh deploy riêng.
 
 - `[ ]`: chưa xong. Ghi `IN_PROGRESS` cạnh task khi nhận; vẫn để ô trống.
 - `[x]`: đạt toàn bộ nghiệm thu và đã ghi evidence; không dùng cho task chỉ mới viết code.
@@ -51,7 +51,7 @@ Tiến độ thực thi: 27/43 task (F01–F07, B01–B05, G01/G03, E01/E02/E04,
 - [x] **P02** Vật tư, địa hình và rút lui — P1, phlt; phụ thuộc: P01,F04,B05. Evidence: EXPEDITION_TRAVEL.md; 7 case, browser hai viewport; supplies/cost/terrain/rest/path/pursuit/receipt/rollback/flags/future guards.
 - [x] **P03** Chọn đường, hợp đồng rủi ro và đồ sinh tồn — P1, phlt; phụ thuộc: P02,B03. Evidence: EXPEDITION_ROUTES.md; 5 case (10 phái), Chromium hai viewport; native caps/atomic fee/frozen route/future/flag/reward guards.
 - [x] **P04** Tiến trình tri thức và nhật ký chuyến đi — P2, phlt; phụ thuộc: P03,F05. Evidence: EXPEDITION_KNOWLEDGE.md; 4 case, Chromium hai viewport; finite/no-stat/abort guards, atomic reward/meta retry and migration.
-- [ ] **G02** Bí cảnh biến chiêu roguelike — P1, g2; phụ thuộc: F04,F05,F07,G01.
+- [x] **G02** Bí cảnh biến chiêu roguelike — P1, g2; phụ thuộc: F04,F05,F07,G01. Evidence: RIFT.md; native5chặng,6case/10phái stats+damage parity, pause/retry/reload/future guards, Chromium mobile/desktop và mode denial. Modifiers session-only, no ranked reward.
 - [ ] **G05** Tiến trình thử nhiều build — P2, g2; phụ thuộc: G02,G03,F05.
 - [x] **E02** Tái chế, chế tạo và chỉnh thuộc tính — P1, shared capability riêng; phụ thuộc: E01,F05. Evidence: SAFE_WORKBENCH.md; 7 case, Chromium PHLT/g2 mobile/desktop, CTC denied; pure preview/native caps/receipt/atomic retry/locked/equipped guards.
 - [x] **E04** Ledger tài nguyên và cân bằng sink/source — P1, shared; online economy riêng; phụ thuộc: F06,F07,E02. Evidence: RESOURCE_ECONOMY.md; 3 client +4 SQLite/D1 cases; ledger/wallet/donation/rollback/UTC/rejoin quota and browser ack-loss nonce.
@@ -59,7 +59,7 @@ Tiến độ thực thi: 27/43 task (F01–F07, B01–B05, G01/G03, E01/E02/E04,
 
 ### Đợt 3 — chơi chung và tiến trình dài hạn
 
-- [ ] **C05** Server quản lý phiên trận và phần thưởng — P0 gate multiplayer, ctc đầu, phlt/g2 qua capability riêng; phụ thuộc: F04,F05,F06,F07,C04. PAUSED — có shared engine/server CAS/actions/receipts/migration0007 và5backend cases; thiếu ADR, client UI/demo hai browser, parity/cost/CI và nghiệm thu đầy đủ. Xem SESSION_CHECKPOINT.md.
+- [x] **C05** Server quản lý phiên trận và phần thưởng — P0 gate multiplayer, ctc đầu, phlt/g2 qua capability riêng; phụ thuộc: F04,F05,F06,F07,C04. Evidence: PARTY_SESSIONS.md, SESSION_TRANSPORT_ADR.md; UI thật/hai browser context/API-D1, parity10phái, nonce/CAS/expiry/receipt, migration0007/CI và load2/4người. Không đóng O04 remote bằng kết quả local.
 - [ ] **C06** Phụ bản tổ đội đầu tiên — P2, ctc; phụ thuộc: C01,C04,C05.
 - [ ] **C07** Công thành và Tống Kim theo mục tiêu — P2, ctc; phụ thuộc: C02,C05,C06.
 - [ ] **C08** Mùa xếp hạng và hậu cần bất đồng bộ — P2, ctc; phụ thuộc: C03,C05,C07.
@@ -109,7 +109,7 @@ O04 có thể chuẩn bị CI local ngay; trạng thái hoàn tất toàn task v
 
 ## Nhật ký nhận việc
 
-27 task DONE local — Codex / feat/online-multiplayer: F01–F07, B01–B05, G01/G03, E01/E02/E04, R01, O02, C01–C04, P01–P04. C05 và O04 PAUSED theo lệnh người dùng; xem SESSION_CHECKPOINT.md. O04 có CI local và release handoff; chưa có staging/rollout/rollback/host CI, không đóng checkbox chỉ bằng local.
+27 task DONE local — Codex / feat/online-multiplayer: F01–F07, B01–B05, G01/G03, E01/E02/E04, R01, O02, C01–C04, P01–P04. C05 IN_PROGRESS theo lệnh tiếp tục; sở hữu js/online_sessions.js, worker/src/sessions.js, shared engine, migration/CI/parity/browser/load tests và docs. O04 có host CI xanh tại9e54e66 (push37764665755/PR37764672297); còn staging/rollout/rollback remote, không đóng checkbox chỉ bằng CI.
 
 | Task | Trạng thái | Agent / nhánh | File sở hữu | Evidence / blocker |
 |---|---|---|---|---|

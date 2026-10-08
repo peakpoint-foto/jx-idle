@@ -32,8 +32,9 @@ jobs:
             if curl -fsS http://127.0.0.1:9229/json/version > /dev/null && curl -fsS http://127.0.0.1:8088/ > /dev/null; then break; fi
             sleep 1
           done
-          if node scripts/browser-smoke.mjs > /tmp/jx-browser-results.json 2> /tmp/jx-browser-smoke.err; then
+          if node scripts/browser-smoke.mjs > /tmp/jx-browser-results.json 2> /tmp/jx-browser-smoke.err && JX_D1_RUNTIME=1 node scripts/session-browser-smoke.mjs > /tmp/jx-session-browser-results.json 2>> /tmp/jx-browser-smoke.err; then
             cat /tmp/jx-browser-results.json
+            cat /tmp/jx-session-browser-results.json
           else
             cat /tmp/jx-browser-smoke.err >&2
             python3 - <<'PY'
@@ -55,4 +56,5 @@ jobs:
             /tmp/jx-browser.log
             /tmp/jx-browser-results.json
             /tmp/jx-browser-smoke.err
+            /tmp/jx-session-browser-results.json
           if-no-files-found: ignore

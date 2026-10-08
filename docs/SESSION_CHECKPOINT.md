@@ -1,5 +1,7 @@
 # C05 — Checkpoint tạm dừng, chưa nghiệm thu
 
+**Lệnh mới ngày08/10/2026 (Asia/Saigon): tiếp tục triển khai từ27task đến toàn backlog. C05 IN_PROGRESS; đoạn PAUSED dưới đây là lịch sử.** CI push37764665755 và PR37764672297 đã xanh tại9e54e66 sau sửa navigation smoke. Không tự deploy production.
+
 Ngày 08/10/2026 (Asia/Saigon). Người dùng yêu cầu **dừng triển khai, cập nhật Markdown, commit và push**. Không tiếp tục tính năng cho tới lệnh mới.
 
 Tiến độ chung: **27/43 task nghiệm thu local; 16 task còn mở**. C05 và O04 chỉ có phần triển khai, không tính DONE. Các feature nâng cao mặc định tắt; chưa deploy hoặc mở public online.
