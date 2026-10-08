@@ -121,7 +121,10 @@ export async function heartbeat(req, env) {
     const r = await env.DB.prepare(
       "UPDATE accounts SET play_sec=?2,off_t0=?3,off_sec=?4,last_hb=?5 WHERE id=?1 AND last_hb IS ?6"
     ).bind(acc.id, t.play_sec, t.off_t0, t.off_sec, t.last_hb, acc.last_hb ?? null).run();
-    if (r.meta.changes) return { play_sec: Math.floor(t.play_sec) };
+    if (r.meta.changes) {
+      const now = Date.now();
+      return { play_sec: Math.floor(t.play_sec), server_now: now, utc_week: Math.floor((now / 864e5 + 3) / 7) };
+    }
     acc = await auth(req, env);
   }
   throw new HttpError(409, "heartbeat_conflict", "Heartbeat đồng thời, thử lại sau");
