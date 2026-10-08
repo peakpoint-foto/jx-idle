@@ -119,7 +119,7 @@ test("an in-flight activity reload is interrupted without refunding its entry", 
 
 test("2.0 Kinh thành guaranteed set is once per UTC week", () => {
   const g = game();
-  g.run("fixture('g2',60);jrAdd=()=>{};S.siege={city:'kinh',layer:3,score:0,kills:0,pots:0};siegeExit(false,true);S.siege={city:'kinh',layer:3,score:0,kills:0,pots:0};siegeExit(false,true)");
+  g.run("fixture('g2',60);S.siege={city:'kinh',layer:3,score:0,kills:0,pots:0};siegeExit(false,true);S.siege={city:'kinh',layer:3,score:0,kills:0,pots:0};siegeExit(false,true)");
   assert.equal(g.run("RW().siege.g2Golden.w"), g.run("weekKey()"));
   assert.equal(g.run("RW().stat.goldBoss"), 0);
 });

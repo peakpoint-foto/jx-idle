@@ -2,6 +2,15 @@
 // nên deploy không cần bước "d1 migrations apply" riêng. Bản SQL tham chiếu: migrations/0001_init.sql.
 
 export const SCHEMA = [
+  `CREATE TABLE IF NOT EXISTS combat_sessions(id TEXT PRIMARY KEY,room_id TEXT NOT NULL,creator_id TEXT NOT NULL,created_at INTEGER NOT NULL,expires_at INTEGER NOT NULL,state TEXT NOT NULL,status TEXT NOT NULL,revision INTEGER NOT NULL DEFAULT 1,ended_at INTEGER)`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS combat_sessions_room_active ON combat_sessions(room_id) WHERE status='active'`,
+  `CREATE TABLE IF NOT EXISTS session_members(session_id TEXT NOT NULL,account_id TEXT NOT NULL,active INTEGER NOT NULL DEFAULT 1,withdrawn INTEGER NOT NULL DEFAULT 0,last_seen INTEGER NOT NULL,connected_from INTEGER NOT NULL,last_seq INTEGER NOT NULL DEFAULT 0,PRIMARY KEY(session_id,account_id))`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS session_members_active ON session_members(account_id) WHERE active=1`,
+  `CREATE TABLE IF NOT EXISTS session_actions(id TEXT PRIMARY KEY,session_id TEXT NOT NULL,account_id TEXT NOT NULL,seq INTEGER NOT NULL,scheduled_tick INTEGER NOT NULL,kind TEXT NOT NULL,target TEXT NOT NULL,payload TEXT NOT NULL,created_at INTEGER NOT NULL,applied INTEGER NOT NULL DEFAULT 0,UNIQUE(session_id,account_id,seq),UNIQUE(session_id,account_id,scheduled_tick))`,
+  `CREATE INDEX IF NOT EXISTS session_actions_pending ON session_actions(session_id,applied,scheduled_tick)`,
+  `CREATE TABLE IF NOT EXISTS session_rewards(session_id TEXT NOT NULL,account_id TEXT NOT NULL,amount INTEGER NOT NULL,day TEXT NOT NULL,created_at INTEGER NOT NULL,PRIMARY KEY(session_id,account_id))`,
+  `CREATE TABLE IF NOT EXISTS resource_ledger(account_id TEXT NOT NULL,mode TEXT NOT NULL,asset TEXT NOT NULL,request_id TEXT NOT NULL,source TEXT NOT NULL,delta INTEGER NOT NULL,day TEXT NOT NULL,created_at INTEGER NOT NULL,payload TEXT,guild_id TEXT,PRIMARY KEY(account_id,mode,asset,request_id))`,
+  `CREATE INDEX IF NOT EXISTS resource_ledger_day ON resource_ledger(account_id,mode,asset,day)`,
   `CREATE TABLE IF NOT EXISTS accounts(
     id TEXT PRIMARY KEY,
     token_hash TEXT NOT NULL UNIQUE,
@@ -86,6 +95,7 @@ export const SCHEMA = [
   )`,
   `CREATE INDEX IF NOT EXISTS duels_challenger ON duels(challenger_id, created_at)`,
   `CREATE INDEX IF NOT EXISTS duels_defender ON duels(defender_id, created_at)`,
+  `CREATE TABLE IF NOT EXISTS duel_meta(duel_id TEXT PRIMARY KEY,kind TEXT NOT NULL,rules_version TEXT NOT NULL,combat_version TEXT NOT NULL,challenger_rev INTEGER NOT NULL,defender_rev INTEGER NOT NULL)`,
   `CREATE TABLE IF NOT EXISTS duel_scores(
     account_id TEXT NOT NULL,
     season TEXT NOT NULL,
@@ -120,6 +130,11 @@ export const SCHEMA = [
     PRIMARY KEY(guild_id, account_id)
   )`,
   `CREATE UNIQUE INDEX IF NOT EXISTS guild_member_account ON guild_members(account_id)`,
+  `CREATE TABLE IF NOT EXISTS guild_receipts(account_id TEXT NOT NULL,request_id TEXT NOT NULL,guild_id TEXT NOT NULL,action TEXT NOT NULL,payload TEXT NOT NULL,created_at INTEGER NOT NULL,PRIMARY KEY(account_id,request_id))`,
+  `CREATE TABLE IF NOT EXISTS guild_logs(account_id TEXT NOT NULL,request_id TEXT NOT NULL,guild_id TEXT NOT NULL,action TEXT NOT NULL,target_id TEXT,created_at INTEGER NOT NULL,PRIMARY KEY(account_id,request_id))`,
+  `CREATE INDEX IF NOT EXISTS guild_logs_recent ON guild_logs(guild_id,created_at)`,
+  `CREATE TABLE IF NOT EXISTS guild_calendar(id TEXT PRIMARY KEY,guild_id TEXT NOT NULL,actor_id TEXT NOT NULL,title TEXT NOT NULL,activity TEXT NOT NULL,starts_at INTEGER NOT NULL,cancelled INTEGER NOT NULL DEFAULT 0)`,
+  `CREATE INDEX IF NOT EXISTS guild_calendar_next ON guild_calendar(guild_id,starts_at)`,
   `CREATE TABLE IF NOT EXISTS rooms(
     id TEXT PRIMARY KEY,
     owner_id TEXT NOT NULL,
@@ -141,6 +156,17 @@ export const SCHEMA = [
   )`,
   `CREATE UNIQUE INDEX IF NOT EXISTS room_member_account ON room_members(account_id)`,
   `CREATE INDEX IF NOT EXISTS room_members_seen ON room_members(room_id, last_seen)`,
+  `CREATE TABLE IF NOT EXISTS friendships(a TEXT NOT NULL,b TEXT NOT NULL,requester TEXT NOT NULL,status TEXT NOT NULL,expires_at INTEGER NOT NULL,created_at INTEGER NOT NULL,PRIMARY KEY(a,b))`,
+  `CREATE INDEX IF NOT EXISTS friendships_recipient ON friendships(b,status,expires_at)`,
+  `CREATE TABLE IF NOT EXISTS room_invites(id TEXT PRIMARY KEY,room_id TEXT NOT NULL,sender_id TEXT NOT NULL,recipient_id TEXT NOT NULL,status TEXT NOT NULL DEFAULT 'pending',created_at INTEGER NOT NULL,expires_at INTEGER NOT NULL)`,
+  `CREATE INDEX IF NOT EXISTS room_invites_recipient ON room_invites(recipient_id,status,expires_at)`,
+  `CREATE TABLE IF NOT EXISTS lobby_rooms(room_id TEXT PRIMARY KEY,objective TEXT NOT NULL DEFAULT 'farm',revision INTEGER NOT NULL DEFAULT 1)`,
+  `CREATE TABLE IF NOT EXISTS lobby_members(room_id TEXT NOT NULL,account_id TEXT NOT NULL,role TEXT NOT NULL DEFAULT 'damage',ready INTEGER NOT NULL DEFAULT 0,PRIMARY KEY(room_id,account_id))`,
+  `CREATE TABLE IF NOT EXISTS boss_receipts(
+    account_id TEXT NOT NULL,request_id TEXT NOT NULL,guild_id TEXT NOT NULL,
+    week TEXT NOT NULL,day TEXT NOT NULL,damage INTEGER NOT NULL,created_at INTEGER NOT NULL,
+    PRIMARY KEY(account_id,request_id)
+  )`,
 ];
 
 // Cột thêm sau lần phát hành đầu: ALTER chạy riêng, bỏ qua lỗi "duplicate column" khi đã có.
@@ -154,9 +180,10 @@ const COLUMNS = [
   "ALTER TABLE chars ADD COLUMN sync_rev INTEGER NOT NULL DEFAULT 1",
 ];
 
-let ready = null;
+const readyByDatabase = new WeakMap();
 
 export function ensureSchema(db) {
+  let ready = readyByDatabase.get(db);
   if (!ready) {
     ready = db
       .batch(SCHEMA.map((s) => db.prepare(s)))
@@ -169,9 +196,10 @@ export function ensureSchema(db) {
         await db.prepare("CREATE UNIQUE INDEX IF NOT EXISTS chars_character_id ON chars(character_id) WHERE character_id IS NOT NULL").run();
       })
       .catch((e) => {
-        ready = null;
+        readyByDatabase.delete(db);
         throw e;
       });
+    readyByDatabase.set(db, ready);
   }
   return ready;
 }

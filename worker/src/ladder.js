@@ -2,39 +2,31 @@
 import { HttpError } from "./http.js";
 import { validateChar, BRACKETS, FLAG_TEXT } from "./validate.js";
 
-  // Kiểm định rồi lưu lực chiến, bậc và trạng thái. Cờ giữ nguyên cho tới khi quản trị gỡ,
-// để không thể gian lận rồi xóa dấu vết bằng một lần đồng bộ sạch.
-export async function applyValidation(env, accId, state, playSec) {
+// Validation must belong to the same snapshot revision. Each batch is atomic;
+// stale requests cannot overwrite newer power or insert flags for an old save.
+export async function applyValidation(env, accId, state, playSec, revision = null) {
   const r = validateChar(state, playSec);
   const now = Date.now();
-  const active = await env.DB.prepare("SELECT code FROM flags WHERE account_id=?1 AND cleared_at IS NULL").bind(accId).all();
-  const have = new Set(active.results.map((x) => x.code));
-  const fresh = [];
-  for (const [code, detail] of r.flags) if (!have.has(code)) { have.add(code); fresh.push([code, detail]) }
-  const stmts = fresh.map(([code, detail]) =>
-    env.DB.prepare("INSERT INTO flags(account_id,code,detail,at) VALUES(?1,?2,?3,?4)").bind(accId, code, String(detail).slice(0, 300), now)
+  const stmts = r.flags.map(([code, detail]) =>
+    env.DB.prepare(`INSERT INTO flags(account_id,code,detail,at)
+      SELECT ?1,?2,?3,?4 WHERE EXISTS(
+        SELECT 1 FROM chars WHERE account_id=?1 AND (?5 IS NULL OR sync_rev=?5))
+      AND NOT EXISTS(SELECT 1 FROM flags WHERE account_id=?1 AND code=?2 AND cleared_at IS NULL)`)
+      .bind(accId, code, String(detail).slice(0,300), now, revision)
   );
-  stmts.push(
-    env.DB.prepare("UPDATE chars SET power=?2,bracket=?3,flagged=?4,validation_status=?5,validation_note=?6 WHERE account_id=?1").bind(
-      accId,
-      r.power,
-      r.pending.length || have.size ? null : r.bracket ? r.bracket.k : null,
-      have.size ? 1 : 0,
-      have.size ? "flagged" : r.pending.length ? "pending_verification" : "verified",
-      r.pending.map(([, detail]) => detail).join("; ") || null
-    )
-  );
+  stmts.push(env.DB.prepare(`UPDATE chars SET power=?2,
+    bracket=CASE WHEN ?4=1 OR EXISTS(SELECT 1 FROM flags WHERE account_id=?1 AND cleared_at IS NULL) THEN NULL ELSE ?3 END,
+    flagged=EXISTS(SELECT 1 FROM flags WHERE account_id=?1 AND cleared_at IS NULL),
+    validation_status=CASE WHEN EXISTS(SELECT 1 FROM flags WHERE account_id=?1 AND cleared_at IS NULL)
+      THEN 'flagged' WHEN ?4=1 THEN 'pending_verification' ELSE 'verified' END,
+    validation_note=?5 WHERE account_id=?1 AND (?6 IS NULL OR sync_rev=?6)`)
+    .bind(accId, r.power, r.bracket ? r.bracket.k : null, r.pending.length ? 1 : 0,
+      r.pending.map(([, detail])=>detail).join("; ") || null, revision));
   await env.DB.batch(stmts);
-  return {
-    power: r.power,
-    bracket: r.pending.length || have.size ? null : r.bracket ? r.bracket.k : null,
-    flagged: have.size > 0,
-    validation_status: have.size ? "flagged" : r.pending.length ? "pending_verification" : "verified",
-    validation_note: r.pending.map(([, detail]) => detail).join("; ") || null,
-    flags: [...have],
-  };
+  const row = await env.DB.prepare("SELECT power,bracket,flagged,validation_status,validation_note FROM chars WHERE account_id=?1").bind(accId).first();
+  const flags = await env.DB.prepare("SELECT code FROM flags WHERE account_id=?1 AND cleared_at IS NULL").bind(accId).all();
+  return { ...row, flagged: !!row.flagged, flags: flags.results.map(x=>x.code) };
 }
-
 export async function ladder(req, env, body, url) {
   const b = url.searchParams.get("b") || "so";
   if (!BRACKETS.some((x) => x.k === b)) throw new HttpError(400, "bad_bracket");

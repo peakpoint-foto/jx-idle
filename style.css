@@ -243,6 +243,10 @@ body.mob #app{transform:scale(.8);transform-origin:0 0;width:125vw!important;hei
 
 /* cong / rut diem / thong tin */
 .pm{display:inline-flex;gap:4px} .pm button{width:28px}
+.build-profile-row{grid-template-columns:minmax(0,1fr) auto}
+.build-profile-actions{display:flex;flex-wrap:wrap;gap:4px;max-width:150px}
+#t-skill .build-profile-actions .btn{min-width:44px!important;min-height:44px!important;height:44px!important;box-sizing:border-box!important}
+@media(max-width:400px){.build-profile-row{grid-template-columns:1fr}.build-profile-actions{max-width:none}}
 .minus{width:28px;height:26px;border-radius:5px;border:1px solid #a55;color:#f88;background:#2e2222;font-weight:700}
 .minus:disabled{opacity:.35}
 .skinfo{width:28px;height:26px;border-radius:5px;border:1px solid var(--line2);color:var(--dim);background:#1b2420;font-style:italic}
@@ -318,3 +322,32 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 .element-tip i{flex:none;color:#f3d35b;font-style:normal}
 .element-tip:hover,.element-tip:focus-visible{border-color:#f3d35b;background:#18271e}
 @media(max-width:600px){.element-tip{align-items:flex-start;flex-wrap:wrap}.element-tip span{flex-basis:100%;order:3}.element-tip i{margin-left:auto}}
+/* Encounter warning remains compact; details expand only on player input. */
+#phaseBossHud{position:absolute;left:8px;right:8px;top:100px;z-index:4;max-width:460px;margin:0 auto;background:#161c20e8;font-size:12px}
+#phaseBossHud summary{min-height:44px;padding:4px;cursor:pointer}
+#phaseBossHud .btn{min-height:44px!important}
+.guild-management{min-width:0;overflow-wrap:anywhere}
+.gm-member{display:grid;gap:6px;padding:8px 0;border-bottom:1px solid var(--line)}
+.gm-actions{display:flex;flex-wrap:wrap;gap:6px}
+#onlGuildPanel .guild-management .btn{min-width:44px!important;min-height:44px!important}
+/* Duel choices remain usable on narrow screens. */
+#onlDuelPanel .btnrow{flex-wrap:wrap}
+#onlDuelPanel .btn,#onlDuelPanel input,#onlDuelPanel select{min-height:44px!important}
+#onlDuelList .qrow{flex-wrap:wrap}
+#onlDuelList .qrow>span{min-width:0;flex:1 1 180px;overflow-wrap:anywhere}
+#onlDuelList small{display:block;overflow-wrap:anywhere}
+#onlRoomPanel .btnrow,#onlRoomPanel .qrow{flex-wrap:wrap}
+#onlRoomPanel .btn,#onlRoomPanel input,#onlRoomPanel select,#onlRoomPanel summary{min-height:44px!important}
+#onlRoomPanel .qrow>span{flex:1 1 160px;min-width:0;overflow-wrap:anywhere}
+#onlRoomPanel small{display:block;overflow-wrap:anywhere}
+#expeditionHud{position:absolute;left:8px;right:8px;top:100px;z-index:4;max-width:460px;margin:0 auto;background:#161c20e8;font-size:12px}
+#expeditionHud .btn,#expeditionHud summary{min-height:44px!important}
+#expKnowledge summary,#expRoute{min-height:44px!important}
+#expKnowledge{min-width:0;overflow-wrap:anywhere}
+#expRoutePreview{overflow-wrap:anywhere}
+#wbItems{display:grid;gap:8px;min-width:0;overflow-wrap:anywhere}
+#wbItems label{display:flex;align-items:center;gap:8px;min-height:44px}
+#wbKind,#wbHt,#wbKey,#wbPreview,#wbConfirm,#wbRetry,#wbDiscard{min-height:44px!important;max-width:100%}
+#wbResult{overflow-wrap:anywhere}
+#wbQuantity{min-height:44px!important;max-width:100%}
+#econCollect,#econAmount,#econDonate{min-height:44px!important;max-width:100%}

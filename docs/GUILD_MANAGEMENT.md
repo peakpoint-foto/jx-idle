@@ -1,0 +1,11 @@
+# C02 — Bang online và quyền quản lý
+
+guild_management default-off chỉ CTC online, bên cạnh guild_online MVP hiện có. Không đụng bang local. Role owner/officer/member: owner chuyển quyền/promote/demote/kick; officer chỉ kick member và quản lý lịch, không kick owner/officer hoặc tự nâng quyền. Quyền/target cùng bang được kiểm tra trong transaction, không tin nút UI hoặc contribution tự khai.
+
+Owner leave tự chọn officer trước, rồi joined_at/account_id nhỏ nhất trong thành viên còn lại. Member role và guild.owner_id cập nhật cùng batch; transfer/leave race giữ một owner. Owner cuối cùng rời xóa bang trống và calendar, không xóa account/character; UI hỏi xác nhận trước giải tán/chuyển/kick. Retry cùng request_id/payload trả receipt, không chạy lại; reuse ID với payload khác trả409. Client giữ nonce khi offline/timeout và chặn hai mutation pending; không auto retry.
+
+Migration0003 additive tạo guild_receipts, guild_logs, guild_calendar/indexes; không sửa member/role cũ. Logs API chỉ thành viên cùng bang, tối đa40 hàng gần nhất; receipts/logs chưa có purge định kỳ để giữ idempotency, cần chính sách retention vận hành trong O03/O04. Lịch tối đa10 tương lai, start từ+1phút đến90ngày; title80 ký tự, activity boss/siege/TK allowlist. Hủy có receipt. Lịch chỉ hẹn, không cấp quota/reward hoặc đăng ký trận. UI input/display giờ Việt Nam, UTC milliseconds trên server; title/names escape HTML.
+
+Nguồn contribution: weekly_damage/boss receipt từ power snapshot đã kiểm định do server tính; không phải live combat C05. Resource donate vẫn disabled đến ledger E04. Flag off giữ dữ liệu; legacy member leave vẫn dùng được, advanced owner/role/calendar operations đóng. API account CTC guard giữ nguyên.
+
+4 integration case SQLite và D1 runtime: role/cross-guild/receipt retry, owner transfer-leave race/sole owner, calendar cap/retry/cancel, flag/migration preservation/verified contribution. Client test nonce retry/distinct operation/busy. npm test175/175 pass; npm run test:d1 17/17 pass thực qua Miniflare/workerd (11 invariants+4 guild+2 feedback). Browser CTC mobile/desktop quyền/lịch/Vietnam timezone/escape/touch; mode khác denied. UI browser dùng local API stub, SQL separately real D1. Không production/deploy.

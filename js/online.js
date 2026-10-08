@@ -91,6 +91,7 @@ async function onlSync(quiet, force = false) {
 async function onlRefreshMe() {
   if (!onlGet()) return null;
   try {
+    try { const cfg = await onlApi("/config?mode=" + encodeURIComponent(modeId()), { auth: false }); setFeatureFlags(cfg.feature_flags); } catch (e) {}
     const me = await onlApi("/me");
     if (me && me.char && me.char.character_id && S.cid && me.char.character_id !== S.cid) {
       onlSet(null); ONL.me = null;
@@ -171,51 +172,77 @@ async function onlShowProfile(name) {
 async function onlRenderDuels() {
   const box = document.getElementById("onlDuelList");
   if (!box || !onlGet()) return;
+  if (!featureEnabled("async_duels")) { box.textContent = "Đấu trường đang tạm đóng"; return; }
   try {
     const d = await onlApi("/duels");
     const score = d.score || {};
-    box.innerHTML = `<small class="dim">Mùa ${esc(d.season)} · ${score.points || 0} điểm · thắng ${score.wins || 0} · thua ${score.losses || 0}</small>` +
-      (d.duels.length ? d.duels.slice(0, 8).map(x => `<div class="qrow"><span><b>${esc(x.direction === "incoming" ? "Từ " + x.opponent : "Đấu với " + x.opponent)}</b><small>${esc(x.status)} · ${x.status === "resolved" ? "thắng: " + esc(x.winner || "hòa") : ""}</small></span>${x.status === "pending" && x.direction === "incoming" ? `<button class="btn sm" data-duel="accept" data-id="${x.id}">Nhận</button><button class="btn sm" data-duel="decline" data-id="${x.id}">Từ chối</button>` : ""}</div>`).join("") : "<small class=\"dim\">Chưa có trận đấu.</small>");
+    const advanced=featureEnabled('duel_modes');
+    const date=t=>new Date(t).toLocaleString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh'});
+    const explain=x=>x.explanation?`<small>Ước lượng: ${Number(x.challenger_power).toFixed(0)} × ${x.explanation.challenger_factor.toFixed(2)} = ${Number(x.challenger_score).toFixed(1)}; ${Number(x.defender_power).toFixed(0)} × ${x.explanation.defender_factor.toFixed(2)} = ${Number(x.defender_score).toFixed(1)} · ${esc(x.rules_version)} · ${esc(x.combat_version||'legacy')}</small>`:'';
+    box.innerHTML = `<small class="dim">Mùa ${esc(d.season)} · ${score.points || 0} điểm · thắng ${score.wins || 0} · thua ${score.losses || 0} · hòa ${score.draws||0}</small>` +
+      (advanced?`<small>Mùa UTC: ${esc(date(d.season_start))} – ${esc(date(d.season_end))} (giờ Việt Nam). Lời mời hết hạn sau 3 ngày; ranked hết hạn khi sang mùa. Tối đa ${d.pair_daily_cap} lời mời ranked/cặp/ngày UTC kể cả từ chối. ${d.ranked_ready?'':'Ranked cần snapshot hợp lệ, cấp 40+.'}</small>`:'')+
+      (advanced&&d.matches?.length?`<div class="btnrow">${d.matches.map(m=>`<button class="btn sm" data-match="${esc(m.name)}">${esc(m.name)} · Lv${m.lvl} · LC ${m.power}</button>`).join('')}</div>`:'')+
+      (d.duels.length ? d.duels.slice(0, 8).map(x => `<div class="qrow"><span><b>${esc(x.direction === "incoming" ? "Từ " + x.opponent : "Đấu với " + x.opponent)} · ${x.kind==='friendly'?'Giao hữu':'Ranked'}</b><small>${esc(x.status)} · ${x.status === "resolved" ? (x.winner?"thắng: " + esc(x.winner):"hòa") : "Hạn: "+esc(date(x.expires_at))}</small>${explain(x)}</span>${x.status === "pending" && x.direction === "incoming" ? `<button class="btn sm" data-duel="accept" data-id="${esc(x.id)}">Nhận</button><button class="btn sm" data-duel="decline" data-id="${esc(x.id)}">Từ chối</button>` : ""}</div>`).join("") : "<small class=\"dim\">Chưa có trận đấu.</small>");
+    box.querySelectorAll('[data-match]').forEach(b=>b.onclick=()=>{document.getElementById('onlOpponent').value=b.dataset.match;});
     box.querySelectorAll("[data-duel]").forEach(b => b.onclick = () => onlDuelAction(b.dataset.duel, b.dataset.id));
   } catch (e) { box.innerHTML = `<small class="bad">${esc(e.msg || "Không tải được duel")}</small>` }
 }
 
 async function onlDuelAction(action, id) {
+  if(ONL.duelBusy)return;ONL.duelBusy=true;
   try { await onlApi("/duel", { body: { action, id } }); await onlRenderDuels(); toast(action === "accept" ? "Đã nhận và phân xử trận đấu" : "Đã xử lý lời thách đấu") }
   catch (e) { toast(e.msg || "Xử lý duel lỗi") }
+  finally{ONL.duelBusy=false;}
 }
 
 async function onlChallenge() {
+  if(ONL.duelBusy)return;ONL.duelBusy=true;
   const input = document.getElementById("onlOpponent");
-  try { await onlApi("/duel", { body: { action: "challenge", opponent: input && input.value } }); if (input) input.value = ""; await onlRenderDuels(); toast("Đã gửi lời thách đấu") }
+  try { await onlApi("/duel", { body: { action: "challenge", opponent: input && input.value,kind:document.getElementById('onlDuelKind')?.value||'ranked' } }); if (input) input.value = ""; await onlRenderDuels(); toast("Đã gửi lời thách đấu") }
   catch (e) { toast(e.msg || "Không gửi được lời thách đấu") }
+  finally{ONL.duelBusy=false;}
 }
 
 async function onlRenderGuild() {
   const box = document.getElementById("onlGuildPanel");
   if (!box || !onlGet()) return;
+  if (!featureEnabled("guild_online")) { box.hidden = true; return; }
   try {
     const d = await onlApi("/guild");
+    ONL.guildId=d.guild?.id||null;
     if (!d.guild) {
       box.innerHTML = `<b>Bang hội online</b><small class="dim">Tạo bang hoặc tham gia bang đang có.</small><div class="btnrow"><input id="onlGuildName" maxlength="24" placeholder="Tên bang"><button class="btn sm" data-guild="create">Tạo bang</button><button class="btn sm" data-guild="join">Tham gia</button></div><small class="dim">${d.suggestions.length ? "Gợi ý: " + d.suggestions.map(x => esc(x.name)).join(" · ") : "Chưa có bang nào"}</small>`;
     } else {
       const g = d.guild, pct = g.boss_max_hp ? Math.round((1 - g.boss_hp / g.boss_max_hp) * 100) : 100;
-      box.innerHTML = `<div class="onlsub"><b>${esc(g.name)}</b><small>Cấp ${g.level} · ${g.xp} XP · ${g.role}</small></div><div class="card stats"><span>Boss tuần</span><span>${fmt(g.boss_hp)} / ${fmt(g.boss_max_hp)}</span><span>Tiến độ</span><span>${pct}%</span><span>Đóng góp</span><span>${g.contrib}</span><span>Lượt đánh hôm nay</span><span>${g.attack_count}/3</span></div><div class="btnrow"><button class="btn sm" data-guild="donate">Đóng góp 10</button><button class="btn sm" data-guild="boss_attack">Đánh boss</button>${g.role === "owner" ? "" : '<button class="btn sm" data-guild="leave">Rời bang</button>'}</div><small class="dim">${d.members.map(x => `${esc(x.name)} · ${fmt(x.power)} · ${x.weekly_damage} sát thương`).join("<br>")}</small>`;
+      box.innerHTML = `<div class="onlsub"><b>${esc(g.name)}</b><small>Cấp ${g.level} · ${g.xp} XP · ${g.role}</small></div><div class="card stats"><span>Boss tuần</span><span>${fmt(g.boss_hp)} / ${fmt(g.boss_max_hp)}</span><span>Tiến độ</span><span>${pct}%</span><span>Đóng góp</span><span>${g.contrib}</span><span>Lượt đánh hôm nay</span><span>${g.attack_count}/3</span></div><div class="btnrow"><button class="btn sm" disabled title="Chờ ledger tài nguyên xác thực">Đóng góp tạm khóa</button><button class="btn sm" data-guild="boss_attack">Đánh boss</button>${g.role === "owner" ? "" : '<button class="btn sm" data-guild="leave">Rời bang</button>'}</div><small class="dim">${d.members.map(x => `${esc(x.name)} · ${fmt(x.power)} · ${x.weekly_damage} sát thương`).join("<br>")}</small>`;
     }
     box.hidden = false;
+    if(d.guild&&featureEnabled("guild_management")&&typeof onlGuildManagementHTML==="function"){
+      box.insertAdjacentHTML("beforeend",onlGuildManagementHTML(d));onlGuildManagementBind(box,d);
+    }
     box.querySelectorAll("[data-guild]").forEach(b => b.onclick = () => onlGuildAction(b.dataset.guild));
   } catch (e) { box.innerHTML = `<small class="bad">${esc(e.msg || "Không tải được bang hội")}</small>`; box.hidden = false }
 }
 
 async function onlGuildAction(action) {
   const input = document.getElementById("onlGuildName");
-  try { await onlApi("/guild", { body: { action, name: input && input.value, amount: 10 } }); await onlRenderGuild(); toast(action === "boss_attack" ? "Đã đánh boss tuần" : "Đã cập nhật bang hội") }
+  try { await onlGuildWrite({action,name:input&&input.value,guild_id:['create','join'].includes(action)?undefined:ONL.guildId}); await onlRenderGuild(); toast(action === "boss_attack" ? "Đã đánh boss tuần" : "Đã cập nhật bang hội") }
   catch (e) { toast(e.msg || "Xử lý bang hội lỗi") }
+}
+
+async function onlGuildWrite(body) {
+  if(ONL.guildBusy)throw {msg:"Đang xử lý bang hội"};
+  const key=JSON.stringify(body),previous=ONL.guildPending;
+  const request_id=previous?.key===key?previous.request_id:"guild_"+(typeof crypto!=="undefined"&&crypto.randomUUID?crypto.randomUUID():Date.now()+"_"+Math.random().toString(36).slice(2));
+  ONL.guildPending={key,request_id};ONL.guildBusy=true;
+  try{const result=await onlApi('/guild',{body:{...body,request_id}});ONL.guildPending=null;return result;}
+  finally{ONL.guildBusy=false;}
 }
 
 async function onlRenderRoom() {
   const box = document.getElementById("onlRoomPanel");
   if (!box || !onlGet()) return;
+  if (!featureEnabled("room_presence")) { box.hidden = true; return; }
   try {
     let d = await onlApi("/room");
     if (d.room) d = await onlApi("/room", { body: { action: "heartbeat" } });
@@ -233,7 +260,7 @@ async function onlRoomAction(action, value) {
   catch (e) { toast(e.msg || "Xử lý phòng lỗi") }
 }
 
-setInterval(() => { if (onlGet() && document.getElementById("onlRoomPanel")) onlRenderRoom() }, 5000);
+setInterval(() => { if (document.visibilityState!=="hidden" && onlGet() && document.getElementById("onlRoomPanel")) onlRenderRoom() }, 5000);
 
 // Heartbeat mỗi phút khi đã đăng ký; đồng bộ save mỗi 5 phút.
 setInterval(() => {
@@ -285,7 +312,7 @@ function onlCardHTML() {
       ${ONL.conflict ? `<div class="onlflag"><b>Phát hiện bản lưu mới hơn trên máy chủ.</b><small>Chọn nạp bản máy chủ hoặc ghi đè bằng bản đang mở.</small><div class="btnrow"><button class="btn sm" id="onlPullConflict">Nạp bản máy chủ</button><button class="btn sm" id="onlPushConflict">Ghi đè máy chủ</button></div></div>` : ""}
       <div class="btnrow"><button class="btn" id="onlSyncBtn">Đồng bộ ngay</button><button class="btn" id="onlRankBtn">Bảng xếp hạng</button><button class="btn" id="onlCodeBtn">Mã khôi phục</button></div>
       <small class="dim" id="onlCode" hidden>Giữ kín mã này, nó thay cho mật khẩu: <code>${esc(acc.token)}</code></small><div id="onlRankPanel" class="onlpanel" hidden></div>
-      <div id="onlDuelPanel" class="onlpanel"><b>PvP bất đồng bộ</b><small class="dim">Thách đấu người cùng bậc; server dùng snapshot đã kiểm định để phân xử.</small><div class="btnrow"><input id="onlOpponent" maxlength="16" placeholder="Tên đối thủ"><button class="btn sm" id="onlChallengeBtn">Thách đấu</button></div><div id="onlDuelList"></div></div>
+      <div id="onlDuelPanel" class="onlpanel"><b>PvP bất đồng bộ</b><small class="dim">Phân xử bất đồng bộ bằng ước lượng lực chiến và hệ số cố định theo mã trận. Giao hữu không cộng điểm; ranked cần cùng bậc, lực chiến gần nhau.</small><div class="btnrow">${featureEnabled("duel_modes")?'<select id="onlDuelKind" aria-label="Loại thách đấu"><option value="ranked">Ranked</option><option value="friendly">Giao hữu</option></select>':""}<input id="onlOpponent" maxlength="16" placeholder="Tên đối thủ"><button class="btn sm" id="onlChallengeBtn">Thách đấu</button></div><div id="onlDuelList"></div></div>
       <div id="onlGuildPanel" class="onlpanel"></div><div id="onlRoomPanel" class="onlpanel"></div></div>`;
   }
   if (S.lvl > ONL_REG_MAX_LVL) return `<h3>Chơi Online</h3><div class="card"><small class="dim">Nhân vật đã quá cấp ${ONL_REG_MAX_LVL}, không đăng ký bảng xếp hạng được. Vẫn chơi CTC cục bộ được (không xếp hạng).</small></div>${recoverBox}`;

@@ -34,6 +34,7 @@ export function parseSave(save) {
   }
   if (!state || typeof state !== "object" || Array.isArray(state)) throw new HttpError(400, "bad_save");
   if (JSON.stringify(state).length > SAVE_MAX_BYTES) throw new HttpError(413, "save_too_large");
+  if (state.sandbox) throw new HttpError(400, "sandbox_save");
   if (state.mode !== "ctc") throw new HttpError(400, "not_ctc", "Chỉ nhân vật Công Thành Chiến được chơi online");
   if (!state.fac) throw new HttpError(400, "no_faction");
   if (state.cid != null && !/^c_[A-Za-z0-9_-]{8,100}$/.test(String(state.cid))) throw new HttpError(400, "bad_character_id");
@@ -79,6 +80,7 @@ export async function register(req, env, body) {
   const id = randomToken(9);
   const token = randomToken(24);
   const characterId = String(state.cid || "c_" + randomToken(12));
+  state.cid = characterId;
   const now = Date.now();
   try {
     await env.DB.batch([
@@ -93,7 +95,7 @@ export async function register(req, env, body) {
     if (/UNIQUE/i.test(String(e && e.message))) throw new HttpError(409, "name_taken", "Tên đã có người dùng");
     throw e;
   }
-  const v = await applyValidation(env, id, state, 0);
+  const v = await applyValidation(env, id, state, 0, 1);
   return { id, token, name, character_id: characterId, sync_rev: 1, play_sec: 0, ...v };
 }
 
@@ -156,14 +158,13 @@ export async function sync(req, env, body) {
       server_updated_at: row.updated_at,
     });
   const now = Date.now();
-  const nextRev = (row.sync_rev || 1) + 1;
   const q = body.force || baseRev == null
-    ? `UPDATE chars SET fac=?2,sex=?3,lvl=?4,xp=?5,snapshot=?6,updated_at=?7,sync_n=sync_n+1,sync_rev=?8 WHERE account_id=?1`
-    : `UPDATE chars SET fac=?2,sex=?3,lvl=?4,xp=?5,snapshot=?6,updated_at=?7,sync_n=sync_n+1,sync_rev=?8 WHERE account_id=?1 AND sync_rev=?9`;
-  const binds = [acc.id, String(state.fac), state.sex ? 1 : 0, Math.floor(state.lvl), +state.xp || 0, JSON.stringify(state), now, nextRev];
+    ? `UPDATE chars SET fac=?2,sex=?3,lvl=?4,xp=?5,snapshot=?6,updated_at=?7,sync_n=sync_n+1,sync_rev=sync_rev+1,validation_status='pending_verification',bracket=NULL WHERE account_id=?1 RETURNING sync_rev`
+    : `UPDATE chars SET fac=?2,sex=?3,lvl=?4,xp=?5,snapshot=?6,updated_at=?7,sync_n=sync_n+1,sync_rev=sync_rev+1,validation_status='pending_verification',bracket=NULL WHERE account_id=?1 AND sync_rev=?8 RETURNING sync_rev`;
+  const binds = [acc.id, String(state.fac), state.sex ? 1 : 0, Math.floor(state.lvl), +state.xp || 0, JSON.stringify(state), now];
   if (!(body.force || baseRev == null)) binds.push(baseRev);
-  const updated = await env.DB.prepare(q).bind(...binds).run();
-  if (!updated.meta.changes) {
+  const updated = await env.DB.prepare(q).bind(...binds).first();
+  if (!updated) {
     const latest = await env.DB.prepare("SELECT sync_rev,snapshot,updated_at FROM chars WHERE account_id=?1").bind(acc.id).first();
     throw new HttpError(409, "sync_conflict", "Bản lưu trên máy chủ đã thay đổi", {
       server_rev: latest.sync_rev,
@@ -171,8 +172,8 @@ export async function sync(req, env, body) {
       server_updated_at: latest.updated_at,
     });
   }
-  const v = await applyValidation(env, acc.id, state, +acc.play_sec || 0);
-  return { ok: true, lvl: Math.floor(state.lvl), play_sec: Math.floor(acc.play_sec), sync_rev: nextRev, ...v };
+  const v = await applyValidation(env, acc.id, state, +acc.play_sec || 0, updated.sync_rev);
+  return { ok: true, lvl: Math.floor(state.lvl), play_sec: Math.floor(acc.play_sec), sync_rev: updated.sync_rev, ...v };
 }
 
 export async function recoverSnapshot(req, env) {
@@ -199,5 +200,7 @@ export async function recover(req, env, body) {
   if (!ch) throw new HttpError(404, "character_not_found");
   if (ch.character_id && ch.character_id !== characterId) throw new HttpError(409, "character_mismatch");
   await env.DB.prepare("UPDATE chars SET character_id=?2 WHERE account_id=?1 AND character_id IS NULL").bind(acc.id, characterId).run();
+  const linked = await env.DB.prepare("SELECT character_id FROM chars WHERE account_id=?1").bind(acc.id).first();
+  if (linked.character_id !== characterId) throw new HttpError(409, "character_mismatch");
   return { ok: true, character_id: characterId };
 }

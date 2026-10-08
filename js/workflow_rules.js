@@ -2,7 +2,8 @@
 
 // Shared preconditions. UI visibility is not an authorization boundary.
 function activityBusy() {
-  return !!(S && S.siege || R.tower || R.tk || typeof SV !== "undefined" && SV.on);
+  return !!(S && (S.siege || S.extensions?.expedition?.status==="active" || S.extensions?.rift?.status==="active") ||
+    R.tower || R.tk || R.onlineSession && !["completed","aborted"].includes(R.onlineSession.status) || typeof SV !== "undefined" && SV.on);
 }
 
 function requireIdle() {
