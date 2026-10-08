@@ -16,7 +16,7 @@ async function fixture(t){
       DB.prepare('INSERT INTO chars(account_id,snapshot,lvl,fac,updated_at,power) VALUES(?1,?2,60,\'shaolin\',?3,100)').bind(id,JSON.stringify({v:2,mode:'ctc',fac:'shaolin',lvl:60}),Date.now())
     ]);
   }
-  const req=(id,method='POST',adminKey)=>new Request('https://game.test/api/moderation',{method,headers:{authorization:'Bearer moderation-local-test-token-0123456789-'+id,'content-type':'application/json',...(adminKey?{'x-admin-key':adminKey}:{})}});
+  const req=(id,method='POST',adminKey,ip='203.0.113.10')=>new Request('https://game.test/api/moderation',{method,headers:{authorization:'Bearer moderation-local-test-token-0123456789-'+id,'content-type':'application/json','cf-connecting-ip':ip,...(adminKey?{'x-admin-key':adminKey}:{})}});
   return {DB,env,req};
 }
 
@@ -55,6 +55,8 @@ test('moderation: bounded report, duplicate collapse, block removes friend acces
   const report={action:'report',target_id:'target',reason:'spam',details:'repeat message'};
   const first=await moderation(req('reporter'),env,report),again=await moderation(req('reporter'),env,report);
   assert.equal(first.report_id,again.report_id);assert.equal(again.duplicate,true);
+  const ipRate=(await DB.prepare("SELECT k FROM rate WHERE k LIKE 'moderation:report-ip:%'").first()).k;
+  assert.match(ipRate,/^moderation:report-ip:[a-f0-9]{24}$/,'only a salted hash of the IP is kept for report rate limits');
   await moderation(req('reporter'),env,{action:'block',target_id:'target'});
   await chat(req('target'),env,{room_id:roomId,client_id:'message-after-block',text:'blocked from reporter'});
   const blockedRoom=await chat(req('reporter','GET'),env,null,new URL('https://game.test/api/chat?room_id='+roomId));
@@ -74,4 +76,30 @@ test('moderation: bounded report, duplicate collapse, block removes friend acces
   }
   await assert.rejects(()=>moderation(req('reporter'),env,{...report,reason:'other'}),{code:'report_limit'});
   await assert.rejects(()=>adminModeration(req('reporter','GET','wrong'),env,null,new URL('https://game.test/api/admin/moderation')),{code:'forbidden'});
+});
+
+test('moderation: report IP cap resists account rotation without storing raw address',async t=>{
+  const {DB,env,req}=await fixture(t),ip='203.0.113.77';
+  for(let n=0;n<21;n++){
+    const id='r'+String(n).padStart(5,'0'),token='moderation-local-test-token-0123456789-'+id;
+    await DB.batch([
+      DB.prepare('INSERT INTO accounts(id,token_hash,name,created_at,last_hb) VALUES(?1,?2,?3,?4,?4)').bind(id,await sha256Hex(token),'Reporter '+n,Date.now()),
+      DB.prepare('INSERT INTO chars(account_id,snapshot,lvl,fac,updated_at,power) VALUES(?1,?2,60,\'shaolin\',?3,100)').bind(id,JSON.stringify({v:2,mode:'ctc',fac:'shaolin',lvl:60}),Date.now()),
+    ]);
+    const request=req(id,'POST',null,ip);
+    if(n<20)await moderation(request,env,{action:'report',target_id:'target',reason:'spam',details:'bounded report'});
+    else await assert.rejects(()=>moderation(request,env,{action:'report',target_id:'target',reason:'spam',details:'bounded report'}),{code:'report_ip_limit'});
+  }
+  const rows=(await DB.prepare("SELECT k FROM rate WHERE k LIKE 'moderation:report-ip:%'").all()).results;
+  assert.equal(rows.length,1);assert.ok(!rows[0].k.includes(ip));
+});
+
+test('moderation: configured admin keys keep distinct audit identities and fail closed',async t=>{
+  const {DB,env,req}=await fixture(t),key='alice-moderator-secret-0123456789';
+  const keyed={...env,ADMIN_KEY:undefined,ADMIN_KEYS:JSON.stringify({alice:key})};
+  const report=await moderation(req('reporter'),env,{action:'report',target_id:'target',reason:'harassment',details:'review'});
+  await assert.rejects(()=>adminModeration(req('reporter','POST','wrong-key-012345678901'),keyed,{report_id:report.report_id,status:'reviewing'},new URL('https://game.test/api/admin/moderation')),{code:'forbidden'});
+  await adminModeration(req('reporter','POST',key),keyed,{report_id:report.report_id,status:'reviewing'},new URL('https://game.test/api/admin/moderation'));
+  assert.equal((await DB.prepare('SELECT actor FROM admin_audit').first()).actor,'admin:alice');
+  await assert.rejects(()=>adminModeration(req('reporter','GET',key),{...env,ADMIN_KEYS:'not-json'},null,new URL('https://game.test/api/admin/moderation')),{code:'admin_config_invalid'});
 });

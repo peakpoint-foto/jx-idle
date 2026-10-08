@@ -58,6 +58,9 @@ try{
   assert.equal((await DB.prepare("SELECT COUNT(*) n FROM room_chat WHERE scope='guild' AND room_id='guildsmoke'").first()).n,1);
   await evaluate(clients[0],`(async()=>{await onlApi('/moderation',{body:{action:'mute',target_id:${JSON.stringify(f.players[1].id)},duration_ms:3600000}});await onlRenderRoom(true);if(!document.querySelector('#onlRoomPanel [data-moderate="unmute"]'))throw Error('mute state not reflected in lobby UI');await onlApi('/moderation',{body:{action:'unmute',target_id:${JSON.stringify(f.players[1].id)}}});await onlApi('/moderation',{body:{action:'report',target_id:${JSON.stringify(f.players[1].id)},reason:'spam',details:'browser moderation smoke'}})})()`);
   assert.equal((await DB.prepare("SELECT COUNT(*) n FROM player_reports WHERE reporter_id=?1 AND target_id=?2").bind(f.players[0].id,f.players[1].id).first()).n,1);
+  const queued=await evaluate(clients[0],`(async()=>{const realFetch=window.fetch;activityReceiptEnqueue({id:'tower-'+Date.now()+'-smoke1234',kind:'tower',stage:{floor:2},contribution:{kills:4,cleared:1}});window.fetch=async()=>{throw new TypeError('offline smoke')};const offlineSent=await activityRetryReceipts();const pending=activityReceiptRead().length;window.fetch=realFetch;const retried=await activityRetryReceipts();return {offlineSent,pending,retried,left:activityReceiptRead().length}})()`);
+  assert.deepEqual(queued,{offlineSent:0,pending:1,retried:1,left:0});
+  assert.equal((await DB.prepare("SELECT COUNT(*) n FROM activity_events WHERE account_id=?1 AND activity='tower'").bind(f.players[0].id).first()).n,1);
   await evaluate(clients[0],"partyWrite('create')");const created=await evaluate(clients[0],'({session:PARTY_CLIENT.session,error:PARTY_CLIENT.error,pending:PARTY_CLIENT.pending?.body})');assert.ok(created.session,JSON.stringify(created));const id=created.session.id;await evaluate(clients[1],'partyPoll(true)');
   assert.equal(await evaluate(clients[1],'PARTY_CLIENT.session.id'),id);
   for(let n=0;n<6;n++){clock+=500;for(const c of clients)await evaluate(c,'partyPoll(true)');}
@@ -77,7 +80,7 @@ try{
   assert.equal((await DB.prepare('SELECT COUNT(*) n FROM session_rewards WHERE session_id=?1').bind(id).first()).n,2);
   const amounts=(await DB.prepare('SELECT amount FROM session_rewards WHERE session_id=?1').bind(id).all()).results;assert.ok(amounts.every(r=>r.amount===1));
   const touch=await evaluate(clients[0],"[...document.querySelectorAll('#onlineSessionPanel button')].every(b=>b.getBoundingClientRect().height>=44)");assert.ok(touch);
-  console.log(JSON.stringify({runtime:process.env.JX_D1_RUNTIME==='1'?'D1 local':'SQLite local',clients:2,isolatedContexts:true,viewports:[360,1280],sharedState:true,ackLossRetry:true,reloadReconnect:true,realBossCompletion:true,receiptsOnce:true,moderationUI:true,muteReportServerRoundtrip:true,roomAndGuildChat:true,touch:true},null,2));
+  console.log(JSON.stringify({runtime:process.env.JX_D1_RUNTIME==='1'?'D1 local':'SQLite local',clients:2,isolatedContexts:true,viewports:[360,1280],sharedState:true,ackLossRetry:true,reloadReconnect:true,realBossCompletion:true,receiptsOnce:true,activityReceiptOfflineRetry:true,moderationUI:true,muteReportServerRoundtrip:true,roomAndGuildChat:true,touch:true},null,2));
 }finally{
   for(const c of clients)c.close();if(browser){for(const id of contexts)await browser.command('Target.disposeBrowserContext',{browserContextId:id}).catch(()=>{});browser.close();}
   if(server)await new Promise(r=>server.close(r));while(inFlight)await new Promise(r=>setTimeout(r,20));Date.now=realNow;await DB.close();

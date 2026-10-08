@@ -1,4 +1,4 @@
-import {HttpError} from './http.js';
+import {HttpError,ipHash} from './http.js';
 import {auth,parseSave} from './account.js';
 import {rateLimit} from './db.js';
 import {admin} from './ladder.js';
@@ -41,6 +41,9 @@ export async function moderation(req,env,body,url){
   if(action==='report'){
     const reason=String(body.reason||'');if(!REASONS.has(reason))throw new HttpError(400,'bad_reason');
     const details=String(body.details||'').replace(/[\u0000-\u001f\u007f]/g,' ').trim().slice(0,500);
+    const hashedIp=await ipHash(req,env);
+    await db.prepare("DELETE FROM rate WHERE k LIKE 'moderation:report-ip:%' AND t<?1").bind(Math.floor(now/1000)-86400).run();
+    if(!await rateLimit(db,'moderation:report-ip:'+hashedIp,20,86400))throw new HttpError(429,'report_ip_limit');
     await db.prepare('DELETE FROM player_reports WHERE created_at<?1').bind(now-180*864e5).run();
     const submitted=await db.prepare('SELECT COUNT(*) AS n FROM player_reports WHERE reporter_id=?1 AND created_at>=?2').bind(actor.id,now-864e5).first();
     if(submitted.n>=5)throw new HttpError(429,'report_limit');
@@ -52,7 +55,7 @@ export async function moderation(req,env,body,url){
   throw new HttpError(400,'bad_action');
 }
 export async function adminModeration(req,env,body,url){
-  admin(req,env);const db=env.DB,now=Date.now();
+  const actor=admin(req,env);const db=env.DB,now=Date.now();
   if(!await rateLimit(db,'admin:moderation',120,60))throw new HttpError(429,'rate_limited');
   await db.batch([
     db.prepare('DELETE FROM player_reports WHERE created_at<?1').bind(now-180*864e5),
@@ -69,5 +72,5 @@ export async function adminModeration(req,env,body,url){
   const result=await db.prepare('UPDATE player_reports SET status=?2 WHERE id=?1').bind(id,status).run();
   if(!result.meta.changes)throw new HttpError(404,'report_not_found');
   await db.prepare('INSERT INTO admin_audit(actor,action,target_id,created_at,detail) SELECT ?1,?2,target_id,?3,?4 FROM player_reports WHERE id=?5')
-    .bind('admin','report_'+status,now,'report_id='+id,id).run();return {ok:true,report_id:id,status};
+    .bind(actor,'report_'+status,now,'report_id='+id,id).run();return {ok:true,report_id:id,status};
 }

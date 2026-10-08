@@ -84,7 +84,27 @@ export async function notices(req, env) {
 /* ---- Quản trị: header x-admin-key phải khớp secret ADMIN_KEY ---- */
 export function admin(req, env) {
   const k = req.headers.get("x-admin-key") || "";
-  if (!env.ADMIN_KEY || k.length < 16 || k !== env.ADMIN_KEY) throw new HttpError(403, "forbidden");
+  if (k.length < 16 || k.length > 256) throw new HttpError(403, "forbidden");
+  if (env.ADMIN_KEYS) {
+    let keys;
+    try { keys = JSON.parse(env.ADMIN_KEYS); } catch { throw new HttpError(503, "admin_config_invalid"); }
+    if (!keys || typeof keys !== "object" || Array.isArray(keys)) throw new HttpError(503, "admin_config_invalid");
+    for (const [id, secret] of Object.entries(keys)) {
+      if (!/^[A-Za-z0-9_-]{1,40}$/.test(id) || typeof secret !== "string" || secret.length < 16 || secret.length > 256)
+        throw new HttpError(503, "admin_config_invalid");
+      if (secret.length === k.length) {
+        let diff = 0;
+        for (let i = 0; i < secret.length; i++) diff |= secret.charCodeAt(i) ^ k.charCodeAt(i);
+        if (diff === 0) return "admin:" + id;
+      }
+    }
+    throw new HttpError(403, "forbidden");
+  }
+  if (!env.ADMIN_KEY || env.ADMIN_KEY.length !== k.length) throw new HttpError(403, "forbidden");
+  let diff = 0;
+  for (let i = 0; i < k.length; i++) diff |= k.charCodeAt(i) ^ env.ADMIN_KEY.charCodeAt(i);
+  if (diff !== 0) throw new HttpError(403, "forbidden");
+  return "admin";
 }
 
 export async function adminFlags(req, env, body, url) {
