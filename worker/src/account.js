@@ -33,6 +33,7 @@ export function parseSave(save) {
     }
   }
   if (!state || typeof state !== "object" || Array.isArray(state)) throw new HttpError(400, "bad_save");
+  if (JSON.stringify(state).length > SAVE_MAX_BYTES) throw new HttpError(413, "save_too_large");
   if (state.mode !== "ctc") throw new HttpError(400, "not_ctc", "Chỉ nhân vật Công Thành Chiến được chơi online");
   if (!state.fac) throw new HttpError(400, "no_faction");
   if (state.cid != null && !/^c_[A-Za-z0-9_-]{8,100}$/.test(String(state.cid))) throw new HttpError(400, "bad_character_id");
@@ -64,6 +65,7 @@ async function verifyTurnstile(env, token, ip) {
 }
 
 export async function register(req, env, body) {
+  if (!body || typeof body !== "object" || Array.isArray(body)) throw new HttpError(400, "bad_request");
   const ih = await ipHash(req, env);
   if (!(await rateLimit(env.DB, "reg:" + ih, 5, 3600)))
     throw new HttpError(429, "rate_limited", "Đăng ký quá nhiều, thử lại sau");
@@ -92,7 +94,7 @@ export async function register(req, env, body) {
     throw e;
   }
   const v = await applyValidation(env, id, state, 0);
-  return { id, token, name, character_id: characterId, play_sec: 0, ...v };
+  return { id, token, name, character_id: characterId, sync_rev: 1, play_sec: 0, ...v };
 }
 
 // Cộng giờ chơi theo đồng hồ server. Hai tab cùng gửi cũng chỉ cộng đúng thời gian thực đã trôi.
@@ -131,6 +133,7 @@ export async function heartbeat(req, env) {
 }
 
 export async function sync(req, env, body) {
+  if (!body || typeof body !== "object" || Array.isArray(body)) throw new HttpError(400, "bad_request");
   const acc = await auth(req, env);
   if (!(await rateLimit(env.DB, "sync:" + acc.id, 20, 3600)))
     throw new HttpError(429, "rate_limited", "Đồng bộ quá nhiều, thử lại sau");
@@ -140,6 +143,12 @@ export async function sync(req, env, body) {
   if (!state.cid || !row.character_id || String(state.cid) !== String(row.character_id))
     throw new HttpError(409, "character_mismatch", "Mã online thuộc nhân vật khác hoặc cần liên kết lại");
   const baseRev = body && body.base_rev == null ? null : Math.max(0, Math.floor(+body.base_rev || 0));
+  if (baseRev == null && (row.sync_rev || 1) > 1 && !body.force)
+    throw new HttpError(409, "sync_conflict", "Cần tải lại phiên bản máy chủ trước khi đồng bộ", {
+      server_rev: row.sync_rev,
+      server_save: row.snapshot,
+      server_updated_at: row.updated_at,
+    });
   if (baseRev != null && baseRev !== row.sync_rev && !body.force)
     throw new HttpError(409, "sync_conflict", "Bản lưu trên máy chủ đã thay đổi", {
       server_rev: row.sync_rev,

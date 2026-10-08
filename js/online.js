@@ -51,6 +51,7 @@ async function onlRegister(name) {
   const r = await onlApi("/register", { body: { name, save: pack(S), turnstile }, auth: false });
   if (r.character_id) S.cid = r.character_id;
   onlSet({ id: r.id, name: r.name, token: r.token });
+  ONL.me = { char: { character_id: r.character_id, sync_rev: r.sync_rev || 1 } };
   S.online = { id: r.id, name: r.name };
   ONL.conflict = null;
   ONL.lastSync = Date.now();

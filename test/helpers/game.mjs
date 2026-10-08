@@ -5,11 +5,11 @@ import { fileURLToPath } from "node:url";
 const root = fileURLToPath(new URL("../../", import.meta.url));
 const files = [
   "data.js", "world.js", "js/core.js", "js/workflow_rules.js", "js/modes.js", "js/stats.js",
-  "js/loot.js", "js/gear_policy.js", "rdata.js", "js/sets.js", "ref.js",
-  "js/recipes.js", "js/combat.js", "js/save.js", "js/ui.js", "js/shop.js",
+  "js/loot.js", "js/weapon_policy.js", "js/gear_policy.js", "rdata.js", "js/sets.js", "ref.js",
+  "js/recipes.js", "js/combat.js", "js/stage_policy.js", "js/save.js", "js/ui.js", "js/shop.js",
   "js/rewards.js", "js/siege.js", "js/activities.js", "js/depth.js",
   "js/forge.js", "js/auto.js", "js/survival.js", "js/svfinal.js",
-  "js/modes_play.js", "js/online.js", "js/workflow_overrides.js", "js/activity_hardening.js",
+  "js/modes_play.js", "js/online.js", "js/workflow_overrides.js", "js/activity_hardening.js", "js/stash_policy.js", "js/potion_policy.js",
 ];
 const sources = files.map(file => [file, fs.readFileSync(root + file, "utf8")]);
 
@@ -51,7 +51,7 @@ export function game(seed = 42) {
     img: () => null, uiSfx: noop, log: noop, toast: noop, burst: noop, addText: noop,
     closeModal: noop, modal: noop, refresh: noop, dotGift: noop, draw: noop, svDraw: noop,
     resizeArena: noop, snapCamera: noop, obsLoad: noop, playMusic: noop, preloadZoneSounds: noop,
-    viFixItem: noop, OBS: { g: null }, INPUT: {}, confirm: () => true, invDirty: false,
+    viFixItem: noop, jrAdd: noop, OBS: { g: null }, INPUT: {}, confirm: () => true, invDirty: false,
     curTab: "log", refreshGift: noop, renderPad: noop, checkHints: noop, manual: () => false,
     btoa: s => Buffer.from(s, "binary").toString("base64"),
     atob: s => Buffer.from(s, "base64").toString("binary"),

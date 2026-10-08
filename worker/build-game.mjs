@@ -20,6 +20,7 @@ const DATA = { "data.js": "JX", "world.js": "JW" };
 
 // Những gì module trả về cho máy chủ.
 const EXPORTS = [
+  "isElementSkillAttr", "normalizeElementSkillItem", "attrName",
   "calc", "power", "newSave", "makeItem", "modeItemOk", "itemPower", "baseRow", "lineScale", "reqOk", "isMode",
   "expNeed", "xpSlow", "J", "FAC", "SK", "MAX_LEVEL", "PTS_PER_LEVEL", "SKILL_PTS_PER_LEVEL", "ENH_MAX",
   "LV_MS", "ACH", "LOGIN30",
