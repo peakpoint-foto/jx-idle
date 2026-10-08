@@ -383,6 +383,17 @@ try {
         if(JSON.stringify([S.sk,S.eq,S.inv,S.gold,S.xp,S.stage,S.wave])!==assets||JSON.stringify(SK)!==skills)throw Error('Rift mutated assets');
         closeModal(true);setFeatureFlags({});renderMore();if(document.getElementById('riftOpen'))throw Error('Rift flag-off UI survived');return {choices:true,nativeCombat:true,pause:true,resume:true,exit:true,assets:true,touch:true};
       })()`);
+      result.buildProgression=await evaluate(`(()=>{
+        setFeatureFlags({build_progression:true,skill_mutators:true,training_lab:true,build_library:true});renderMore();
+        if(S.mode!=='g2'){if(document.getElementById('buildProgressionOpen'))throw Error('Build progression escaped mode');setFeatureFlags({});return {denied:true};}
+        const assets=JSON.stringify([S.attr,S.sk,S.eq,S.inv,S.gold,S.xp]);
+        document.getElementById('buildProgressionOpen').click();if(!document.getElementById('mBody').textContent.includes('9thành tựu hữu hạn'))throw Error('Build progression rules missing');
+        for(const b of document.querySelectorAll('[data-build-ach]'))if(b.getBoundingClientRect().height<44)throw Error('Build progression touch target: '+b.getBoundingClientRect().height);
+        const claims=JSON.stringify(buildProgressionState().claims);document.querySelector('[data-build-route="training"]').click();
+        if(!document.getElementById('trainingPanel').open)throw Error('Build progress guide training route failed');
+        if(JSON.stringify([S.attr,S.sk,S.eq,S.inv,S.gold,S.xp])!==assets||JSON.stringify(buildProgressionState().claims)!==claims)throw Error('Guide granted reward');
+        setFeatureFlags({});renderMore();if(document.getElementById('buildProgressionOpen'))throw Error('Build progress flag off failed');return {finiteRules:true,touch:true,guide:true,noReward:true,flagOff:true};
+      })()`);
       const labCheck=await evaluate(`(() => {
         setFeatureFlags({training_lab:true});renderSkill();
         if(S.mode!=='g2') {if(document.getElementById('trainingPanel'))throw Error('Lab escaped mode guard');return {denied:true};}

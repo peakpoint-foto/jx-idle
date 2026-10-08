@@ -353,3 +353,4 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 #econCollect,#econAmount,#econDonate{min-height:44px!important;max-width:100%}
 .party-session button{min-width:44px;min-height:44px}.party-session .qrow{flex-wrap:wrap;gap:8px}.party-session small{display:block;overflow-wrap:anywhere}.party-session details summary{min-height:44px;display:flex;align-items:center}
 .mbox .btn.rift-choice{display:block;min-height:60px;height:auto!important;width:100%;margin:8px 0;text-align:left;white-space:normal;padding:8px 12px}.rift-choice small{display:block;white-space:normal}.mbox [data-rift]{min-height:44px;touch-action:manipulation}.party-session button{touch-action:manipulation}
+#modal #mBody .build-progression button.btn{min-width:44px;min-height:44px}.build-progression .qrow{flex-wrap:wrap;gap:8px}.build-progression small{display:block;white-space:normal}

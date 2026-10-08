@@ -15,6 +15,15 @@ function socket(url){
   return {ready,close:()=>ws.close(),command:async(method,params={})=>{await ready;const id=++next;return new Promise((resolve,reject)=>{const timer=setTimeout(()=>{pending.delete(id);reject(Error('CDP timeout '+method));},15000);pending.set(id,{resolve,reject,timer});ws.send(JSON.stringify({id,method,params}));});}};
 }
 async function evaluate(c,expression){const r=await c.command('Runtime.evaluate',{expression,awaitPromise:true,returnByValue:true});if(r.exceptionDetails)throw Error(JSON.stringify(r.exceptionDetails));return r.result.value;}
+async function navigate(c,url,game=false){
+  const result=await c.command('Page.navigate',{url});if(result.errorText)throw Error(result.errorText);
+  const href=new URL(url).href;
+  for(let n=0;n<100;n++){
+    const ready=await evaluate(c,`location.href===${JSON.stringify(href)}&&document.readyState==='complete'${game?"&&typeof partyPoll==='function'&&typeof closeModal==='function'&&typeof setFeatureFlags==='function'":''}`);
+    if(ready)return;await new Promise(r=>setTimeout(r,100));
+  }
+  throw Error('Browser document did not load '+url);
+}
 try{
   const f=await sessionFixture(DB,2);
   server=http.createServer(async(req,res)=>{inFlight++;try{
@@ -45,7 +54,7 @@ try{
   assert.equal(await evaluate(clients[0],'!!PARTY_CLIENT.pending'),true);await evaluate(clients[0],'partyWrite()');
   assert.equal((await DB.prepare('SELECT COUNT(*) n FROM session_actions WHERE session_id=?1').bind(id).first()).n,1);
   // Reload an independent client: pointer and authenticated account reconnect to server state.
-  await clients[1].command('Page.reload');for(let n=0;n<100;n++){if(await evaluate(clients[1],"document.readyState==='complete'&&typeof partyPoll==='function'"))break;await new Promise(r=>setTimeout(r,100));}
+  await navigate(clients[1],'about:blank');await navigate(clients[1],origin,true);
   await evaluate(clients[1],`S=${JSON.stringify(f.players[1].state)};setFeatureFlags(${JSON.stringify(f.env.FEATURE_FLAGS)});recalc();document.querySelector('#tabs [data-t="more"]').click();renderMore();partyPoll(true)`);
   assert.equal(await evaluate(clients[1],'PARTY_CLIENT.session.id'),id);
   for(let n=0;n<120;n++){const s=await evaluate(clients[0],'PARTY_CLIENT.session');if(s.status!=='active')break;clock+=1000;for(const c of clients)await evaluate(c,'partyPoll(true)');}

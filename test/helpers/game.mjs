@@ -9,7 +9,7 @@ const files = [
   "js/recipes.js", "js/combat.js", "js/stage_policy.js", "js/save.js", "js/save_schema.js", "js/ui.js", "js/shop.js",
   "js/rewards.js", "js/siege.js", "js/activities.js", "js/depth.js", "js/potion_policy.js",
   "js/builds.js", "js/build_profiles.js", "js/training.js", "js/build_compare.js", "js/build_advice.js", "js/build_library.js", "js/loot_codex.js", "js/combat_policy.js", "js/journal.js", "js/forge.js", "js/auto.js", "js/survival.js", "js/svfinal.js",
-  "js/modes_play.js", "js/online.js", "js/context_guide.js", "js/feedback_context.js", "js/workflow_overrides.js", "js/activity_hardening.js", "js/stash_policy.js", "js/skill_graph_ui.js", "js/combat_reports.js", "js/boss_phases.js", "js/expedition.js", "js/expedition_travel.js", "js/expedition_routes.js", "js/expedition_knowledge.js", "js/workbench.js", "js/resource_summary.js", "js/online_sessions.js", "js/rift.js",
+  "js/modes_play.js", "js/online.js", "js/context_guide.js", "js/feedback_context.js", "js/workflow_overrides.js", "js/activity_hardening.js", "js/stash_policy.js", "js/skill_graph_ui.js", "js/combat_reports.js", "js/boss_phases.js", "js/expedition.js", "js/expedition_travel.js", "js/expedition_routes.js", "js/expedition_knowledge.js", "js/workbench.js", "js/resource_summary.js", "js/online_sessions.js", "js/rift.js", "js/build_progression.js",
 ];
 const sources = files.map(file => [file, fs.readFileSync(root + file, "utf8")]);
 

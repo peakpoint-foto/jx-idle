@@ -1,11 +1,11 @@
 # TODO bàn giao agent — Võ Lâm Idle
 
 Nguồn đặc tả: [AGENT_BACKLOG.md](AGENT_BACKLOG.md). Ngày: 08/10/2026 (Asia/Saigon).
-Tiến độ thực thi: 29/43 task (F01–F07, B01–B05, G01/G02/G03, E01/E02/E04, R01, O02, C01–C05, P01/P02/P03/P04) đã nghiệm thu local; 14 task còn lại chưa hoàn thành. F02 dùng nhánh unsupported được backlog cho phép, không tuyên bố khôi phục 15 target thiếu. Không ghi nhận mục tiêu 100% hoặc đủ điều kiện public online. Xem [evidence](EXECUTION_EVIDENCE.md) và [mapping còn thiếu](SKILL_AUDIT.md). Các đợt là nhóm phạm vi, không phải cam kết thời gian; phụ thuộc quyết định thứ tự thực tế.
+Tiến độ thực thi: 30/43 task (F01–F07, B01–B05, G01/G02/G03/G05, E01/E02/E04, R01, O02, C01–C05, P01/P02/P03/P04) đã nghiệm thu local; 13 task còn lại chưa hoàn thành. F02 dùng nhánh unsupported được backlog cho phép, không tuyên bố khôi phục 15 target thiếu. Không ghi nhận mục tiêu 100% hoặc đủ điều kiện public online. Xem [evidence](EXECUTION_EVIDENCE.md) và [mapping còn thiếu](SKILL_AUDIT.md). Các đợt là nhóm phạm vi, không phải cam kết thời gian; phụ thuộc quyết định thứ tự thực tế.
 
 ## Trạng thái và cách nhận
 
-**ACTIVE theo lệnh mới ngày08/10/2026 (Asia/Saigon): tiếp tục từ27task để thực hiện toàn backlog.** C05/G02 DONE local; 29/43 DONE local,14task còn mở. Lệnh mới thay trạng thái PAUSED trước đó; rollout production vẫn cần lệnh deploy riêng.
+**ACTIVE theo lệnh mới ngày08/10/2026 (Asia/Saigon): tiếp tục từ27task để thực hiện toàn backlog.** C05/G02/G05 DONE local; 30/43 DONE local,13task còn mở. Lệnh mới thay trạng thái PAUSED trước đó; rollout production vẫn cần lệnh deploy riêng.
 
 - `[ ]`: chưa xong. Ghi `IN_PROGRESS` cạnh task khi nhận; vẫn để ô trống.
 - `[x]`: đạt toàn bộ nghiệm thu và đã ghi evidence; không dùng cho task chỉ mới viết code.
@@ -52,7 +52,7 @@ Tiến độ thực thi: 29/43 task (F01–F07, B01–B05, G01/G02/G03, E01/E02/
 - [x] **P03** Chọn đường, hợp đồng rủi ro và đồ sinh tồn — P1, phlt; phụ thuộc: P02,B03. Evidence: EXPEDITION_ROUTES.md; 5 case (10 phái), Chromium hai viewport; native caps/atomic fee/frozen route/future/flag/reward guards.
 - [x] **P04** Tiến trình tri thức và nhật ký chuyến đi — P2, phlt; phụ thuộc: P03,F05. Evidence: EXPEDITION_KNOWLEDGE.md; 4 case, Chromium hai viewport; finite/no-stat/abort guards, atomic reward/meta retry and migration.
 - [x] **G02** Bí cảnh biến chiêu roguelike — P1, g2; phụ thuộc: F04,F05,F07,G01. Evidence: RIFT.md; native5chặng,6case/10phái stats+damage parity, pause/retry/reload/future guards, Chromium mobile/desktop và mode denial. Modifiers session-only, no ranked reward.
-- [ ] **G05** Tiến trình thử nhiều build — P2, g2; phụ thuộc: G02,G03,F05.
+- [x] **G05** Tiến trình thử nhiều build — P2, g2; phụ thuộc: G02,G03,F05. Evidence: test/build_progression.test.mjs (4 pass), Chromium mobile/desktop; bộ sưu tập hữu hạn, cosmetic local, claim retry/rollback và reset giữ bộ sưu tập.
 - [x] **E02** Tái chế, chế tạo và chỉnh thuộc tính — P1, shared capability riêng; phụ thuộc: E01,F05. Evidence: SAFE_WORKBENCH.md; 7 case, Chromium PHLT/g2 mobile/desktop, CTC denied; pure preview/native caps/receipt/atomic retry/locked/equipped guards.
 - [x] **E04** Ledger tài nguyên và cân bằng sink/source — P1, shared; online economy riêng; phụ thuộc: F06,F07,E02. Evidence: RESOURCE_ECONOMY.md; 3 client +4 SQLite/D1 cases; ledger/wallet/donation/rollback/UTC/rejoin quota and browser ack-loss nonce.
 - [ ] **O03** Quản trị và moderation — P1 trước public online, shared; online theo mode được bật; phụ thuộc: F06,C02,C04,O02.
