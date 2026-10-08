@@ -84,7 +84,7 @@ export async function register(req, env, body) {
         "INSERT INTO accounts(id,token_hash,name,created_at,ip_hash,last_hb) VALUES(?1,?2,?3,?4,?5,?4)"
       ).bind(id, await sha256Hex(token), name, now, ih),
       env.DB.prepare(
-        "INSERT INTO chars(account_id,character_id,fac,sex,lvl,xp,snapshot,updated_at,sync_n) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,1)"
+        "INSERT INTO chars(account_id,character_id,fac,sex,lvl,xp,snapshot,updated_at,sync_n,sync_rev) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,1,1)"
       ).bind(id, characterId, String(state.fac), state.sex ? 1 : 0, Math.floor(state.lvl), +state.xp || 0, JSON.stringify(state), now),
     ]);
   } catch (e) {
@@ -115,12 +115,16 @@ export function creditTime(acc, now) {
 }
 
 export async function heartbeat(req, env) {
-  const acc = await auth(req, env);
-  const t = creditTime(acc, Date.now());
-  await env.DB.prepare("UPDATE accounts SET play_sec=?2,off_t0=?3,off_sec=?4,last_hb=?5 WHERE id=?1")
-    .bind(acc.id, t.play_sec, t.off_t0, t.off_sec, t.last_hb)
-    .run();
-  return { play_sec: Math.floor(t.play_sec) };
+  let acc = await auth(req, env);
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const t = creditTime(acc, Date.now());
+    const r = await env.DB.prepare(
+      "UPDATE accounts SET play_sec=?2,off_t0=?3,off_sec=?4,last_hb=?5 WHERE id=?1 AND last_hb IS ?6"
+    ).bind(acc.id, t.play_sec, t.off_t0, t.off_sec, t.last_hb, acc.last_hb ?? null).run();
+    if (r.meta.changes) return { play_sec: Math.floor(t.play_sec) };
+    acc = await auth(req, env);
+  }
+  throw new HttpError(409, "heartbeat_conflict", "Heartbeat đồng thời, thử lại sau");
 }
 
 export async function sync(req, env, body) {
@@ -128,23 +132,47 @@ export async function sync(req, env, body) {
   if (!(await rateLimit(env.DB, "sync:" + acc.id, 20, 3600)))
     throw new HttpError(429, "rate_limited", "Đồng bộ quá nhiều, thử lại sau");
   const state = parseSave(body.save);
-  const now = Date.now();
-  const current = await env.DB.prepare("SELECT character_id FROM chars WHERE account_id=?1").bind(acc.id).first();
-  if (!current) throw new HttpError(404, "character_not_found");
-  if (!state.cid || !current.character_id || String(state.cid) !== String(current.character_id))
+  const row = await env.DB.prepare("SELECT character_id,sync_rev,snapshot,updated_at FROM chars WHERE account_id=?1").bind(acc.id).first();
+  if (!row) throw new HttpError(404, "character_not_found");
+  if (!state.cid || !row.character_id || String(state.cid) !== String(row.character_id))
     throw new HttpError(409, "character_mismatch", "Mã online thuộc nhân vật khác hoặc cần liên kết lại");
-  await env.DB.prepare(
-    `UPDATE chars SET fac=?2,sex=?3,lvl=?4,xp=?5,snapshot=?6,updated_at=?7,sync_n=sync_n+1 WHERE account_id=?1`
-  )
-    .bind(acc.id, String(state.fac), state.sex ? 1 : 0, Math.floor(state.lvl), +state.xp || 0, JSON.stringify(state), now)
-    .run();
+  const baseRev = body && body.base_rev == null ? null : Math.max(0, Math.floor(+body.base_rev || 0));
+  if (baseRev != null && baseRev !== row.sync_rev && !body.force)
+    throw new HttpError(409, "sync_conflict", "Bản lưu trên máy chủ đã thay đổi", {
+      server_rev: row.sync_rev,
+      server_save: row.snapshot,
+      server_updated_at: row.updated_at,
+    });
+  const now = Date.now();
+  const nextRev = (row.sync_rev || 1) + 1;
+  const q = body.force || baseRev == null
+    ? `UPDATE chars SET fac=?2,sex=?3,lvl=?4,xp=?5,snapshot=?6,updated_at=?7,sync_n=sync_n+1,sync_rev=?8 WHERE account_id=?1`
+    : `UPDATE chars SET fac=?2,sex=?3,lvl=?4,xp=?5,snapshot=?6,updated_at=?7,sync_n=sync_n+1,sync_rev=?8 WHERE account_id=?1 AND sync_rev=?9`;
+  const binds = [acc.id, String(state.fac), state.sex ? 1 : 0, Math.floor(state.lvl), +state.xp || 0, JSON.stringify(state), now, nextRev];
+  if (!(body.force || baseRev == null)) binds.push(baseRev);
+  const updated = await env.DB.prepare(q).bind(...binds).run();
+  if (!updated.meta.changes) {
+    const latest = await env.DB.prepare("SELECT sync_rev,snapshot,updated_at FROM chars WHERE account_id=?1").bind(acc.id).first();
+    throw new HttpError(409, "sync_conflict", "Bản lưu trên máy chủ đã thay đổi", {
+      server_rev: latest.sync_rev,
+      server_save: latest.snapshot,
+      server_updated_at: latest.updated_at,
+    });
+  }
   const v = await applyValidation(env, acc.id, state, +acc.play_sec || 0);
-  return { ok: true, lvl: Math.floor(state.lvl), play_sec: Math.floor(acc.play_sec), ...v };
+  return { ok: true, lvl: Math.floor(state.lvl), play_sec: Math.floor(acc.play_sec), sync_rev: nextRev, ...v };
+}
+
+export async function recoverSnapshot(req, env) {
+  const acc = await auth(req, env);
+  const row = await env.DB.prepare("SELECT snapshot,sync_rev,updated_at FROM chars WHERE account_id=?1").bind(acc.id).first();
+  if (!row) throw new HttpError(404, "no_character");
+  return { id: acc.id, name: acc.name, snapshot: row.snapshot, sync_rev: row.sync_rev, updated_at: row.updated_at };
 }
 
 export async function me(req, env) {
   const acc = await auth(req, env);
-  const ch = await env.DB.prepare("SELECT character_id,fac,lvl,updated_at,power,bracket,flagged,validation_status,validation_note FROM chars WHERE account_id=?1").bind(acc.id).first();
+  const ch = await env.DB.prepare("SELECT character_id,fac,lvl,updated_at,power,bracket,flagged,validation_status,validation_note,sync_rev FROM chars WHERE account_id=?1").bind(acc.id).first();
   const fl = await env.DB.prepare("SELECT code,detail,at FROM flags WHERE account_id=?1 AND cleared_at IS NULL ORDER BY at").bind(acc.id).all();
   return { id: acc.id, name: acc.name, created_at: acc.created_at, play_sec: Math.floor(acc.play_sec), char: ch || null, flags: fl.results };
 }
