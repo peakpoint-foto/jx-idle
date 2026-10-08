@@ -47,8 +47,9 @@ try {
   const motion=await evaluate("(() => {const b=document.getElementById('giftBtn');b.classList.add('on');const animation=getComputedStyle(b,'::after').animationName;b.classList.remove('on');return animation})()");
   if(motion!=='none')throw new Error('Reduced-motion preference not respected: '+motion);
   const results = [];
-  for (const width of [360, 1280]) {
-    await command("Emulation.setDeviceMetricsOverride", { width, height: 800, deviceScaleFactor: 1, mobile: width < 600 });
+  for (const viewport of [{width:360,height:800,orientation:"portrait",mobile:true},{width:800,height:360,orientation:"landscape",mobile:true},{width:1280,height:800,orientation:"desktop",mobile:false}]) {
+    const {width,height}=viewport;
+    await command("Emulation.setDeviceMetricsOverride", { width, height, deviceScaleFactor: 1, mobile: viewport.mobile });
     for (const mode of ["ctc", "phlt", "g2"]) {
       const result = await evaluate(`(() => {
         closeModal(true);S=Object.assign(newSave(),{fac:'shaolin',mode:'${mode}',lvl:100,sexSet:1,sk:{10:10,319:1,271:1},skPts:50});
@@ -82,7 +83,7 @@ try {
         choose.click();weeklyRecord(firstTask.event,firstTask.need);weeklyRenderCard();const weeklyClaimButton=document.querySelector('#weeklyTaskCard [data-week-claim]');
         if(!weeklyClaimButton)throw Error('Weekly claim unavailable '+S.mode);weeklyClaimButton.click();if(weeklyRead().claims.length!==1)throw Error('Weekly receipt missing '+S.mode);
         showTab('skill');
-        return {mode:S.mode,width:${width},graphWidth:Math.round(rect.width),linkedModal:true,unsupportedVisible:true,fieldSearch:true,weeklyTask:true};
+        return {mode:S.mode,width:${width},height:${height},orientation:${JSON.stringify(viewport.orientation)},graphWidth:Math.round(rect.width),linkedModal:true,unsupportedVisible:true,fieldSearch:true,weeklyTask:true};
       })()`);
       if (result.graphWidth <= 0) throw new Error("Graph is not laid out: " + JSON.stringify(result));
       results.push(result);
@@ -457,6 +458,15 @@ try {
         closeModal(true);setFeatureFlags({});return {modeSummary:true,journalEntry:true,selectedExport:true};
       })()`);
       result.combatReports=reportsCheck;
+      const longSession=await evaluate(`(() => {
+        closeModal(true);S=Object.assign(newSave(),{fac:'shaolin',mode:'${mode}',lvl:100,sexSet:1});
+        R.tower=null;R.tk=null;R.logs=[];SV.on=false;R.dirty=true;recalc();
+        const heap0=performance.memory?.usedJSHeapSize||0,started=performance.now();simulate(300,.25);const elapsed=performance.now()-started,heap1=performance.memory?.usedJSHeapSize||0;
+        if(elapsed>15000)throw Error('20-minute simulated session too slow: '+Math.round(elapsed)+'ms '+S.mode+'/'+${width}+'x'+${height});
+        if(R.logs.length>40)throw Error('Long session log is unbounded');
+        return {elapsedMs:Math.round(elapsed),heapDelta:heap0&&heap1?heap1-heap0:null,logs:R.logs.length};
+      })()`);
+      result.longSession=longSession;
     }
   }
   console.log(JSON.stringify({ browser: "Chromium", results }, null, 2));
