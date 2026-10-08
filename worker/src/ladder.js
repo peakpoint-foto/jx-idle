@@ -47,7 +47,7 @@ export async function profile(req, env, body, url) {
   const name = String(url.searchParams.get("name") || "").trim();
   if (!name) throw new HttpError(400, "missing_name");
   const row = await env.DB.prepare(
-    `SELECT a.name,c.fac,c.lvl,c.power,c.bracket,c.flagged,c.updated_at AS last_sync
+    `SELECT a.name,c.fac,c.lvl,c.power,c.bracket,c.flagged,c.validation_status,c.updated_at AS last_sync
      FROM accounts a JOIN chars c ON c.account_id=a.id WHERE a.name=?1 COLLATE NOCASE`
   ).bind(name).first();
   if (!row) throw new HttpError(404, "not_found");
@@ -57,7 +57,8 @@ export async function profile(req, env, body, url) {
     lvl: row.lvl,
     power: row.power,
     bracket: row.bracket,
-    ranked: !row.flagged,
+    ranked: row.validation_status === "verified" && !row.flagged && !!row.bracket,
+    validation_status: row.validation_status || (row.flagged ? "flagged" : "verified"),
     last_sync: row.last_sync,
   };
 }

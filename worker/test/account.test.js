@@ -38,6 +38,7 @@ test("parseSave nhận chuỗi pack và từ chối chế độ khác ctc", () =
   assert.throws(() => parseSave({ ...st, lvl: "abc" }), { code: "bad_level" });
   assert.throws(() => parseSave("{not json"), { code: "bad_save" });
   assert.throws(() => parseSave({ ...st, cid: "other" }), { code: "bad_character_id" });
+  assert.throws(() => parseSave({ ...st, padding: "x".repeat(1 << 20) }), { code: "save_too_large" });
 });
 
 test("cleanName giữ tiếng Việt, chặn ký tự lạ", () => {

@@ -34,6 +34,12 @@ test("nopot survival potion changes neither HP nor cooldown", () => {
   const g = game();g.run("fixture();S.chal='nopot';Object.assign(SV,{on:true,paused:false,over:false,hp:10,maxhp:100,hpCd:0});svUseHp()");
   assert.deepEqual(g.json("[SV.hp,SV.hpCd]"), [10,0]);
 });
+test("siege life potion cap is enforced at the shared use point", () => {
+  const g = game();
+  g.run("fixture();S.siege={city:'kinh',layer:1,pots:0};R.hot={lifeT:0,manaT:0};usePotion('life',{dur:1,total:10},true);usePotion('life',{dur:1,total:10},true)");
+  assert.equal(g.run("S.siege.pots"), 1);
+  assert.equal(g.run("S.potUsed"), 1);
+});
 test("aborted training does not complete the train quest", () => {
   const g = game();g.run("fixture();RW().yt={i:5,have:0,done:false};Object.assign(SV,{t:0,kills:0,spawned:0,autoT:0,gold:0,L0:60,bossKills:0});svRewards(false)");
   assert.equal(g.run("ytState().done"), false);
@@ -93,6 +99,29 @@ test("Tong Kim shop caps each stable item ID weekly", () => {
   const points=g.run("S.attrPts"),tokens=g.run("tkTokens()");g.run("tkBuy(3)");
   assert.equal(g.run("S.attrPts"),points);assert.equal(g.run("tkTokens()"),tokens);
   g.run("tkState().week='previous';tkBuy(3)");assert.equal(g.run("S.attrPts"),points+4);
+});
+
+test("2.0 tower difficulty keeps increasing after floor 50", () => {
+  const g = game();
+  const values = g.json("[51,60,100,250,500,1000].map(f=>towerEndlessDifficulty(f,180).hp)");
+  assert.ok(values.every((v, i) => i === 0 || v > values[i - 1]));
+  assert.ok(g.run("towerEndlessDifficulty(1000,180).hp < 1e12"));
+});
+
+test("an in-flight activity reload is interrupted without refunding its entry", () => {
+  const g = game();
+  g.run("fixture('ctc');towerStart();save();S=unpack(localStorage.getItem(saveKey())).state;R.tower=null;R.enemies=[];activityRestoreOnLoad()");
+  assert.equal(g.run("S.activityRun"), null);
+  assert.equal(g.run("towerTries().n"), 1);
+  assert.equal(g.run("activityBusy()"), false);
+  assert.equal(g.run("S.activityInterrupted.kind"), "tower");
+});
+
+test("2.0 Kinh thành guaranteed set is once per UTC week", () => {
+  const g = game();
+  g.run("fixture('g2',60);S.siege={city:'kinh',layer:3,score:0,kills:0,pots:0};siegeExit(false,true);S.siege={city:'kinh',layer:3,score:0,kills:0,pots:0};siegeExit(false,true)");
+  assert.equal(g.run("RW().siege.g2Golden.w"), g.run("weekKey()"));
+  assert.equal(g.run("RW().stat.goldBoss"), 0);
 });
 test("mode transfer blocks an unclaimed completed quest", () => {
   const g=game();g.run("fixture();RW().yt={i:5,have:1,done:true};modeTransferDo()");

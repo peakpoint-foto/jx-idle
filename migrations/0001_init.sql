@@ -38,6 +38,20 @@ CREATE TABLE IF NOT EXISTS feedback(
   status TEXT NOT NULL DEFAULT 'open'
 );
 CREATE INDEX IF NOT EXISTS feedback_at ON feedback(status, at);
+CREATE TABLE IF NOT EXISTS activity_events(
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  account_id TEXT NOT NULL,
+  event_key TEXT NOT NULL,
+  activity TEXT NOT NULL,
+  mode TEXT NOT NULL,
+  period TEXT NOT NULL,
+  contribution INTEGER NOT NULL DEFAULT 0,
+  cleared INTEGER NOT NULL DEFAULT 0,
+  won INTEGER NOT NULL DEFAULT 0,
+  accepted_at INTEGER NOT NULL,
+  UNIQUE(account_id, event_key)
+);
+CREATE INDEX IF NOT EXISTS activity_quota ON activity_events(account_id, activity, period);
 CREATE UNIQUE INDEX IF NOT EXISTS chars_character_id ON chars(character_id) WHERE character_id IS NOT NULL;
 CREATE TABLE IF NOT EXISTS duels(
   id TEXT PRIMARY KEY,

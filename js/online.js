@@ -11,7 +11,7 @@ const onlKey = () => (typeof saveKey === "function" ? saveKey() : "jx") + "_onli
 function onlGet() { try { const v = JSON.parse(localStorage.getItem(onlKey()) || "null"); return v && v.token ? v : null } catch (e) { return null } }
 function onlSet(v) { try { v ? localStorage.setItem(onlKey(), JSON.stringify(v)) : localStorage.removeItem(onlKey()) } catch (e) { } }
 const onlEligible = () => typeof S !== "undefined" && S && S.fac && S.mode === "ctc";
-const ONL = { me: null, lastSync: 0, busy: false, conflict: null, room: null, roomTimer: 0 };
+const ONL = { me: null, lastSync: 0, busy: false, serverNow: 0, conflict: null, room: null, roomTimer: 0 };
 
 async function onlApi(path, opt = {}) {
   const acc = onlGet(), headers = {};
@@ -51,6 +51,7 @@ async function onlRegister(name) {
   const r = await onlApi("/register", { body: { name, save: pack(S), turnstile }, auth: false });
   if (r.character_id) S.cid = r.character_id;
   onlSet({ id: r.id, name: r.name, token: r.token });
+  ONL.me = { char: { character_id: r.character_id, sync_rev: r.sync_rev || 1 } };
   S.online = { id: r.id, name: r.name };
   ONL.conflict = null;
   ONL.lastSync = Date.now();
@@ -264,7 +265,7 @@ setInterval(() => { if (document.visibilityState!=="hidden" && onlGet() && docum
 // Heartbeat mỗi phút khi đã đăng ký; đồng bộ save mỗi 5 phút.
 setInterval(() => {
   if (!onlEligible() || !onlGet()) return;
-  onlApi("/hb", { method: "POST", keepalive: true }).then(d => { if (ONL.me) ONL.me.play_sec = d.play_sec }).catch(() => { });
+  onlApi("/hb", { method: "POST", keepalive: true }).then(d => { ONL.serverNow = d.server_now || 0; if (ONL.me) ONL.me.play_sec = d.play_sec }).catch(() => { });
   if (Date.now() - ONL.lastSync >= ONL_SYNC_MS) onlSync(true);
 }, ONL_HB_MS);
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden" && onlEligible() && onlGet() && Date.now() - ONL.lastSync > 60e3) onlSync(true) });

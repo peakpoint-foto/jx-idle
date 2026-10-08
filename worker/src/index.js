@@ -5,6 +5,7 @@ import { ensureSchema } from "./db.js";
 import { register, heartbeat, sync, me, recover, recoverSnapshot } from "./account.js";
 import { ladder, notices, adminFlags, adminUnflag } from "./ladder.js";
 import { feedback, adminFeedback, adminFeedbackSet, adminFeedbackMetrics } from "./feedback.js";
+import { activityClaim } from "./activity.js";
 import { profile } from "./ladder.js";
 import { duels, guild, room } from "./social.js";
 import { featureConfig, guardedFeature } from "./capabilities.js";
@@ -21,6 +22,7 @@ const ROUTES = {
   "POST /api/register": (req, env, body) => register(req, env, body),
   "POST /api/hb": (req, env) => heartbeat(req, env),
   "POST /api/sync": (req, env, body) => sync(req, env, body),
+  "POST /api/activity/claim": (req, env, body) => activityClaim(req, env, body),
   "GET /api/me": (req, env) => me(req, env),
   "POST /api/recover": (req, env, body) => recover(req, env, body),
   "GET /api/ladder": ladder,

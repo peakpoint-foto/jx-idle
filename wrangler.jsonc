@@ -15,13 +15,23 @@
       "binding": "DB",
       "database_name": "jx-idle-final-db",
       "database_id": "65f253d1-733b-4ab3-b1b5-7ffad08972af",
+      "preview_database_id": "77d7a5ba-32ea-43ef-acf7-7cc5031aa230",
       "migrations_dir": "migrations"
     }
   ],
   "observability": { "enabled": true },
-  // Bản xem trước của PR (Workers Builds chạy `wrangler preview`). Binding D1 không kế thừa vào đây,
-  // nên bản xem trước không chạm dữ liệu thật; API online ở bản xem trước trả 503 "no_db".
-  "previews": {}
+  // D1 không kế thừa vào bản xem trước của PR, nên khai báo DB riêng để API online hoạt động
+  // mà không ghi dữ liệu production.
+  "previews": {
+    "d1_databases": [
+      {
+        "binding": "DB",
+        "database_name": "jx-idle-preview-db",
+        "database_id": "77d7a5ba-32ea-43ef-acf7-7cc5031aa230",
+        "migrations_dir": "migrations"
+      }
+    ]
+  }
   // Biến tùy chọn (Settings > Variables and Secrets):
   //   TURNSTILE_SITEKEY (biến) + TURNSTILE_SECRET (secret): bật chống bot khi đăng ký.
   //   IP_SALT (secret): muối khi băm IP.

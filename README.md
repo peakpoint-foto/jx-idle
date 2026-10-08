@@ -68,7 +68,7 @@ Các nút **Vượt ải**, **Luyện công**, **Công thành**, **Tống Kim** 
 - **Tống Kim:** mở chiến trường và phần thưởng. CTC/PHLT có một trận mỗi tuần; 2.0 không giới hạn lượt vào và giới hạn mua từng mặt hàng mỗi tuần.
 - **Leo tháp:** mở Tháp thử thách. Ở 2.0, lượt vào và số tầng đều không giới hạn; chế độ khác có số lượt theo ngày và chinh phục tối đa 50 tầng. Sau tầng 50 ở 2.0, cấp quái theo cấp nhân vật (tối đa 180), không tăng vô hạn theo số tầng.
 
-Trong tháp, mỗi tầng có một đợt quái tinh anh; tầng chia hết cho năm là tầng trùm. Qua tầng mới lần đầu sẽ nhận thưởng tiến trình. Mọi chế độ đều tiếp tục leo vô tận ngay trong lượt hiện tại sau khi qua tầng 50 (không tự thoát); chỉ chế độ 2.0 không giới hạn lượt vào, các chế độ khác vẫn có số lượt theo ngày và lần vào sau khi đã chinh phục tháp bắt đầu lại từ tầng 40. Phần thưởng lần đầu chỉ trao khi đạt tầng cao hơn kỷ lục trước đó.
+Trong tháp, mỗi tầng có một đợt quái tinh anh; tầng chia hết cho năm là tầng trùm. Qua tầng mới lần đầu sẽ nhận thưởng tiến trình. Mọi chế độ đều tiếp tục leo vô tận ngay trong lượt hiện tại sau khi qua tầng 50 (không tự thoát); chỉ chế độ 2.0 không giới hạn lượt vào, các chế độ khác vẫn có số lượt theo ngày và lần vào sau khi đã chinh phục tháp bắt đầu lại từ tầng 40. Ở 2.0, độ khó hữu hiệu tiếp tục tăng theo từng tầng sau tầng 50 bằng hệ số HP, sát thương, phòng thủ và né tránh; không có trần gameplay theo cấp quái. Phần thưởng lần đầu chỉ trao khi đạt tầng cao hơn kỷ lục trước đó.
 
 Ba mục Công thành, Tống Kim và Tháp được mở từ các nút riêng trên chiến trường, không còn nằm trong dãy tab Hệ thống/Phần thưởng. Cửa hàng, trạng thái hoạt động và các mục thưởng khác vẫn hiển thị trong bảng hoạt động tương ứng.
 
@@ -195,15 +195,16 @@ Bản Wrangler local gọi API local cùng origin. Bản static `start_game.bat`
 
 Máy chủ là Cloudflare Worker `jx-idle-final` (cấu hình trong `wrangler.jsonc`, mã trong `worker/`), phục vụ cả game lẫn API `/api/*`, dữ liệu lưu trong D1.
 
-1. `npm install`, rồi `npx wrangler deploy`. D1 `jx-idle-final-db` đã khai báo kèm `database_id` trong `wrangler.jsonc`.
-2. Bảng dữ liệu được Worker tự tạo ở request đầu tiên. Không cần chạy migration riêng.
-3. Tùy chọn: đặt `TURNSTILE_SITEKEY` (biến) và `TURNSTILE_SECRET` (secret) để bật chống bot khi đăng ký, và `IP_SALT` (secret) làm muối băm IP.
-4. Đặt secret `ADMIN_KEY` (ít nhất 16 ký tự) để dùng API quản trị, gửi kèm header `x-admin-key`:
+1. `npm install`, rồi `npx wrangler deploy`. D1 production `jx-idle-final-db` đã khai báo kèm `database_id` trong `wrangler.jsonc`.
+2. PR preview dùng D1 riêng `jx-idle-preview-db` qua `previews.d1_databases`, không ghi vào dữ liệu production. Khi deploy bằng Workers Builds, cấu hình preview phải được lấy từ commit chứa `wrangler.jsonc` này.
+3. Bảng dữ liệu được Worker tự tạo ở request đầu tiên. Nếu muốn chuẩn bị schema trước, chạy `npx wrangler d1 migrations apply DB --remote` cho production và `npx wrangler d1 migrations apply DB --remote --preview` cho preview.
+4. Tùy chọn: đặt `TURNSTILE_SITEKEY` (biến) và `TURNSTILE_SECRET` (secret) để bật chống bot khi đăng ký, và `IP_SALT` (secret) làm muối băm IP.
+5. Đặt secret `ADMIN_KEY` (ít nhất 16 ký tự) để dùng API quản trị, gửi kèm header `x-admin-key`:
    - `GET /api/admin/flags?name=<tên>`: xem cờ của một nhân vật (bỏ `name` để xem 200 cờ mới nhất).
    - `POST /api/admin/unflag` với `{"name":"<tên>"}`: gỡ mọi cờ đang mở. Nếu nhân vật vẫn vi phạm, lần đồng bộ sau sẽ bị gắn cờ lại.
-5. Ngưỡng cấp theo giờ chơi nằm ở `LV_TIME` trong `worker/src/validate.js`. Mặc định cố ý rộng tay: 3 quái/giây (đã tính Lệnh bài Triệu hồi nhân ba số quái), hệ số EXP ×4, thêm 25% và 1 giờ dự phòng. Ví dụ cấp 100 cần khoảng 0,9 giờ, cấp 120 khoảng 2,8 giờ, cấp 160 khoảng 10,5 giờ.
-6. Máy chủ dùng lại mã game: `worker/build-game.mjs` đóng gói các script cần thiết thành `worker/gen/game.js`. Wrangler tự chạy bước này trước mỗi lần dev/deploy (`build.command`).
-7. Chạy thử cục bộ: `npx wrangler dev`, kiểm thử: `npm test`.
+6. Ngưỡng cấp theo giờ chơi nằm ở `LV_TIME` trong `worker/src/validate.js`. Mặc định cố ý rộng tay: 3 quái/giây (đã tính Lệnh bài Triệu hồi nhân ba số quái), hệ số EXP ×4, thêm 25% và 1 giờ dự phòng. Ví dụ cấp 100 cần khoảng 0,9 giờ, cấp 120 khoảng 2,8 giờ, cấp 160 khoảng 10,5 giờ.
+7. Máy chủ dùng lại mã game: `worker/build-game.mjs` đóng gói các script cần thiết thành `worker/gen/game.js`. Wrangler tự chạy bước này trước mỗi lần dev/deploy (`build.command`).
+8. Chạy thử cục bộ: `npx wrangler dev`, kiểm thử: `npm test`.
 
 ## Tốc độ, âm thanh và hiển thị
 

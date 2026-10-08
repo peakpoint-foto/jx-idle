@@ -40,6 +40,36 @@ test("sửa chỉ số trang bị bị gắn cờ", () => {
   assert.ok(codes(validateChar(s3, 1e7)).includes("item_enh"));
 });
 
+test("dòng cộng cấp kỹ năng hệ cũ chờ xác minh thay vì gắn cờ gian lận", () => {
+  const s = makeChar(60);
+  const skill = G.J.affix.find((a) => G.attrName(a.a) === "waterskill_v");
+  assert.ok(skill);
+  s.eq.weapon.mag = [{ a: skill.a, p: [38, -1, 0], pre: 1 }];
+  const r = validateChar(s, 1e7);
+  assert.deepEqual(codes(r), []);
+  assert.equal(r.pending[0][0], "item_policy_pending");
+  // validateChar reports the natural bracket; applyValidation is the boundary
+  // that converts any pending result into an unranked character.
+  assert.equal(r.bracket.k, "so");
+});
+
+test("validator soi cả hành trang/đất và dữ liệu số hỏng", () => {
+  const s = makeChar(60);
+  const old = G.makeItem(0, 0, 2, 3);
+  const skill = G.J.affix.find((a) => G.attrName(a.a) === "waterskill_v");
+  old.mag = [{ a: skill.a, p: [38, -1, 0], pre: 1 }];
+  s.inv = [old];
+  const pending = validateChar(s, 1e7);
+  assert.deepEqual(codes(pending), []);
+  assert.ok(pending.pending.some(([code]) => code === "item_policy_pending"));
+
+  const malformed = makeChar(60);
+  malformed.inv[0] = G.makeItem(0, 0, 2, 3);
+  malformed.inv[0].base[0][1] = Infinity;
+  const invalid = validateChar(malformed, 1e7);
+  assert.ok(codes(invalid).includes("item_base"));
+});
+
 test("điểm tiềm năng và kỹ năng vượt mức bị gắn cờ", () => {
   const s = makeChar(50);
   s.attr.str = 5000;

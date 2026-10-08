@@ -11,6 +11,7 @@ const before=(a,b)=>assert.ok(scripts.indexOf(a)>=0&&scripts.indexOf(a)<scripts.
 for(const [a,b] of [
   ['data.js','js/core.js'],['world.js','js/core.js'],['js/core.js','js/skill_graph.js'],['js/skill_graph.js','js/stats.js'],
   ['js/modes.js','js/stats.js'],['js/capabilities.js','js/combat.js'],['js/combat_contract.js','js/combat.js'],
+  ['js/potion_policy.js','js/combat_policy.js'],['js/potion_policy.js','js/combat_reports.js'],['js/potion_policy.js','js/expedition_travel.js'],
   ['js/combat.js','js/save.js'],['js/save.js','js/save_schema.js'],['js/save_schema.js','js/main.js'],
   ['js/build_profiles.js','js/training.js'],['js/online.js','js/online_lobby.js'],['js/ui.js','js/main.js'],
   ['js/jxorig.js','js/combat_reports.js'],['js/combat_reports.js','js/boss_phases.js'],['js/boss_phases.js','js/expedition.js'],

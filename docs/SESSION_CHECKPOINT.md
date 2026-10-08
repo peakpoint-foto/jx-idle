@@ -32,3 +32,11 @@ Kiểm chứng cuối trước commit:
 - `git diff --check`: pass. Browser nghiệm thu gần nhất thuộc E04; C05 chưa có UI hoặc demo hai trình duyệt.
 
 Nhánh bàn giao: `feat/online-multiplayer`. SHA checkpoint và trạng thái push được xác minh qua Git và báo trong phản hồi bàn giao; không triển khai production.
+
+## Xử lý PR #19 ngày 08/10/2026
+
+Theo yêu cầu sửa lỗi merge PR, kết hợp `main` tại `fa0c901` vào nhánh bàn giao. Giải quyết xung đột ở index.html, js/save.js, test/helpers/game.mjs, worker/src/account.js và worker/src/index.js; giữ SAVE_V2/migration, sandbox guard, validation CAS, feedback metrics cùng các sửa activity/loot/stage/potion và API activity từ main.
+
+Đặt potion_policy trước các wrapper combat policy/report/expedition, thêm kiểm tra thứ tự nạp; bỏ mock ghi đè const jrAdd trong test Kinh thành để chạy journal thật. Kiểm chứng sau merge: contracts 93 script/43 task/27 DONE, 244/244 test tổng, 32/32 D1, audit thường pass (15 target vẫn unsupported), browser smoke hồ sơ sạch đủ 3 mode × 2 viewport. Lockfile và data.js không đổi.
+
+CI cũ run37749101567 đạt các bước Node/install/contracts/test/D1/audit, thất bại ở browser smoke. GitHub API/log chi tiết hiện trả Forbidden/404; trang job công khai chỉ xác nhận bước thất bại. Bổ sung stderr artifact và annotation cho browser smoke để kiểm tra lần chạy mới. Kết quả CI remote sau push phải được xác minh riêng, không suy từ local pass. Phạm vi lần này là sửa PR; tiến độ vẫn 27/43 và C05 PAUSED, không tiếp tục backlog hay merge vào main.
