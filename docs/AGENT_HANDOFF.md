@@ -2,7 +2,7 @@
 
 Đọc [backlog](AGENT_BACKLOG.md) và [TODO](AGENT_TODO.md) trước khi nhận task. Đây là kế hoạch, không phải lệnh làm mọi tính năng ngay hoặc tự deploy.
 
-**Người dùng đã giao lệnh mới tiếp tục từ27task đến toàn backlog ngày08/10/2026 (Asia/Saigon).** Trạng thái ACTIVE; C05 đang triển khai, O04 thiếu release gates remote. [SESSION_CHECKPOINT.md](SESSION_CHECKPOINT.md) giữ lịch sử checkpoint và PR. Thực hiện theo phụ thuộc; không tự deploy production.
+**Trạng thái 08/10/2026:** C05/G02/G05 đã nghiệm thu local, tổng 30/43 task; 13 task còn mở. PR #19 đã merge; nhánh đã đồng bộ main và push tại `51c1905`. [PR_MERGE_FIX.md](PR_MERGE_FIX.md) ghi bản sửa kiểm tra reconnect và evidence. GitHub API Forbidden nên chưa tạo được PR mới. O04 vẫn thiếu release gates remote; không tự deploy production.
 
 ## Bối cảnh cần giữ
 

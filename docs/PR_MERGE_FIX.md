@@ -8,4 +8,6 @@ Sửa kích thước nút progression bằng selector scoped có specificity cao
 
 Kiểm chứng local: contracts pass; 260/260 test pass; 4/4 progression test pass; Chromium cả ba mode/mobile/desktop pass; hai client D1 pass shared state, mất ACK/retry, reload reconnect, hạ boss thật và receipt một lần.
 
-GitHub API trả Forbidden cả lần thử thông thường và escalated; Git HTTPS fetch vẫn hoạt động. Không coi CI remote mới là pass trước khi có kết quả. Chưa deploy hoặc tự merge PR mới.
+Đã merge main không xung đột và push `51c1905`; xác nhận remote SHA bằng git ls-remote. D1 suite 38/38 pass. CI mới: https://github.com/peakpoint-foto/jx-idle/actions/runs/37784364781 (đang chạy khi ghi).
+
+GitHub API trả Forbidden cả lần thử thông thường và escalated khi đọc/tạo PR; Git HTTPS fetch/push hoạt động. Chưa tạo được PR mới. Không coi CI remote mới là pass trước khi có kết quả. Chưa deploy hoặc tự merge PR mới.
