@@ -159,6 +159,7 @@ export const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS guild_receipts(account_id TEXT NOT NULL,request_id TEXT NOT NULL,guild_id TEXT NOT NULL,action TEXT NOT NULL,payload TEXT NOT NULL,created_at INTEGER NOT NULL,PRIMARY KEY(account_id,request_id))`,
   `CREATE TABLE IF NOT EXISTS guild_logs(account_id TEXT NOT NULL,request_id TEXT NOT NULL,guild_id TEXT NOT NULL,action TEXT NOT NULL,target_id TEXT,created_at INTEGER NOT NULL,PRIMARY KEY(account_id,request_id))`,
   `CREATE INDEX IF NOT EXISTS guild_logs_recent ON guild_logs(guild_id,created_at)`,
+  `CREATE TABLE IF NOT EXISTS guild_tech_nodes(guild_id TEXT NOT NULL,node_id TEXT NOT NULL,season_idx INTEGER NOT NULL,level INTEGER NOT NULL DEFAULT 0,contributed INTEGER NOT NULL DEFAULT 0,PRIMARY KEY(guild_id,node_id,season_idx))`,
   `CREATE TABLE IF NOT EXISTS mentorships(
     mentor_id TEXT NOT NULL,
     disciple_id TEXT NOT NULL,

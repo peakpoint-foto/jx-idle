@@ -221,3 +221,11 @@ Chi tiết từng tính năng xem các mục dưới.
 - `js/combo.js`: dùng skill A mở cửa sổ 2s cho các skill được A bổ trợ
   (qua `skillSupportLinks`); dùng skill đích trong cửa sổ +25% sát thương.
 - UI: chỉ báo combo nhỏ trên màn hình combat (tên skill và đếm ngược).
+
+## 2.15 Guild tech tree
+
+- `data/content/guild_tech.v1.json`: 3 node (Khí Thế +EXP, Lò Rèn -phí, Chiêu Hiền +slot);
+  node có cấp, yêu cầu mở trước, reset theo mùa.
+- Worker: `guild_tech.js` (đóng góp tích lũy qua quota 0.3, idempotent theo nonce),
+  API `/api/guild-tech` (GET/POST), flag `guild_tech` tắt mặc định.
+- Client: `js/guild_tech_ui.js` hiển thị cây và nút đóng góp.
