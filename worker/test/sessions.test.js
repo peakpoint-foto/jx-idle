@@ -69,7 +69,7 @@ test('CAS batch rollback leaves deterministic step/actions retryable; model/mode
   await f.DB.prepare("CREATE TRIGGER fail_party_update BEFORE UPDATE OF state ON combat_sessions BEGIN SELECT RAISE(ABORT,'test rollback'); END").run();f.tick(250);await assert.rejects(()=>p.get(id));
   assert.equal((await f.DB.prepare('SELECT state FROM combat_sessions WHERE id=?1').bind(id).first()).state,before);assert.equal((await f.DB.prepare('SELECT applied FROM session_actions').first()).applied,0);
   await f.DB.prepare('DROP TRIGGER fail_party_update').run();assert.equal((await p.get(id)).session.tick,1);assert.equal((await f.DB.prepare('SELECT applied FROM session_actions').first()).applied,1);
-  await f.DB.prepare("UPDATE chars SET snapshot=?1 WHERE account_id='party1'").bind(JSON.stringify({mode:'phlt'})).run();await assert.rejects(()=>q.get(id),{code:'session_mode_denied'});
+  await f.DB.prepare("UPDATE chars SET snapshot=?1 WHERE account_id='party1'").bind(JSON.stringify({mode:'unknown'})).run();await assert.rejects(()=>q.get(id),{code:'session_mode_denied'});
   const s=JSON.parse((await f.DB.prepare('SELECT state FROM combat_sessions WHERE id=?1').bind(id).first()).state);s.model='future';await f.DB.prepare('UPDATE combat_sessions SET state=?2 WHERE id=?1').bind(id,JSON.stringify(s)).run();f.tick(250);await assert.rejects(()=>p.get(id),{code:'session_model_changed'});
 });
 test('create receipt survives terminal state and expiry releases all roster locks before a new session',async t=>{
@@ -120,4 +120,62 @@ test('dungeon is default-off, binds create retry to activity and breaks formatio
   f.tick(250);assert.equal((await q.get(retry.id)).session.status,'aborted','wipe ends without a reward');
   const next=(await q.post({action:'create',id:'dungeon_after_wipe_0123',activity:'dungeon'})).session;
   assert.notEqual(next.id,retry.id);assert.equal(next.status,'active','ready party can retry after wipe');
+});
+const editState=async(f,id,fn)=>{const r=await f.DB.prepare('SELECT state FROM combat_sessions WHERE id=?1').bind(id).first(),s=JSON.parse(r.state);fn(s);await f.DB.prepare('UPDATE combat_sessions SET state=?2,revision=revision+1 WHERE id=?1').bind(id,JSON.stringify(s)).run();};
+test('siege is default-off, exposes objectives and gate, and the server validates capture/supply targets',async t=>{
+  const f=await fixture(t),[p]=f.players;
+  await assert.rejects(()=>p.post({action:'create',activity:'siege'}),{code:'feature_disabled'});
+  f.env.FEATURE_FLAGS.party_siege=true;
+  const created=await p.post({action:'create',id:'siege_create_receipt_01',activity:'siege'}),id=created.session.id;
+  assert.equal(created.session.activity,'siege');assert.equal(created.session.boss.gate,1);assert.equal(created.session.objectives.captured,0);
+  assert.deepEqual(created.session.objectives.points.map(x=>x.id),['p1','p2','p3']);
+  const tick=created.session.tick+1;
+  for(const bad of [{kind:'capture'},{kind:'capture',target:'boss'},{kind:'capture',target:'p9'},{kind:'supply',target:'party0'},{kind:'supply',target:'nobody'},{kind:'attack',target:'p1'}])
+    await assert.rejects(()=>p.post({action:'command',id,seq:1,tick,...bad}),{code:'bad_session_command'},JSON.stringify(bad));
+  assert.equal((await p.post({action:'command',id,seq:1,tick,kind:'capture',target:'p1'})).command.seq,1);
+  const g=await fixture(t),party=(await g.players[0].post({action:'create'})).session;
+  await assert.rejects(()=>g.players[0].post({action:'command',id:party.id,seq:1,tick:party.tick+1,kind:'capture',target:'p1'}),{code:'bad_session_command'},'capture exists only in siege');
+  assert.equal(party.boss.gate,0);assert.deepEqual(party.objectives,{breaks:0,supports:0});
+});
+test('siege: simultaneous captures count, supply boosts capture and logistics, completion pays one idempotent siege receipt',async t=>{
+  const f=await fixture(t),[p,q]=f.players;f.env.FEATURE_FLAGS.party_siege=true;
+  const id=(await p.post({action:'create',activity:'siege'})).session.id;
+  await editState(f,id,s=>{for(const a of s.actors)a.cooldown=1e6;s.actors[1].mp=0;});
+  const snap=(await p.get(id)).session.tick;
+  await p.post({action:'command',id,seq:1,tick:snap+1,kind:'capture',target:'p1'});
+  await q.post({action:'command',id,seq:1,tick:snap+1,kind:'capture',target:'p1'});
+  f.tick(250);let view=(await p.get(id)).session;
+  assert.equal(view.objectives.points[0].progress,2,'both same-tick captures apply');assert.deepEqual(view.actors.map(a=>a.contribution.capture),[1,1]);assert.equal(view.boss.gate,1);
+  f.tick(250);const now=(await p.get(id)).session.tick;await q.get(id);
+  await p.post({action:'command',id,seq:2,tick:now+1,kind:'supply',target:'party1'});
+  await q.post({action:'command',id,seq:2,tick:now+1,kind:'capture',target:'p2'});
+  f.tick(250);view=(await p.get(id)).session;
+  assert.ok(view.actors[0].contribution.logistics>0);assert.ok(view.actors[1].mp>0);assert.equal(view.objectives.points[1].progress,2,'supplied capturer adds 1+1');
+  await editState(f,id,s=>{for(const x of s.objectives.points){x.owned=true;x.progress=x.need;}s.objectives.captured=3;s.boss.gate=0;s.boss.hp=1;for(const a of s.actors)a.cooldown=0;});
+  for(let i=0;i<80&&view.status!=='completed';i++){f.tick(250);await q.get(id);view=(await p.get(id)).session;}
+  assert.equal(view.status,'completed');
+  const receipts=[await p.post({action:'claim',id}),await q.post({action:'claim',id}),await p.post({action:'claim',id})];
+  assert.equal(receipts[0].receipt.amount,1);assert.equal(receipts[1].receipt.amount,1);assert.deepEqual(receipts[2].receipt,receipts[0].receipt);
+  const ledger=(await f.DB.prepare("SELECT account_id,source,delta FROM resource_ledger WHERE request_id=?1 ORDER BY account_id").bind('party:'+id).all()).results;
+  assert.deepEqual(ledger.map(r=>[r.source,r.delta]),[['siege_completion',1],['siege_completion',1]]);
+});
+test('siege quota is one active-or-completed run per UTC week; aborts and flag rollback refund it',async t=>{
+  const f=await fixture(t),[p,q]=f.players;f.env.FEATURE_FLAGS.party_siege=true;
+  const [a,b]=await Promise.all([p.post({action:'create',activity:'siege'}),p.post({action:'create',activity:'siege'})]);
+  assert.equal(a.session.id,b.session.id);
+  assert.equal((await f.DB.prepare("SELECT COUNT(*) n FROM combat_sessions WHERE json_extract(state,'$.activity')='siege'").first()).n,1,'concurrent creates make one run');
+  assert.equal((await p.post({action:'create',activity:'siege'})).session.id,a.session.id,'a repeated create returns the live run instead of a quota error');
+  f.env.FEATURE_FLAGS.party_siege=false;assert.equal((await q.get(a.session.id)).session.status,'aborted');f.env.FEATURE_FLAGS.party_siege=true;
+  const again=(await p.post({action:'create',activity:'siege'})).session;assert.notEqual(again.id,a.session.id,'an aborted run refunds the weekly attempt');
+  const finish=async id=>{await f.DB.batch([f.DB.prepare("UPDATE combat_sessions SET status='completed',ended_at=?2 WHERE id=?1").bind(id,f.now()),f.DB.prepare('UPDATE session_members SET active=0 WHERE session_id=?1').bind(id)]);};
+  await finish(again.id);
+  await assert.rejects(()=>p.post({action:'create',activity:'siege'}),{code:'siege_quota_used'});
+  await assert.rejects(()=>q.post({action:'create',activity:'siege'}),{code:'session_leader_required'});
+  const monday=Date.UTC(2026,9,5);
+  await f.DB.prepare('UPDATE combat_sessions SET created_at=?2 WHERE id=?1').bind(again.id,monday).run();
+  await assert.rejects(()=>p.post({action:'create',activity:'siege'}),{code:'siege_quota_used'},'Monday 00:00 UTC still belongs to this week');
+  const party=(await p.post({action:'create'})).session;assert.equal(party.activity,'party','quota applies to siege only');
+  await f.DB.batch([f.DB.prepare("UPDATE combat_sessions SET status='aborted',ended_at=?2 WHERE id=?1").bind(party.id,f.now()),f.DB.prepare('UPDATE session_members SET active=0 WHERE session_id=?1').bind(party.id)]);
+  await f.DB.prepare('UPDATE combat_sessions SET created_at=?2 WHERE id=?1').bind(again.id,monday-1).run();
+  const next=(await p.post({action:'create',activity:'siege'})).session;assert.equal(next.status,'active','previous UTC week does not count');
 });

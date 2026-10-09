@@ -13,7 +13,7 @@ const OUT = path.join(ROOT, "worker/gen/game.js");
 // Đúng thứ tự trong index.html. Chỉ những file calc() và kiểm định cần.
 const FILES = [
   "data.js", "world.js", "js/core.js", "js/skill_graph.js", "js/modes.js", "js/capabilities.js", "js/stats.js", "js/combat_contract.js", "js/rift_rules.js", "js/session_combat.js", "js/feedback_context.js", "js/loot.js",
-  "js/sets.js", "js/combat.js", "js/save.js", "js/save_schema.js", "js/rewards.js", "js/depth.js",
+  "js/sets.js", "js/combat.js", "js/save.js", "js/save_schema.js", "js/rewards.js", "js/depth.js", "js/standard_gear.js",
 ];
 // File chỉ chứa một object dữ liệu lớn: nhúng dạng chuỗi JSON (JSON.parse nhanh hơn literal JS).
 const DATA = { "data.js": "JX", "world.js": "JW" };
@@ -28,7 +28,8 @@ const EXPORTS = [
   "COMBAT_MODEL_VERSION", "combatModelDescriptor", "combatEvent",
   "applyPart", "hitPercent", "heroGuard",
   "tickEnemyStatuses",
-  "SESSION_COMBAT", "sessionActor", "sessionCombatNew", "sessionCombatStep",
+  "CHALLENGE_VERSION", "CHALLENGE_PRESETS", "challengeBudgets", "challengeSpecCheck", "challengeSave", "standardGear",
+  "SESSION_COMBAT", "SESSION_SIEGE", "SESSION_RESCUE", "SESSION_TRIAL", "sessionTrialRule", "sessionActor", "sessionCombatNew", "sessionCombatStep",
   "RIFT_RULES", "RIFT_MODIFIERS", "riftModifiersValid", "riftStats", "riftChoices",
   "featureEnabled", "featureConfigSnapshot", "parseFeatureFlags",
   "redactFeedbackText", "cleanFeedbackDiagnostics", "cleanFeedbackContext",

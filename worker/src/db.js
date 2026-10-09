@@ -7,6 +7,19 @@ export const SCHEMA = [
   `CREATE INDEX IF NOT EXISTS player_mutes_expiry ON player_mutes(expires_at)`,
   `CREATE TABLE IF NOT EXISTS room_chat(id TEXT PRIMARY KEY,scope TEXT NOT NULL DEFAULT 'room',room_id TEXT NOT NULL,sender_id TEXT NOT NULL,client_id TEXT NOT NULL,body TEXT NOT NULL,created_at INTEGER NOT NULL,UNIQUE(sender_id,client_id))`,
   `CREATE INDEX IF NOT EXISTS room_chat_scope_room_time ON room_chat(scope,room_id,created_at DESC)`,
+  `CREATE TABLE IF NOT EXISTS season_meta(season_idx INTEGER PRIMARY KEY,frozen_at INTEGER NOT NULL)`,
+  `CREATE TABLE IF NOT EXISTS season_final(season_idx INTEGER NOT NULL,account_id TEXT NOT NULL,fac TEXT NOT NULL,bracket TEXT NOT NULL,points INTEGER NOT NULL,wins INTEGER NOT NULL,placement INTEGER NOT NULL,group_size INTEGER NOT NULL,title TEXT NOT NULL,claimed_at INTEGER,PRIMARY KEY(season_idx,account_id))`,
+  `CREATE INDEX IF NOT EXISTS season_final_group ON season_final(season_idx,fac,bracket,placement)`,
+  `CREATE TABLE IF NOT EXISTS trial_results(week INTEGER NOT NULL,length TEXT NOT NULL,account_id TEXT NOT NULL,rules TEXT NOT NULL,session_id TEXT NOT NULL,depth INTEGER NOT NULL,score REAL NOT NULL,ticks INTEGER NOT NULL,created_at INTEGER NOT NULL,PRIMARY KEY(week,length,account_id,rules))`,
+  `CREATE INDEX IF NOT EXISTS trial_results_board ON trial_results(week,length,rules,score DESC,created_at)`,
+  `CREATE TABLE IF NOT EXISTS trial_recorded(session_id TEXT PRIMARY KEY,recorded_at INTEGER NOT NULL)`,
+  `CREATE TABLE IF NOT EXISTS challenges(id TEXT PRIMARY KEY,author_id TEXT NOT NULL,preset TEXT NOT NULL,version TEXT NOT NULL,spec TEXT NOT NULL,spec_hash TEXT NOT NULL,status TEXT NOT NULL DEFAULT 'open',created_at INTEGER NOT NULL,UNIQUE(author_id,preset,version,spec_hash))`,
+  `CREATE INDEX IF NOT EXISTS challenges_recent ON challenges(status,created_at DESC)`,
+  `CREATE INDEX IF NOT EXISTS challenges_author ON challenges(author_id,created_at)`,
+  `CREATE TABLE IF NOT EXISTS challenge_attempts(session_id TEXT PRIMARY KEY,challenge_id TEXT NOT NULL,account_id TEXT NOT NULL,created_at INTEGER NOT NULL,recorded_at INTEGER)`,
+  `CREATE INDEX IF NOT EXISTS challenge_attempts_account ON challenge_attempts(account_id,created_at)`,
+  `CREATE TABLE IF NOT EXISTS challenge_results(challenge_id TEXT NOT NULL,account_id TEXT NOT NULL,session_id TEXT NOT NULL,depth INTEGER NOT NULL,score REAL NOT NULL,ticks INTEGER NOT NULL,created_at INTEGER NOT NULL,PRIMARY KEY(challenge_id,account_id))`,
+  `CREATE INDEX IF NOT EXISTS challenge_results_board ON challenge_results(challenge_id,score DESC,created_at)`,
   `CREATE INDEX IF NOT EXISTS player_blocks_target ON player_blocks(target_id,blocker_id)`,
   `CREATE TABLE IF NOT EXISTS player_reports(id INTEGER PRIMARY KEY AUTOINCREMENT,reporter_id TEXT NOT NULL,target_id TEXT NOT NULL,reason TEXT NOT NULL,details TEXT NOT NULL DEFAULT '',created_at INTEGER NOT NULL,status TEXT NOT NULL DEFAULT 'open')`,
   `CREATE INDEX IF NOT EXISTS player_reports_status_created ON player_reports(status,created_at)`,
@@ -187,6 +200,8 @@ const COLUMNS = [
   "ALTER TABLE chars ADD COLUMN validation_note TEXT",
   "ALTER TABLE chars ADD COLUMN character_id TEXT",
   "ALTER TABLE chars ADD COLUMN sync_rev INTEGER NOT NULL DEFAULT 1",
+  "ALTER TABLE chars ADD COLUMN mode TEXT NOT NULL DEFAULT 'ctc'",
+  "ALTER TABLE rooms ADD COLUMN mode TEXT NOT NULL DEFAULT 'ctc'",
 ];
 
 const readyByDatabase = new WeakMap();
@@ -203,6 +218,7 @@ export function ensureSchema(db) {
           });
         await db.prepare("CREATE INDEX IF NOT EXISTS chars_ladder ON chars(validation_status, bracket, flagged, power)").run();
         await db.prepare("CREATE UNIQUE INDEX IF NOT EXISTS chars_character_id ON chars(character_id) WHERE character_id IS NOT NULL").run();
+        await db.prepare("CREATE INDEX IF NOT EXISTS chars_mode ON chars(mode, bracket, validation_status)").run();
       })
       .catch((e) => {
         readyByDatabase.delete(db);

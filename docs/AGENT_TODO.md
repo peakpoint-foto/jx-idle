@@ -1,11 +1,11 @@
 # TODO bàn giao agent — Võ Lâm Idle
 
 Nguồn đặc tả: [AGENT_BACKLOG.md](AGENT_BACKLOG.md). Ngày: 08/10/2026 (Asia/Saigon).
-Tiến độ thực thi: 30/43 task (F01–F07, B01–B05, G01/G02/G03/G05, E01/E02/E04, R01, O02, C01–C05, P01/P02/P03/P04) đã nghiệm thu local; 13 task còn lại chưa hoàn thành. F02 dùng nhánh unsupported được backlog cho phép, không tuyên bố khôi phục 15 target thiếu. Không ghi nhận mục tiêu 100% hoặc đủ điều kiện public online. Xem [evidence](EXECUTION_EVIDENCE.md) và [mapping còn thiếu](SKILL_AUDIT.md). Các đợt là nhóm phạm vi, không phải cam kết thời gian; phụ thuộc quyết định thứ tự thực tế.
+Tiến độ thực thi: 39/43 task (F01–F07, B01–B05, G01/G02/G03/G05, E01/E02/E04, R01, R02, O01, O02, C01–C08, E03, P01–P06, G04) đã nghiệm thu local; 4 task còn lại chưa hoàn thành. F02 dùng nhánh unsupported được backlog cho phép, không tuyên bố khôi phục 15 target thiếu. Không ghi nhận mục tiêu 100% hoặc đủ điều kiện public online. Xem [evidence](EXECUTION_EVIDENCE.md) và [mapping còn thiếu](SKILL_AUDIT.md). Các đợt là nhóm phạm vi, không phải cam kết thời gian; phụ thuộc quyết định thứ tự thực tế.
 
 ## Trạng thái và cách nhận
 
-**ACTIVE theo lệnh mới ngày08/10/2026 (Asia/Saigon): tiếp tục từ27task để thực hiện toàn backlog.** C05/G02/G05 DONE local; 30/43 DONE local,13task còn mở. Lệnh mới thay trạng thái PAUSED trước đó; rollout production vẫn cần lệnh deploy riêng.
+**ACTIVE theo lệnh mới ngày08/10/2026 (Asia/Saigon): tiếp tục từ27task để thực hiện toàn backlog.** C05/G02/G05 DONE local; 39/43 DONE local, 4 task còn mở. Lệnh mới thay trạng thái PAUSED trước đó; rollout production vẫn cần lệnh deploy riêng.
 
 - `[ ]`: chưa xong. Ghi `IN_PROGRESS` cạnh task khi nhận; vẫn để ô trống.
 - `[x]`: đạt toàn bộ nghiệm thu và đã ghi evidence; không dùng cho task chỉ mới viết code.
@@ -55,20 +55,20 @@ Tiến độ thực thi: 30/43 task (F01–F07, B01–B05, G01/G02/G03/G05, E01/
 - [x] **G05** Tiến trình thử nhiều build — P2, g2; phụ thuộc: G02,G03,F05. Evidence: test/build_progression.test.mjs (4 pass), Chromium mobile/desktop; bộ sưu tập hữu hạn, cosmetic local, claim retry/rollback và reset giữ bộ sưu tập.
 - [x] **E02** Tái chế, chế tạo và chỉnh thuộc tính — P1, shared capability riêng; phụ thuộc: E01,F05. Evidence: SAFE_WORKBENCH.md; 7 case, Chromium PHLT/g2 mobile/desktop, CTC denied; pure preview/native caps/receipt/atomic retry/locked/equipped guards.
 - [x] **E04** Ledger tài nguyên và cân bằng sink/source — P1, shared; online economy riêng; phụ thuộc: F06,F07,E02. Evidence: RESOURCE_ECONOMY.md; 3 client +4 SQLite/D1 cases; ledger/wallet/donation/rollback/UTC/rejoin quota and browser ack-loss nonce.
-- [ ] **O03** Quản trị và moderation — P1 trước public online, shared; online theo mode được bật; phụ thuộc: F06,C02,C04,O02. IN_PROGRESS — Codex / feat/online-multiplayer; migrations 0008–0010, report cap 5/account + 20/hashed-IP/day, block/timed mute, room/guild chat guards, self-service/admin UI, `ADMIN_KEYS` per-admin audit identity; còn cấu hình secrets thật, chủ game duyệt quy trình report/retention và staging release gate.
+- [ ] **O03** Quản trị và moderation — P1 trước public online, shared; online theo mode được bật; phụ thuộc: F06,C02,C04,O02. IN_PROGRESS — Codex / feat/online-multiplayer; migrations 0008–0010, report cap 5/account + 20/hashed-IP/day, block/timed mute, room/guild chat guards, self-service/admin UI, `ADMIN_KEYS` per-admin audit identity; còn cấu hình secrets thật, chủ game duyệt quy trình report/retention và staging release gate. BLOCKED (rà soát local 09/10/2026: không còn việc local nào cho O03 — retention 180/365/7 ngày đã được thực thi bằng DELETE có điều kiện trong `moderation.js`/`chat.js`, rate limit, audit và XSS đã có test): cần (1) `ADMIN_KEYS` thật do chủ game cấp qua Worker secret, (2) chủ game duyệt quy trình report và chính sách lưu trữ, (3) staging. Không đóng bằng test local.
 
 ### Đợt 3 — chơi chung và tiến trình dài hạn
 
 - [x] **C05** Server quản lý phiên trận và phần thưởng — P0 gate multiplayer, ctc đầu, phlt/g2 qua capability riêng; phụ thuộc: F04,F05,F06,F07,C04. Evidence: PARTY_SESSIONS.md, SESSION_TRANSPORT_ADR.md; UI thật/hai browser context/API-D1, parity10phái, nonce/CAS/expiry/receipt, migration0007/CI và load2/4người. Không đóng O04 remote bằng kết quả local.
 - [x] **C06** Phụ bản tổ đội đầu tiên — P2, ctc; phụ thuộc: C01,C04,C05. DONE local — [CTC_DUNGEON.md](CTC_DUNGEON.md): arena/boss phá trận server-authoritative, contribution guard/support, loot policy C05, frozen roster, flag rollback và retry; 10 phái × 2/4 người, D1 integration và hai browser context.
-- [ ] **C07** Công thành và Tống Kim theo mục tiêu — P2, ctc; phụ thuộc: C02,C05,C06.
-- [ ] **C08** Mùa xếp hạng và hậu cần bất đồng bộ — P2, ctc; phụ thuộc: C03,C05,C07.
-- [ ] **P05** Co-op sinh tồn và cứu viện — P2, phlt; phụ thuộc: C05,P03,F07.
-- [ ] **P06** Thử thách tuần đồng điều kiện — P2, phlt; phụ thuộc: P04,C05.
-- [ ] **G04** Giao hữu chuẩn hóa và thử thách cộng đồng — P2, g2; phụ thuộc: C05,G02,G03.
-- [ ] **E03** Hiệu ứng trang bị theo lối chơi — P2, phlt/g2; ctc chỉ đồ hợp lệ; phụ thuộc: F02,F04,E02.
-- [ ] **R02** Nhiệm vụ linh hoạt và thưởng người quay lại — P2, shared luật riêng; phụ thuộc: F01,F05,E04. IN_PROGRESS — [WEEKLY_TASKS.md](WEEKLY_TASKS.md), mode-specific selectable tasks, one-mode lock, UTC rollover/rollback guard, 3 weekly claims and one-shot return receipt; 5 unit tests + 6 browser mode/viewport smoke. Còn server-trusted time để chặn forward-clock farming và offline return summary; hiện là progression client-side, không dùng cạnh tranh.
-- [ ] **R03** Thành tựu, ngoại hình và chuyển sinh — P2, shared tách progression; phụ thuộc: F05,C08,P04,G05.
+- [x] **C07** Công thành và Tống Kim theo mục tiêu — P2, ctc; phụ thuộc: C02,C05,C06. DONE local — [SIEGE_CTC.md](SIEGE_CTC.md): `party_siege` default-off trên nền C05; 3 điểm chiếm + cổng khóa chủ tướng + tiếp tế, server quyết định score/thưởng, quota 1 phiên/tuần UTC (hủy hoàn lượt), thưởng công trạng cap E04 nguồn `siege_completion`. Kiểm chứng: engine parity 10 phái × 2/4, 3 case D1/SQLite, 2 case client, session smoke hai context 360/1280. Giới hạn: số liệu chưa playtest, chưa đo tải riêng, chưa staging.
+- [x] **C08** Mùa xếp hạng và hậu cần bất đồng bộ — P2, ctc; phụ thuộc: C03,C05,C07. DONE local — [RANKED_SEASONS.md](RANKED_SEASONS.md): flag `ranked_seasons` default-off; mùa 28 ngày (4 tuần C03) ranh giới Thứ Năm 00:00 UTC; bảng phái×bracket có đồng hạng; chốt một lần bất biến; danh hiệu cosmetic nhận idempotent trong 28 ngày; hậu cần bang suy ra có trần 30/người/mùa; migration 0011 chỉ thêm bảng. Kiểm chứng: 6 case D1/SQLite, 6 case client, session smoke 360/1280. Giới hạn: số liệu chưa playtest, bracket theo lúc chốt, chưa staging.
+- [x] **P05** Co-op sinh tồn và cứu viện — P2, phlt; phụ thuộc: C05,P03,F07. DONE local — [COOP_RESCUE.md](COOP_RESCUE.md) trên nền [ONLINE_MODES.md](ONLINE_MODES.md): flag `coop_rescue` default-off với cơ chế `requires`; sảnh/phiên tách mode (rooms.mode, SQL nguyên tử); giải cứu tốn 20% HP + 8 MP, mỗi người chỉ được cứu một lần, tranh chấp an toàn; điểm cứu viện sổ cái PHLT riêng cap 3/ngày + ví 30. Kiểm chứng: engine parity 10 phái, 6 case D1/SQLite, 2 case client, session smoke hai trình duyệt. Chưa làm được: chia loot/vật tư (không có kho server), chat/báo cáo PHLT, playtest cân bằng.
+- [x] **P06** Thử thách tuần đồng điều kiện — P2, phlt; phụ thuộc: P04,C05. DONE local — [WEEKLY_TRIAL.md](WEEKLY_TRIAL.md): flag `weekly_trial` default-off; máy chủ tự mô phỏng chuyến chạy từ snapshot xác thực (không nhận điểm từ client); seed và luật tuần là hàm thuần của phiên bản + tuần UTC; chuỗi chủ tướng tuyệt đối, ngắn 3/dài 6 chặng; bảng theo độ sâu có hòa điểm và chỉ nhân vật PHLT hợp lệ; 5 lượt/ngày UTC nguyên tử; đổi tuần không đổi seed; migration 0012 chỉ thêm bảng. Kiểm chứng: engine parity 10 phái, 7 case D1/SQLite, 6 case client, session smoke hai trình duyệt. Giới hạn: không thưởng, hệ số chưa playtest.
+- [x] **G04** Giao hữu chuẩn hóa và thử thách cộng đồng — P2, g2; phụ thuộc: C05,G02,G03. DONE local — [COMMUNITY_CHALLENGE.md](COMMUNITY_CHALLENGE.md): flag `community_challenge` default-off (chỉ 2.0, requires `online_account_g2`); thử thách là một build đã kiểm tra chặt (ngân sách theo mốc cấp, không chữ tự do) và máy chủ dựng nhân vật chuẩn với trang bị tất định, không dùng save của người chạy; máy chủ tự mô phỏng, seed là hàm thuần của phiên bản + mã, bảng theo chặng với hòa điểm và chỉ nhân vật 2.0 hợp lệ; 5 build/ngày, 20 mở, 10 lượt/ngày nguyên tử; không thưởng, không nhận điểm từ client; migration 0013 chỉ thêm bảng. Phạm vi giao hữu: so sánh bất đồng bộ cùng điều kiện, không có PvP trực tiếp 2.0. Kiểm chứng: 4 case trang bị chuẩn, engine +2 (parity 10 phái), 6 case D1/SQLite, 6 case client, session smoke hai trình duyệt. Giới hạn: hệ số mốc mới hiệu chỉnh bằng mô phỏng, chưa playtest.
+- [x] **E03** Hiệu ứng trang bị theo lối chơi — P2, phlt/g2; ctc chỉ đồ hợp lệ; phụ thuộc: F02,F04,E02. DONE local — [SET_EFFECTS.md](SET_EFFECTS.md): PHLT +6% sinh lực/+5 kháng, g2 +4 chí mạng/+5% sát thương vũ khí khi đủ bộ; CTC không đổi; không cộng dồn bộ; chỉ số tĩnh, không proc. Kiểm chứng: `test/set_effects.test.mjs` 7 case, `worker/test/set_effects.test.js` 2 case (parity calc server), `npm test` 282/282, D1 42/42, browser smoke 9 mode/viewport. Số liệu cân bằng là khởi điểm, cần playtest; proc để v2.
+- [x] **R02** Nhiệm vụ linh hoạt và thưởng người quay lại — P2, shared luật riêng; phụ thuộc: F01,F05,E04. DONE local — [WEEKLY_TASKS.md](WEEKLY_TASKS.md): nhiệm vụ tuần theo mode (khóa một mode/tuần UTC, tối đa 3 claim, rollback đồng hồ), quà quay lại một lần, và gợi ý quay lại nhúng vào modal tóm tắt offline sẵn có; 9 test + browser smoke. Giới hạn: client-side, tua đồng hồ tiến chỉ bỏ qua nhịp tuần, không dùng cho xếp hạng/thưởng server.
+- [ ] **R03** Thành tựu, ngoại hình và chuyển sinh — P2, shared tách progression; phụ thuộc: F05,C08,P04,G05. CHƯA ĐÓNG — mới có thiết kế: [REBIRTH_DESIGN.md](REBIRTH_DESIGN.md) mô tả hiện trạng (chuyển sinh tối đa 5 lần, validator đặt nhân vật đã chuyển sinh ở trạng thái chờ vì thiếu lịch sử cấp server), phương án unlock ngang theo mode và 6 quyết định cần duyệt (con số cân bằng, giữ/hoàn điểm kỹ năng, mốc xác minh server). Backlog yêu cầu review tài liệu trước khi chỉnh nên không viết mã; chờ quyết định của chủ sản phẩm.
 
 ### Đợt 4 — giao dịch sau xác thực quyền sở hữu
 
@@ -80,11 +80,10 @@ Các hàng dưới là lớp phụ thuộc, không phải yêu cầu chạy nhi�
 
 | Lớp | Task còn trống | Mục tiêu bàn giao |
 |---|---|---|
-| 1 | C05, G02, E03, R02, O03, O01, O04 | Session server/bí cảnh/đồ/nhiệm vụ/moderation/mobile; O04 còn gate remote. Chỉ nhận khi người dùng cho tiếp tục |
-| 2 | C06, P05, P06, G04, G05 | Tổ đội, co-op/thử thách mode riêng và tiến trình build sau các phụ thuộc lớp1 |
-| 3 | C07, E05 | Chiến trường mục tiêu và escrow sau session/ledger/moderation |
-| 4 | C08 | Mùa ranked và hậu cần có server xác thực |
-| 5 | R03 | Thành tựu/ngoại hình/chuyển sinh sau tiến trình của cả ba mode |
+| 1 | O03, O04 | Moderation; O04 còn gate remote. Chỉ nhận khi người dùng cho tiếp tục |
+| 2 | — | G04 đã DONE local; không còn task trống lớp này |
+| 3 | E05 | Chiến trường mục tiêu và escrow sau session/ledger/moderation |
+| 4 | R03 | Thành tựu/ngoại hình/chuyển sinh sau tiến trình của cả ba mode |
 
 O04 local gates đã được chạy trong source archive; task còn remote staging/rollback. C05/E05 phải tách spike/ADR, prototype, implementation và kiểm chứng; E05 ADR xong nhưng thiếu server-owned inventory, không đóng task bằng ADR hoặc UI placeholder.
 

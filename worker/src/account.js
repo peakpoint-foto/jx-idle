@@ -2,6 +2,7 @@
 import { HttpError, bearer, sha256Hex, randomToken, ipHash } from "./http.js";
 import { rateLimit } from "./db.js";
 import { applyValidation } from "./ladder.js";
+import { GAME } from "../gen/game.js";
 
 // Khớp với js/save.js: offline tối đa 8 giờ mỗi lần, 12 giờ mỗi 24 giờ.
 export const OFFLINE_MAX = 8 * 3600;
@@ -20,8 +21,17 @@ export function cleanName(n) {
   return s;
 }
 
+// Chế độ nào được mở tài khoản online. CTC luôn mở; PHLT/2.0 chỉ khi flag riêng của chế độ đó bật.
+// Gọi parseSave không truyền env (các đường cũ) vẫn chỉ nhận CTC: mặc định đóng.
+export const ACCOUNT_MODE_FLAGS = Object.freeze({ phlt: "online_account_phlt", g2: "online_account_g2" });
+export function accountModeOpen(env, mode) {
+  if (mode === "ctc") return true;
+  const flag = Object.prototype.hasOwnProperty.call(ACCOUNT_MODE_FLAGS, mode) ? ACCOUNT_MODE_FLAGS[mode] : null;
+  return !!(env && flag && GAME.featureEnabled(flag, mode, env.FEATURE_FLAGS, false));
+}
+
 // Nhận save ở dạng chuỗi pack ({d,h}) hoặc object trạng thái; trả về object trạng thái.
-export function parseSave(save) {
+export function parseSave(save, env = null) {
   let state = save;
   if (typeof save === "string") {
     if (save.length > SAVE_MAX_BYTES) throw new HttpError(413, "save_too_large");
@@ -35,7 +45,11 @@ export function parseSave(save) {
   if (!state || typeof state !== "object" || Array.isArray(state)) throw new HttpError(400, "bad_save");
   if (JSON.stringify(state).length > SAVE_MAX_BYTES) throw new HttpError(413, "save_too_large");
   if (state.sandbox) throw new HttpError(400, "sandbox_save");
-  if (state.mode !== "ctc") throw new HttpError(400, "not_ctc", "Chỉ nhân vật Công Thành Chiến được chơi online");
+  if (state.mode !== "ctc") {
+    if (!env || !Object.prototype.hasOwnProperty.call(ACCOUNT_MODE_FLAGS, state.mode))
+      throw new HttpError(400, "not_ctc", "Chỉ nhân vật Công Thành Chiến được chơi online");
+    if (!accountModeOpen(env, state.mode)) throw new HttpError(403, "mode_not_open", "Chế độ này chưa mở tài khoản online");
+  }
   if (!state.fac) throw new HttpError(400, "no_faction");
   if (state.cid != null && !/^c_[A-Za-z0-9_-]{8,100}$/.test(String(state.cid))) throw new HttpError(400, "bad_character_id");
   const lvl = Math.floor(+state.lvl);
@@ -73,7 +87,7 @@ export async function register(req, env, body) {
   if (!(await verifyTurnstile(env, body.turnstile, req.headers.get("cf-connecting-ip"))))
     throw new HttpError(403, "captcha", "Xác minh chống bot không thành công");
   const name = cleanName(body.name);
-  const state = parseSave(body.save);
+  const state = parseSave(body.save, env);
   if (state.lvl > REGISTER_MAX_LVL)
     throw new HttpError(400, "too_late", `Chỉ đăng ký được khi nhân vật dưới cấp ${REGISTER_MAX_LVL + 1}`);
 
@@ -88,8 +102,8 @@ export async function register(req, env, body) {
         "INSERT INTO accounts(id,token_hash,name,created_at,ip_hash,last_hb) VALUES(?1,?2,?3,?4,?5,?4)"
       ).bind(id, await sha256Hex(token), name, now, ih),
       env.DB.prepare(
-        "INSERT INTO chars(account_id,character_id,fac,sex,lvl,xp,snapshot,updated_at,sync_n,sync_rev) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,1,1)"
-      ).bind(id, characterId, String(state.fac), state.sex ? 1 : 0, Math.floor(state.lvl), +state.xp || 0, JSON.stringify(state), now),
+        "INSERT INTO chars(account_id,character_id,fac,sex,lvl,xp,snapshot,updated_at,sync_n,sync_rev,mode) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,1,1,?9)"
+      ).bind(id, characterId, String(state.fac), state.sex ? 1 : 0, Math.floor(state.lvl), +state.xp || 0, JSON.stringify(state), now, state.mode),
     ]);
   } catch (e) {
     if (/UNIQUE/i.test(String(e && e.message))) throw new HttpError(409, "name_taken", "Tên đã có người dùng");
@@ -139,9 +153,11 @@ export async function sync(req, env, body) {
   const acc = await auth(req, env);
   if (!(await rateLimit(env.DB, "sync:" + acc.id, 20, 3600)))
     throw new HttpError(429, "rate_limited", "Đồng bộ quá nhiều, thử lại sau");
-  const state = parseSave(body.save);
-  const row = await env.DB.prepare("SELECT character_id,sync_rev,snapshot,updated_at FROM chars WHERE account_id=?1").bind(acc.id).first();
+  const state = parseSave(body.save, env);
+  const row = await env.DB.prepare("SELECT character_id,sync_rev,snapshot,updated_at,mode FROM chars WHERE account_id=?1").bind(acc.id).first();
   if (!row) throw new HttpError(404, "character_not_found");
+  // A character's mode is its identity: a transfer or edited save must never move an account between mode economies and boards.
+  if ((row.mode || "ctc") !== state.mode) throw new HttpError(409, "mode_locked", "Tài khoản online đã khóa theo chế độ của nhân vật");
   if (!state.cid || !row.character_id || String(state.cid) !== String(row.character_id))
     throw new HttpError(409, "character_mismatch", "Mã online thuộc nhân vật khác hoặc cần liên kết lại");
   const baseRev = body && body.base_rev == null ? null : Math.max(0, Math.floor(+body.base_rev || 0));
@@ -185,7 +201,7 @@ export async function recoverSnapshot(req, env) {
 
 export async function me(req, env) {
   const acc = await auth(req, env);
-  const ch = await env.DB.prepare("SELECT character_id,fac,lvl,updated_at,power,bracket,flagged,validation_status,validation_note,sync_rev FROM chars WHERE account_id=?1").bind(acc.id).first();
+  const ch = await env.DB.prepare("SELECT character_id,fac,lvl,updated_at,power,bracket,flagged,validation_status,validation_note,sync_rev,mode FROM chars WHERE account_id=?1").bind(acc.id).first();
   const fl = await env.DB.prepare("SELECT code,detail,at FROM flags WHERE account_id=?1 AND cleared_at IS NULL ORDER BY at").bind(acc.id).all();
   return { id: acc.id, name: acc.name, created_at: acc.created_at, play_sec: Math.floor(acc.play_sec), char: ch || null, flags: fl.results };
 }

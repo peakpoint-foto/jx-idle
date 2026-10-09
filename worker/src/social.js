@@ -81,7 +81,7 @@ async function duelList(db, accountId, advanced=false) {
   let matches=[],rankedReady=false;
   if(advanced){try{
     let me=await charFor(db,accountId);requireVerified(me);me=duelProfile(me);rankedReady=!!me.bracket;
-    if(rankedReady)matches=(await db.prepare("SELECT a.name,c.lvl,c.power,c.bracket FROM accounts a JOIN chars c ON c.account_id=a.id WHERE a.id<>?1 AND c.bracket=?2 AND c.validation_status='verified' AND c.flagged=0 AND c.updated_at>=?3 AND c.power BETWEEN ?4 AND ?5 AND json_extract(c.snapshot,'$.mode')='ctc' AND COALESCE(json_extract(c.snapshot,'$.sandbox'),0)=0 ORDER BY ABS(c.power-?6) LIMIT 10").bind(accountId,me.bracket,now-30*864e5,me.power/DUEL_RULES.powerRatio,me.power*DUEL_RULES.powerRatio,me.power).all()).results;
+    if(rankedReady)matches=(await db.prepare("SELECT a.name,c.lvl,c.power,c.bracket FROM accounts a JOIN chars c ON c.account_id=a.id WHERE a.id<>?1 AND c.mode='ctc' AND c.bracket=?2 AND c.validation_status='verified' AND c.flagged=0 AND c.updated_at>=?3 AND c.power BETWEEN ?4 AND ?5 AND json_extract(c.snapshot,'$.mode')='ctc' AND COALESCE(json_extract(c.snapshot,'$.sandbox'),0)=0 ORDER BY ABS(c.power-?6) LIMIT 10").bind(accountId,me.bracket,now-30*864e5,me.power/DUEL_RULES.powerRatio,me.power*DUEL_RULES.powerRatio,me.power).all()).results;
   }catch(e){if(!(e instanceof HttpError))throw e;}}
   return { season,season_start:Number(season)*7*864e5,season_end:(Number(season)+1)*7*864e5,ttl_ms:DUEL_TTL,pair_daily_cap:advanced?DUEL_RULES.pairDaily:null,
     ranked_ready:rankedReady,matches,score: {...(score || { points: 0, wins: 0, losses: 0 }),draws:draws?.n||0}, duels: rows.results.map(r => duelView(r, accountId)) };
@@ -328,6 +328,7 @@ export async function room(req, env, body) {
   const acc = await auth(req, env);
   const accountChar=await charFor(env.DB,acc.id);
   let state;try{state=JSON.parse(accountChar.snapshot);}catch(e){}
+  if(state&&state.mode!=='ctc'&&!GAME.featureEnabled('party_lobby',state.mode,env.FEATURE_FLAGS,!!state.sandbox))throw new HttpError(403,'feature_disabled','Phòng của chế độ này chưa mở');
   if(state&&GAME.featureEnabled('party_lobby',state.mode,env.FEATURE_FLAGS,!!state.sandbox))return partyRoom(req,env,body,acc,accountChar);
   if (req.method === "GET") return roomView(env.DB, await activeRoom(env.DB, acc.id));
   await limitWrites(env.DB,"room",acc.id);
@@ -356,7 +357,8 @@ export async function room(req, env, body) {
       env.DB.prepare(`INSERT INTO room_members(room_id,account_id,name,power,joined_at,last_seen)
         SELECT ?1,?2,?3,?4,?5,?5 WHERE (SELECT COUNT(*) FROM room_members WHERE room_id=?1)<4
         AND EXISTS(SELECT 1 FROM rooms WHERE id=?1 AND status='open' AND expires_at>?5)
-        AND NOT EXISTS(SELECT 1 FROM room_members WHERE account_id=?2)`).bind(id,acc.id,me.name,me.power||0,now),
+        AND NOT EXISTS(SELECT 1 FROM room_members WHERE account_id=?2)
+        AND EXISTS(SELECT 1 FROM rooms WHERE id=?1 AND mode='ctc')`).bind(id,acc.id,me.name,me.power||0,now),
       env.DB.prepare("UPDATE rooms SET updated_at=?2 WHERE id=?1 AND changes()>0").bind(id,now),
     ]);
     if (!joined[0].meta.changes) throw new HttpError(409,"room_full","Phòng đã đầy, hết hạn hoặc bạn đã vào phòng khác");

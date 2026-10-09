@@ -132,7 +132,8 @@ function activityReceiptEnqueue(run) {
   return activityReceiptWrite(rows);
 }
 async function activityRetryReceipts() {
-  if (ACTIVITY_RECEIPT_RETRYING || typeof onlEligible !== "function" || !onlEligible() ||
+  // Activity receipts belong to the CTC ledger; other modes never send them.
+  if (ACTIVITY_RECEIPT_RETRYING || typeof onlEligible !== "function" || !onlEligible() || !S || S.mode !== "ctc" ||
       typeof onlGet !== "function" || !onlGet() || typeof onlApi !== "function") return 0;
   ACTIVITY_RECEIPT_RETRYING = true;
   let sent = 0;

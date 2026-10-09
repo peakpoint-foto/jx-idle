@@ -99,3 +99,19 @@ BUILD_COMPARISON.md mô tả API/UI và giới hạn bài đo. 3 test mới pass
 ## Chi tiết B04
 
 COMBAT_REPORTS.md mô tả producer, namespace/history/timeline cap và privacy. 12 case pass; browser sáu mode/viewport mở journal → mode summary → export timeline chọn, không mặc định stats/identity. DOT không cộng lúc cast; survival counter không âm; pet nguồn riêng; shield/spend/hit-recover tách; CC ghi alive ticks. Archive tối đa 5, timeline 128, payload history 64 KiB UTF-8. Lethal reason cần event thật; abort không bị gán won, revival có phase. Capture combat_reports default-off, không deploy/network export.
+
+## Đợt 09/10/2026 — R02, E03, C07, C08, đa mode, P05, P06, G04
+
+Nhánh `claude/quirky-cerf-et4cmn`; commit cuối đợt được ghi trong lịch sử Git. Kiểm chứng chạy tuần tự trên cùng checkout, bundle `worker/gen/game.js` được build lại trước mỗi suite:
+
+- `npm run check:contracts`: 107 script, 43 task (39 DONE).
+- `npm test`: 362/362 pass, 0 skip/todo.
+- `npm run test:d1`: 81/81 pass (lần chạy cuối). Ghi nhận trung thực: một lần chạy gộp trước đó có 1 test siege thất bại, hai lần chạy lại không tái hiện; xem SESSION_CHECKPOINT.md.
+- `node scripts/browser-smoke.mjs`: 9 kết quả mode/viewport, exit 0.
+- `node scripts/session-browser-smoke.mjs`: pass trên SQLite local và D1 runtime local (`JX_D1_RUNTIME=1`): party/dungeon/siege CTC, panel mùa, giải cứu PHLT, thử thách tuần PHLT, thử thách cộng đồng 2.0 (hai trình duyệt cô lập 360/1280, bảng chung, nút ≥44px, không tràn ngang, tắt cờ ẩn panel).
+- `git diff --check`: pass.
+
+Lỗi thật được phát hiện nhờ kiểm thử trong đợt này và đã sửa: tạo siege lặp báo hết lượt thay vì trả phiên đang chạy; `trial_solo_only` bị che bởi `session_not_ready`; hồ sơ thiếu mode bị coi là không phải CTC; validator báo oan đồ set/vio và dòng nguyên tố (fuzz 12.003 món từ bộ sinh đồ của game, 0 cờ); `enchase` không chuẩn hóa dòng nguyên tố; `challengeSave` không tất định; engine nhận `scale` kiểu chuỗi.
+
+Chưa đo/chưa làm: playtest cân bằng cho mọi hệ số mới, tải thật của polling 1 giây, staging/CI host, `ADMIN_KEYS` thật, server-owned inventory, thiết kế R03 chưa duyệt. Không tuyên bố đủ điều kiện public online.
+

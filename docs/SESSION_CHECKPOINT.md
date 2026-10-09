@@ -1,5 +1,18 @@
 # Checkpoint — trạng thái mới và lịch sử C05
 
+**Cập nhật 09/10/2026 (Asia/Saigon).** Theo lệnh "thực hiện đến hết": **39/43 task nghiệm thu local, 4 task còn mở: R03, O03, O04, E05.** Đã đóng local trong đợt này: R02 (gợi ý quay lại), E03 (hiệu ứng set theo mode), C07 (công thành tổ đội CTC), C08 (mùa xếp hạng), nền tài khoản PHLT/2.0, P05 (giải cứu PHLT), P06 (thử thách tuần PHLT), G04 (thử thách cộng đồng 2.0). Mọi cờ mới mặc định tắt; migration 0011–0013 chỉ thêm bảng; không deploy, không PR.
+
+Task còn mở và lý do (không giả lập hoàn thành):
+
+- **R03**: chỉ có thiết kế ([REBIRTH_DESIGN.md](REBIRTH_DESIGN.md)); backlog yêu cầu duyệt tài liệu trước khi đổi luật chuyển sinh, 6 quyết định cân bằng cần chủ sản phẩm.
+- **O03**: không còn việc local (retention, rate limit, audit, XSS đã có mã và test); cần `ADMIN_KEYS` thật, duyệt quy trình report/lưu trữ và staging.
+- **O04**: thiếu Worker/D1 staging, credential và CI run trên host; runbook đã cập nhật cờ/migration/rollback đến 0013 nhưng chưa chạy remote.
+- **E05**: ADR xong; thiếu server-owned inventory và chính sách backfill.
+
+Kiểm chứng cuối: xem EXECUTION_EVIDENCE.md (mục "Đợt 09/10/2026"). Một test siege (`worker/test/sessions.test.js`) từng thất bại 1 trong 3 lần chạy `test:d1` gộp và không tái hiện khi chạy riêng 6 lần hay khi chạy 6 tiến trình song song; nghi do kết thúc phụ thuộc xác suất đánh trúng nên đã nới giới hạn vòng lặp (12 → 80 nhịp), chưa chứng minh được nguyên nhân.
+
+Nội dung bên dưới là lịch sử các checkpoint trước.
+
 Ngày 08/10/2026: C05/G02/G05 DONE local, 30/43 task. Đã push `51c1905`, đồng bộ main không xung đột; PR #19 đã merge. Bản sửa reload smoke đã kiểm chứng hai client D1. Full suite 260/260, D1 38/38 và browser ba mode/mobile/desktop pass. CI remote mới: https://github.com/peakpoint-foto/jx-idle/actions/runs/37784364781 (đang chạy lúc ghi). GitHub API Forbidden, chưa tạo được PR mới. Chưa deploy production. Các đoạn bên dưới là checkpoint lịch sử.
 
 **Lệnh mới ngày08/10/2026 (Asia/Saigon): tiếp tục triển khai từ27task đến toàn backlog. C05 IN_PROGRESS; đoạn PAUSED dưới đây là lịch sử.** CI push37764665755 và PR37764672297 đã xanh tại9e54e66 sau sửa navigation smoke. Không tự deploy production.

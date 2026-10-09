@@ -11,6 +11,9 @@ import { duels, guild, room } from "./social.js";
 import { featureConfig, guardedFeature } from "./capabilities.js";
 import {friends} from './lobby.js';
 import {economy} from './economy.js';
+import {season} from './seasons.js';
+import {trial} from './trial.js';
+import {challenge} from './challenge.js';
 import {sessions} from './sessions.js';
 import {moderation,adminModeration} from './moderation.js';
 import {chat} from './chat.js';
@@ -20,6 +23,11 @@ const ROUTES = {
   "POST /api/sessions": sessions,
   "GET /api/economy": economy,
   "POST /api/economy": economy,
+  "GET /api/season": season,
+  "GET /api/trial": trial,
+  "GET /api/challenge": challenge,
+  "POST /api/challenge": challenge,
+  "POST /api/season": season,
   "GET /api/config": featureConfig,
   "POST /api/register": (req, env, body) => register(req, env, body),
   "POST /api/hb": (req, env) => heartbeat(req, env),

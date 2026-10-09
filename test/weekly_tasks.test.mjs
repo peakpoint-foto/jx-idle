@@ -64,3 +64,44 @@ test("weekly PHLT progress follows completed expedition checkpoints and G2 progr
   assert.equal(g2.run("riftFinish('completed').ok"),true);
   assert.equal(g2.json("weeklyRead().tasks.find(x=>x.id==='rift').have"),1);
 });
+
+test("return guide lists the return gift, unclaimed weekly reward and unselected task, and stays quiet otherwise", () => {
+  const g=game();g.run("fixture('ctc')");
+  // Nothing chosen this week yet: the guide asks for a selection.
+  assert.deepEqual(g.json("weeklyReturnGuideLines()"),["Tuần này chưa chọn nhiệm vụ: chọn một trong 3 nhiệm vụ ở tab Khác."]);
+  // A selected, unfinished task needs no guidance.
+  g.run("weeklySelect('hunt');questTick('kills',10)");
+  assert.deepEqual(g.json("weeklyReturnGuideLines()"),[]);
+  assert.equal(g.run("weeklyReturnGuideHTML()"),"");
+  // Finished but unclaimed.
+  g.run("questTick('kills',490)");
+  assert.deepEqual(g.json("weeklyReturnGuideLines()"),["Có thưởng nhiệm vụ tuần chưa nhận ở tab Khác."]);
+  g.run("weeklyClaim()");
+  assert.deepEqual(g.json("weeklyReturnGuideLines()"),["Tuần này chưa chọn nhiệm vụ: chọn một trong 3 nhiệm vụ ở tab Khác."]);
+});
+
+test("return guide announces the one-shot return gift after seven days away and drops it once claimed", () => {
+  const g=game();g.run("fixture('phlt');weeklySelect('journey');S.extensions.weeklyReturn={v:1,lastSeen:Date.now()-8*86400000,eligibleAt:0,claimedAt:0}");
+  assert.deepEqual(g.json("weeklyReturnGuideLines()"),["Quà quay lại đang chờ ở tab Khác."]);
+  assert.match(g.run("weeklyReturnGuideHTML()"),/Gợi ý khi quay lại/);
+  assert.equal(g.run("weeklyReturnClaim().ok"),true);
+  assert.deepEqual(g.json("weeklyReturnGuideLines()"),[]);
+  // A second absence never produces a second gift.
+  g.run("S.extensions.weeklyReturn.lastSeen=Date.now()-30*86400000");
+  assert.deepEqual(g.json("weeklyReturnGuideLines()"),[]);
+});
+
+test("return guide is silent during a clock rollback, in another mode, and in sandbox", () => {
+  const g=game();g.run("fixture('g2');weeklySelect('rift');globalThis.weekStart=Date.now();Date.now=()=>weekStart+14*86400000;weeklySync();Date.now=()=>weekStart");
+  // The simulated 14-day jump legitimately makes the one-shot gift eligible; weekly-task lines must stay quiet while the clock is behind the stored week.
+  assert.deepEqual(g.json("weeklyReturnGuideLines().filter(t=>!t.startsWith('Quà quay lại'))"),[]);
+  const other=game();other.run("fixture('ctc');weeklySync();S.mode='phlt'");
+  assert.deepEqual(other.json("weeklyReturnGuideLines()"),[]);
+  const sandbox=game();sandbox.run("fixture('ctc');ADMV.sandbox=true");
+  assert.deepEqual(sandbox.json("weeklyReturnGuideLines()"),[]);
+});
+
+test("welcome-back modal embeds the return guide behind a typeof guard", () => {
+  const main=readFileSync(new URL("../js/main.js",import.meta.url),"utf8");
+  assert.match(main,/typeof weeklyReturnGuideHTML==="function"\?weeklyReturnGuideHTML\(\):""/);
+});
