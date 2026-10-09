@@ -5,6 +5,7 @@ const FEATURE_REGISTRY = Object.freeze({
   build_profiles: { modes: ["ctc","phlt","g2"], enabled: false, online: false },
   gold_sinks: { modes: ["ctc","phlt","g2"], enabled: false, online: false },
   legendary_affix: { modes: ["ctc","phlt","g2"], enabled: false, online: false },
+  element_reactions: { modes: ["ctc","phlt","g2"], enabled: false, online: false },
   build_advice: { modes: ["ctc","phlt","g2"], enabled: false, online: false },
   combat_policy: { modes: ["ctc","phlt","g2"], enabled: false, online: false },
   loot_codex: { modes: ["ctc","phlt","g2"], enabled: false, online: false },

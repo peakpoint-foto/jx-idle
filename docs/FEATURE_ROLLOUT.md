@@ -208,3 +208,10 @@ Chi tiết từng tính năng xem các mục dưới.
   mỗi ngã 2 nhánh (an toàn vs hiểm/thưởng cao), tradeoff hiển thị trước.
 - Modifier nhân dồn vào route rules (hp/damage/gold/loot); UI chọn trong modal
   expedition đang đi.
+
+## 2.13 Phản ứng ngũ hành
+
+- `js/element_reactions.js`: luật chung cho client và session.
+  Băng rồi Lôi: choáng +0.5s; Độc rồi Hỏa: nổ lan 50%.
+  Trạng thái tồn tại 4s; flag `element_reactions` mặc định tắt.
+- Client (heroHit): choáng/nổ lan 120px. Session: choáng 2 tick, nổ +50% damage.

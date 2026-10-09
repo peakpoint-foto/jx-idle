@@ -39,7 +39,7 @@ function sessionCombatNew(mode,actors,seed,activity="party",options={}){
   if(activity==="challenge"&&(!Number.isSafeInteger(options.week)||typeof options.version!=="string"||!Number.isInteger(options.waves)||options.waves<1||options.waves>8||!(typeof options.scale==="number"&&options.scale>=.1&&options.scale<=10)))throw Error("Challenge needs a seed, a version, 1-8 waves and a bounded scale");
   const baseHp=Math.max(100,actors.reduce((n,a)=>n+Object.values(a.p.main.parts).reduce((x,y)=>x+y,0)*Math.max(.2,a.p.main.rate),0)*18);
   const hp=activity==="rescue"?baseHp*SESSION_RESCUE.bossHp:baseHp;
-  const state={v:1,model:COMBAT_MODEL_VERSION,rules:SESSION_COMBAT.version,mode,activity,rng:seed>>>0,tick:0,status:"active",actors:JSON.parse(JSON.stringify(actors)),events:[],objectives:{breaks:0,supports:0},
+  const state={v:1,model:COMBAT_MODEL_VERSION,rules:SESSION_COMBAT.version,mode,activity,rng:seed>>>0,tick:0,status:"active",actors:JSON.parse(JSON.stringify(actors)),events:[],objectives:{breaks:0,supports:0},flags:options.flags||{},
     boss:{hp,max:hp,series:(seed>>>0)%5,res:Object.fromEntries(ELEM.map(k=>[k,10])),def:100,ar:1000,cooldown:1,poison:0,poisonDmg:0,stun:0,stunImm:0,ward:0,wardPhase:0,wardUntil:0,breakers:[],
     phase:0,telegraphUntil:0,enraged:false}};
   if(activity==="siege"){
@@ -142,6 +142,15 @@ function sessionCombatHit(state,actor){
     raw+=crit&&el==="phys"?d*CRIT_MULT:d;
   }
   if(counters(a.series,b.series))raw+=p.series5;if(p.bossDmg>1)raw*=p.bossDmg;if(state.activity==="dungeon"&&b.ward>0)raw*=.2;if(state.activity==="siege"&&b.gate)raw*=SESSION_SIEGE.gateDamage;raw=Math.max(1,raw);
+  // 2.13: phản ứng ngũ hành (parity với client).
+  if(typeof elemReactionCheck==="function"&&state.flags&&state.flags.element_reactions){
+    const els=Object.keys(a.parts).filter(x=>x!=="phys");let bestEl=els[0],bv=0;
+    for(const el of els){const d=a.parts[el]||0;if(d>bv){bv=d;bestEl=el}}
+    if(bestEl){const rx=elemReactionCheck(b,bestEl,state.tick||0);
+      if(rx&&rx.reaction.effect==="stun"){b.stun=Math.max(b.stun||0,rx.reaction.power*4);state.events.push({t:"elem_stun",tick:state.tick});}
+      if(rx&&rx.reaction.effect==="explode"){const boom=Math.round(raw*rx.reaction.power);b.hp=Math.max(0,b.hp-boom);actor.contribution.damage+=boom;state.events.push({t:"elem_explode",tick:state.tick,dmg:boom});}
+      if(rx&&rx.consumed)elemReactionClear(b);}
+  }
   const floor=state.activity==="siege"&&b.gate?1:0,useful=Math.min(raw,Math.max(0,b.hp-floor));b.hp=Math.max(floor,b.hp-raw);actor.contribution.damage+=useful;
   sessionEvent(state,"damage",{sourceId:actor.id,targetId:"boss",skillId:a.id,raw,capacity:b.hp+useful,reason:"party_attack"});
   if(b.hp>0&&a.stun&&b.stunImm<=0&&sessionRandom(state)*100<a.stun){b.stun=.5;b.stunImm=STUN_IMM_BOSS;actor.contribution.control+=.5;sessionEvent(state,"control",{sourceId:actor.id,targetId:"boss",duration:.5,reason:"party_native_stun"});}
