@@ -29,7 +29,7 @@ function sessionAttack(stats){
 function sessionActor(id,name,stats,role="damage"){
   const p={};for(const k of ["life","mana","ar","def","regen","manaRegen","series","bossDmg","series5","leech","manaLeech","curseAR","curseDef","curseDR","flatDR","manaShield","absorb","res5","block"])p[k]=Number(stats[k])||0;
   p.res={...stats.res};p.statusRes={...stats.statusRes};p.ignRes={...stats.ignRes};Object.assign(p,sessionAttack(stats));
-  return {id,name,role,p,hp:p.life,mp:p.mana,cooldown:0,utilityCooldown:0,guardUntil:0,contribution:{damage:0,control:0,heal:0,prevented:0},lastSeq:0};
+  return {id,name,role,p,hp:p.life,mp:p.mana,cooldown:0,utilityCooldown:0,guardUntil:0,aggro:0,contribution:{damage:0,control:0,heal:0,prevented:0},lastSeq:0};
 }
 function sessionCombatNew(mode,actors,seed,activity="party",options={}){
   const min=sessionSolo(activity)?1:2,max=sessionSolo(activity)?1:4;
@@ -120,7 +120,7 @@ function sessionCombatUtility(state,actor,command){
   }
   if(command.kind==="support"&&actor.utilityCooldown<=0&&actor.mp>=5){
     const target=state.actors.find(a=>a.id===command.target&&a.hp>0);if(!target)return;
-    const raw=target.p.life*.1,capacity=target.p.life-target.hp;if(capacity<=0)return;
+    let raw=target.p.life*.1;if(actor.role==="support")raw*=1.5;const capacity=target.p.life-target.hp;if(capacity<=0)return;
     target.hp=Math.min(target.p.life,target.hp+raw);actor.mp-=5;actor.utilityCooldown=6;actor.contribution.heal+=Math.min(raw,capacity);
     if(state.activity==="dungeon")state.objectives.supports++;
     sessionEvent(state,"heal",{sourceId:actor.id,targetId:target.id,raw,capacity,reason:"party_support"});
@@ -151,7 +151,9 @@ function sessionCombatHit(state,actor){
       if(rx&&rx.reaction.effect==="explode"){const boom=Math.round(raw*rx.reaction.power);b.hp=Math.max(0,b.hp-boom);actor.contribution.damage+=boom;state.events.push({t:"elem_explode",tick:state.tick,dmg:boom});}
       if(rx&&rx.consumed)elemReactionClear(b);}
   }
+  if(actor.role==="damage")raw*=1.1;
   const floor=state.activity==="siege"&&b.gate?1:0,useful=Math.min(raw,Math.max(0,b.hp-floor));b.hp=Math.max(floor,b.hp-raw);actor.contribution.damage+=useful;
+  actor.aggro=(actor.aggro||0)+useful*(actor.role==="tank"?3:1);
   sessionEvent(state,"damage",{sourceId:actor.id,targetId:"boss",skillId:a.id,raw,capacity:b.hp+useful,reason:"party_attack"});
   if(b.hp>0&&a.stun&&b.stunImm<=0&&sessionRandom(state)*100<a.stun){b.stun=.5;b.stunImm=STUN_IMM_BOSS;actor.contribution.control+=.5;sessionEvent(state,"control",{sourceId:actor.id,targetId:"boss",duration:.5,reason:"party_native_stun"});}
   if(p.leech){const amount=raw*p.leech/100,cap=p.life-actor.hp;actor.hp=Math.min(p.life,actor.hp+amount);actor.contribution.heal+=Math.min(amount,cap);sessionEvent(state,"heal",{sourceId:actor.id,targetId:actor.id,raw:amount,capacity:cap,reason:"party_leech"});}
@@ -159,7 +161,7 @@ function sessionCombatHit(state,actor){
 }
 function sessionBossDmgMul(state){
   const b=state.boss,PH=SESSION_BOSS_PHASES;
-  return PH.phaseDmgMul[b.phase]||1*(b.enraged?PH.enrageMul:1);
+  return (PH.phaseDmgMul[b.phase] || 1) * (b.enraged ? PH.enrageMul : 1);
 }
 function sessionCombatBossHit(state,target,mul=1){
   const p=target.p,b=state.boss;
@@ -171,6 +173,7 @@ function sessionCombatBossHit(state,target,mul=1){
   if(p.res5&&!counters(b.series,p.series))raw=Math.max(1,raw-p.res5);
   if(p.statusRes[el])raw=Math.max(1,raw*(1-p.statusRes[el]/100));if(p.absorb)raw=Math.max(1,raw*(1-p.absorb));
   if(p.curseDR)raw*=1-p.curseDR;if(p.legDR)raw*=1-Math.min(50,p.legDR)/100;if(p.flatDR)raw=Math.max(1,raw-p.flatDR);
+  if(target.role==="tank")raw*=.7;
   if(p.manaShield>0&&target.mp>0){const absorbed=Math.min(target.mp,raw*p.manaShield/100);target.mp-=absorbed;raw-=absorbed;target.contribution.prevented+=absorbed;}
   if(target.guardUntil>=state.tick){target.contribution.prevented+=raw*.5;raw*=.5;}
   raw=Math.max(0,raw);target.hp=Math.max(0,target.hp-raw);
@@ -216,7 +219,11 @@ function sessionCombatStep(input,commands=[],connectedIds=[]){
     }else{state.status="completed";return state;}
   }
   if(b.stun>0)b.stun=Math.max(0,b.stun-dt);
-  else{b.cooldown-=dt;if(b.cooldown<=0){b.cooldown=b.interval||1;const live=state.actors.filter(a=>a.hp>0);if(live.length)sessionCombatBossHit(state,live[Math.max(0,Math.floor(state.tick/4)-1)%live.length]);}}
+  else{b.cooldown-=dt;if(b.cooldown<=0){b.cooldown=b.interval||1;const live=state.actors.filter(a=>a.hp>0);if(live.length){
+      live.sort((x,y)=>(y.aggro||0)-(x.aggro||0));
+      sessionCombatBossHit(state,live[0]);
+      for(const a of live)a.aggro=(a.aggro||0)*.98;
+    }}}
   if(state.actors.every(a=>a.hp<=0)||state.tick>=480)state.status="aborted";
   return state;
 }

@@ -241,3 +241,10 @@ Chi tiết từng tính năng xem các mục dưới.
 - `js/cross_skill.js`: học 1 skill tấn công ngoại phái (cấp 100, 1M vàng);
   nâng tối đa cấp 5 (tốn vàng + 5 điểm kỹ năng/cấp).
 - Không nhận bonus hệ (seriesLv) của phái mình; `skillLv` và `lvOf` đều tôn trọng.
+
+## 3.4 Vai trò tank/support trong session
+
+- Actor có `role`: tank (-30% damage nhận, 3x aggro), support (+50% heal),
+  damage (+10% sát thương).
+- Boss ưu tiên aggro cao nhất thay vì xoay vòng; aggro giảm 2%/tick.
+- Session model lên v3 (thêm aggro); sửa bug enrage multiplier (precedence).

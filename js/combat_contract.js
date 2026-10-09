@@ -1,6 +1,6 @@
 "use strict";
 
-const COMBAT_MODEL_VERSION = "jx-combat-v2";
+const COMBAT_MODEL_VERSION = "jx-combat-v3"; // 3.4: thêm aggro, vai trò tank/support
 const COMBAT_EVENT_KINDS = Object.freeze(["damage", "heal", "mana", "control", "death", "phase", "objective"]);
 
 function combatModelDescriptor() {
