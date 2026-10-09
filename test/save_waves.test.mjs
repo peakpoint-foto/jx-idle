@@ -12,7 +12,7 @@ test("fixture v1 qua migration không mất dữ liệu, waves được áp dụ
   const after = g.json(`(()=>{const snap=${snapJS};const o=JSON.parse(JSON.stringify(S));o.v=1;delete o.extensions;const m=migrate(o);return Object.assign(snap(m),{v:m.v,wv:m.extensions.wv,codex:m.extensions.codex.unlocked,goals7:!!m.extensions.goals7});})()`);
   assert.deepEqual((({v, wv, codex, goals7, ...rest}) => rest)(after), before, "dữ liệu gameplay giữ nguyên");
   assert.equal(after.v, 2);
-  assert.equal(after.wv, 2, "đã chạy hết waves");
+  assert.equal(after.wv, 3, "đã chạy hết waves");
   assert.deepEqual(after.codex, [1]);
   assert.equal(after.goals7, true);
 });
@@ -24,7 +24,7 @@ test("migration idempotent: chạy lại không đổi gì", () => {
     const once=migrate(o),twice=migrate(JSON.parse(JSON.stringify(once)));
     return {wv1:once.extensions.wv,wv2:twice.extensions.wv,same:JSON.stringify(once)===JSON.stringify(twice)};
   })()`);
-  assert.equal(r.wv1, 2); assert.equal(r.wv2, 2); assert.equal(r.same, true);
+  assert.equal(r.wv1, 3); assert.equal(r.wv2, 3); assert.equal(r.same, true);
 });
 
 test("wave đăng ký lộn xộn vẫn chạy theo thứ tự version", () => {

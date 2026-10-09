@@ -36,6 +36,13 @@ registerSaveWave(1, "codex_waves", state => {
   ext.codex = ext.codex && typeof ext.codex === "object" ? ext.codex : {};
   if (!Array.isArray(ext.codex.unlocked)) ext.codex.unlocked = [1];
 });
+// Wave 3 (2.3, đợt migration thứ hai): chuẩn hóa slots loadout trên save cũ.
+registerSaveWave(3, "loadout", state => {
+  if (!Array.isArray(state.builds)) state.builds = [];
+  while (state.builds.length < 3) state.builds.push(null);
+  const ext = state.extensions;
+  if (!ext.loadout || typeof ext.loadout !== "object") ext.loadout = {v: 1};
+});
 // Wave 2: mục tiêu 7 ngày cho người mới — khởi tạo mốc bắt đầu.
 registerSaveWave(2, "onboarding_goals", state => {
   const ext = state.extensions;

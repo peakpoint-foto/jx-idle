@@ -10,7 +10,7 @@ for (const mode of ["ctc", "phlt", "g2"]) {
     assert.equal(g.run("S.cid===oldCid"),true);
     const ext=g.json("S.extensions");
     assert.deepEqual([g.json("S.mode"),g.json("S.gold"),g.json("S.attrPts"),g.json("S.skPts"),g.json("S.eq.weapon.uid")],[mode,12345,7,9,99]);
-    assert.equal(ext.v,1);assert.equal(ext.wv,2);assert.deepEqual(ext.codex.unlocked,[1]);assert.ok(ext.goals7&&typeof ext.goals7.start==="number");
+    assert.equal(ext.v,1);assert.equal(ext.wv,3);assert.deepEqual(ext.codex.unlocked,[1]);assert.ok(ext.goals7&&typeof ext.goals7.start==="number");
     assert.equal(g.run("localStorage.getItem(saveKey()+'_pre_v2')===oldRaw"),true);
     assert.equal(g.run("onlGet().token"),"do-not-copy");
     g.run("var migrated=migrate(S);var twice=migrate(migrated)");
@@ -56,7 +56,7 @@ test("extension migrations are nonmutating and reject unknown schema", () => {
   assert.equal(g.run("legacy.v"),1);
   assert.equal(g.run("legacy.extensions===undefined"),true);
   const mext=g.json("migrated.extensions");
-  assert.equal(mext.v,1);assert.equal(mext.wv,2,"migration waves chạy trong migrateSaveSchema");
+  assert.equal(mext.v,1);assert.equal(mext.wv,3,"migration waves chạy trong migrateSaveSchema");
   assert.throws(()=>g.run("migrateSaveSchema({v:2,extensions:{v:99}})"),/chưa được hỗ trợ/);
 });
 

@@ -110,3 +110,12 @@ Chi tiết từng tính năng xem các mục dưới.
   trong ~7s, tường dần ở tầng 15+).
 - Bảng worker (rank) chưa cần — quyết định ở đợt rollout khi có dữ liệu.
 - Kill-switch: flag `rift_tower` (kèm `training_lab`). Gỡ: xóa file + hook panel.
+
+## 2.3 Loadout nhiều bộ đồ/skill (`build_profiles`)
+
+- Nền đã có: profile lưu UID trang bị + điểm + chiêu, validate đầy đủ, chặn đổi
+  trong hoạt động (`buildChangeProblem`).
+- Mới 2.3: slot mở dần theo tiến trình — bộ 1 luôn mở, bộ 2 ở cấp 30, bộ 3 ở
+  cấp 60 (`buildSlotLocked`, UI hiện trạng khóa). Migration wave 3 (đợt thứ hai)
+  chuẩn hóa `S.builds` trên save cũ.
+- Kill-switch: flag `build_profiles`. Gỡ: trung bình (xóa file + UI hook).
