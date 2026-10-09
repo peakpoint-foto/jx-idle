@@ -91,7 +91,8 @@ const EVENT_CADENCE = ["weekly", "monthly"];
 function validateEventFlags(data) {
   const what = "events";
   if (!isPlainObj(data)) throw contentError(what, "phải là object");
-  checkVersion(data.version, "events", what);
+  if (!/^events-v[12]$/.test(data.version || "")) throw contentError(what, `version phải dạng "events-vN", nhận: ${JSON.stringify(data.version)}`);
+  const v2 = data.version === "events-v2";
   if (!Array.isArray(data.slots)) throw contentError(what, "slots phải là mảng");
   const ids = new Set();
   data.slots.forEach((s, i) => {
@@ -101,12 +102,38 @@ function validateEventFlags(data) {
     if (ids.has(s.id)) throw contentError(what, `${at}.id trùng: ${s.id}`);
     ids.add(s.id);
     if (!EVENT_KINDS.includes(s.kind)) throw contentError(what, `${at}.kind phải một trong ${EVENT_KINDS.join("/")}`);
-    if (!EVENT_CADENCE.includes(s.cadence)) throw contentError(what, `${at}.cadence phải một trong ${EVENT_CADENCE.join("/")}`);
+    // v2: schedule thay cadence (lịch theo tuần thay vì nhịp cố định).
+    if (!v2 && !EVENT_CADENCE.includes(s.cadence)) throw contentError(what, `${at}.cadence phải một trong ${EVENT_CADENCE.join("/")}`);
     if (typeof s.mode !== "string" || s.mode.length > 8) throw contentError(what, `${at}.mode không hợp lệ`);
     if (typeof s.enabled !== "boolean") throw contentError(what, `${at}.enabled phải là boolean`);
     if (typeof s.name !== "string" || !s.name.trim() || s.name.length > 40) throw contentError(what, `${at}.name không hợp lệ`);
+    if (v2) {
+      // Lịch sự kiện (1.3): tuần nào sự kiện chạy. "all" | "even" | "odd" theo chỉ số tuần UTC.
+      if (!isPlainObj(s.schedule) || !["all", "even", "odd"].includes(s.schedule.weeks))
+        throw contentError(what, `${at}.schedule.weeks phải là all/even/odd`);
+      if (s.limits !== undefined) {
+        if (!isPlainObj(s.limits)) throw contentError(what, `${at}.limits phải là object`);
+        for (const k of Object.keys(s.limits)) {
+          if (!["perDay", "perWeek"].includes(k)) throw contentError(what, `${at}.limits: khóa lạ "${k}"`);
+          checkNum(s.limits, k, `${what}/${at}.limits`, 1, 1000);
+        }
+      }
+    }
   });
   return data;
+}
+// Lịch sự kiện (1.3): sự kiện có chạy trong tuần `week` (chỉ số tuần UTC) không.
+// Sự kiện ngoài lịch -> false -> worker từ chối chạy (event_not_scheduled).
+function eventScheduled(events, slotId, week) {
+  const s = events && Array.isArray(events.slots) ? events.slots.find(x => x.id === slotId) : null;
+  if (!s || s.enabled === false) return false;
+  const w = (s.schedule && s.schedule.weeks) || "all";
+  if (w === "all") return true;
+  return w === "even" ? week % 2 === 0 : week % 2 === 1;
+}
+function eventsForWeek(events, week) {
+  if (!events || !Array.isArray(events.slots)) return [];
+  return events.slots.filter(s => eventScheduled(events, s.id, week));
 }
 // So sánh version content client vs server (nguyên tắc 10): lệch -> true (cần banner tải lại).
 function contentVersionMismatch(localVersion, remoteVersion) {

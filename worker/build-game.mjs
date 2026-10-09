@@ -29,7 +29,7 @@ const EXPORTS = [
   "applyPart", "hitPercent", "heroGuard",
   "tickEnemyStatuses",
   "CHALLENGE_VERSION", "CHALLENGE_PRESETS", "challengeBudgets", "challengeSpecCheck", "challengeSave", "standardGear",
-  "JX_CONTENT", "SESSION_COMBAT", "SESSION_SIEGE", "SESSION_RESCUE", "SESSION_TRIAL", "sessionTrialRule", "sessionTrialMutator", "sessionActor", "sessionCombatNew", "sessionCombatStep",
+  "JX_CONTENT", "eventScheduled", "eventsForWeek", "SESSION_COMBAT", "SESSION_SIEGE", "SESSION_RESCUE", "SESSION_TRIAL", "sessionTrialRule", "sessionTrialMutator", "sessionActor", "sessionCombatNew", "sessionCombatStep",
   "RIFT_RULES", "RIFT_MODIFIERS", "riftModifiersValid", "riftStats", "riftChoices",
   "featureEnabled", "featureConfigSnapshot", "parseFeatureFlags",
   "redactFeedbackText", "cleanFeedbackDiagnostics", "cleanFeedbackContext",
@@ -65,7 +65,7 @@ function __loadContent(file, validate) {
 }
 const __contentData = {
   trial: __loadContent("data/content/trial.v1.json", __contentCtx.validateTrialRules),
-  events: __loadContent("data/content/events.v1.json", __contentCtx.validateEventFlags),
+  events: __loadContent("data/content/events.v2.json", __contentCtx.validateEventFlags),
   trialMutators: __loadContent("data/content/trial_mutators.v1.json", __contentCtx.validateTrialMutators),
 };
 // JX_CONTENT có mặt trong bundle trước mọi file game (kể cả js/content.js và js/session_combat.js).

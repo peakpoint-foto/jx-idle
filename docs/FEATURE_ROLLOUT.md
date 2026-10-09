@@ -35,6 +35,23 @@ Chi tiết từng tính năng xem các mục dưới.
   yếu Nga Mi 60 hoàn thành 3 chặng với mọi mutator) + worker gating
   (flag tắt/bật, tag, boss chịu mutator).
 
+## 1.3 Lịch sự kiện (`event_calendar`)
+
+- Gating: `event_calendar` (mặc định tắt, mọi mode). Chỉ điều khiển UI lịch;
+  việc "ngoài lịch không chạy" luôn bật vì là tính đúng đắn của lịch.
+- Dữ liệu: `data/content/events.v2.json` (file v1 giữ nguyên, không sửa).
+  Mỗi slot có `schedule.weeks`: `all` | `even` | `odd` theo chỉ số tuần UTC,
+  `limits` ghi số lượt tối đa mỗi kỳ (hiện tại trùng quota đã có trong code).
+- Logic dùng chung `eventScheduled`/`eventsForWeek` trong `js/content.js`
+  (client và worker đọc cùng định nghĩa qua build-game.mjs).
+- Worker (`sessions.js`): tạo trial session kiểm tra lịch trước quota —
+  ngoài lịch -> 409 `event_not_scheduled`, không trừ lượt.
+- UI: card "Lịch sự kiện tuần" ở tab Khác (qua `renderMore`), hiện khoảng tuần
+  (giờ VN) và các sự kiện trong lịch kèm giới hạn lượt.
+- Mốc tuần dùng đúng công thức `trialWeekId`/`trialWeekStart` (thứ Hai 00:00 UTC).
+- Test: `test/event_calendar.test.mjs` (v1/v2, all/even/odd, mốc tuần, HTML đúng
+  tuần) + worker (ngoài lịch bị từ chối và không trừ quota, trong lịch chạy).
+
 ## 1.1 Cố vấn build (`build_advice`)
 
 - Gating: `featureEnabled("build_advice")` chặn cả `buildAdvice()` (ném lỗi "chưa mở")

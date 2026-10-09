@@ -25,7 +25,7 @@ function load(kind, file, validate) {
 }
 
 const trial = load("trial", "data/content/trial.v1.json", ctx.validateTrialRules);
-const events = load("events", "data/content/events.v1.json", ctx.validateEventFlags);
+const events = load("events", "data/content/events.v2.json", ctx.validateEventFlags);
 const trialMutators = load("trial-mutators", "data/content/trial_mutators.v1.json", ctx.validateTrialMutators);
 
 if (!checkOnly) {

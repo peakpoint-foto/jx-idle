@@ -94,6 +94,8 @@ async function create(env,acc,now,requestId,activity,mode,length){
     if(await siegeQuotaUsed(db,room.id,weekStart))throw new HttpError(409,'siege_quota_used');
   }
   if(activity==='trial'){
+    // Lịch sự kiện (1.3): ngoài lịch tuần thì không chạy, kể cả khi còn lượt quota.
+    if(!GAME.eventScheduled(GAME.JX_CONTENT.events,'weekly_trial',trialWeekId(now)))throw new HttpError(409,'event_not_scheduled');
     const current=await db.prepare("SELECT s.* FROM combat_sessions s JOIN session_members m ON m.session_id=s.id WHERE m.account_id=?1 AND m.active=1 AND s.status='active' AND s.room_id=?2").bind(acc.id,room.id).first();
     if(current)return current;
     if((await quotaStatus(db,acc.id,'trial',quotaPeriodDay(now))).used>=TRIAL_RULES.attemptsPerDay)throw new HttpError(409,'trial_attempts_used');

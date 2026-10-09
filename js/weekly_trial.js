@@ -2,7 +2,7 @@
 // P06 client: the server simulates every run and owns the board. This panel only starts a run and shows what the server recorded.
 // Mô tả luật đọc từ content JSON (data-driven); text khớp bản hardcode cũ từng chữ.
 const TRIAL_RULE_TEXT=Object.fromEntries(SESSION_TRIAL.rules.map(r=>[r.id,`${r.name}: ${r.desc}`]));
-const TRIAL_ERRORS={trial_attempts_used:"Hết lượt thử hôm nay.",trial_solo_only:"Rời phòng nhóm trước: thử thách chỉ chạy một mình.",trial_locked:"Cần đồng bộ nhân vật hợp lệ gần đây.",feature_disabled:"Thử thách tuần chưa mở.",session_not_ready:"Phòng chưa sẵn sàng, thử lại."};
+const TRIAL_ERRORS={trial_attempts_used:"Hết lượt thử hôm nay.",trial_solo_only:"Rời phòng nhóm trước: thử thách chỉ chạy một mình.",trial_locked:"Cần đồng bộ nhân vật hợp lệ gần đây.",event_not_scheduled:"Thử thách tuần chưa có trong lịch tuần này.",feature_disabled:"Thử thách tuần chưa mở.",session_not_ready:"Phòng chưa sẵn sàng, thử lại."};
 const TRIAL_CLIENT={data:null,busy:false,error:"",loadedAt:0,identity:null,generation:0};
 function trialIdentity(){const a=onlGet();return a?.token&&S?.mode==="phlt"&&!ADMV.sandbox&&featureEnabled("weekly_trial")?[a.token,S.cid||"",S.mode].join(":"):null;}
 // The server publishes UTC milliseconds; players read Vietnam time (UTC+7).

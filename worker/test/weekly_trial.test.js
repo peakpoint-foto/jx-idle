@@ -155,3 +155,17 @@ test('mutator gating: flag tắt thì không có mutator; flag bật thì tag k�
   assert.equal(s.boss.max, Math.round(1200 * Math.pow(1.35, 0) * (rule.hp || 1) * (mut.hp || 1)));
   assert.equal(s.boss.def, 100 * (rule.def || 1) * (mut.def || 1));
 });
+test('sự kiện ngoài lịch tuần không chạy (event_not_scheduled), trong lịch thì chạy', async t => {
+  const f = await fixture(t), p = await f.solo('p'), week = trialWeekId(f.now());
+  const orig = GAME.JX_CONTENT;
+  const mk = weeks => ({...orig, events: {version: 'events-v2', slots: [{id: 'weekly_trial', kind: 'trial', mode: 'phlt', name: 'T', enabled: true, schedule: {weeks}, limits: {perDay: 5}}]}});
+  try {
+    GAME.JX_CONTENT = mk(week % 2 === 0 ? 'odd' : 'even'); // tuần này KHÔNG có lịch
+    assert.equal(GAME.eventScheduled(GAME.JX_CONTENT.events, 'weekly_trial', week), false);
+    await assert.rejects(() => p.post({action: 'create', activity: 'trial', length: 'short'}), {code: 'event_not_scheduled'});
+    assert.equal((await p.board()).attempts.used, 0, 'lịch chặn thì không trừ quota');
+    GAME.JX_CONTENT = mk(week % 2 === 0 ? 'even' : 'odd'); // tuần này CÓ lịch
+    const run = await p.post({action: 'create', activity: 'trial', length: 'short'});
+    assert.equal(run.session.status, 'active');
+  } finally { GAME.JX_CONTENT = orig; }
+});
