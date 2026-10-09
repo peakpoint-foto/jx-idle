@@ -201,3 +201,10 @@ Chi tiết từng tính năng xem các mục dưới.
 - `rebornBonus()` tính XP theo đường; validator hiện có đã cover (giới hạn 5 lần,
   enh ≤ ENH_MAX, skill pending).
 - UI tab Chuyển sinh: radio chọn đường trước khi xác nhận.
+
+## 2.12 Expedition chọn nhánh
+
+- `js/expedition_forks.js`: 3 ngã rẽ/ngày, seed theo ngày (mọi người cùng bản đồ);
+  mỗi ngã 2 nhánh (an toàn vs hiểm/thưởng cao), tradeoff hiển thị trước.
+- Modifier nhân dồn vào route rules (hp/damage/gold/loot); UI chọn trong modal
+  expedition đang đi.
