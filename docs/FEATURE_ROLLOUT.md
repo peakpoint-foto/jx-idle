@@ -215,3 +215,9 @@ Chi tiết từng tính năng xem các mục dưới.
   Băng rồi Lôi: choáng +0.5s; Độc rồi Hỏa: nổ lan 50%.
   Trạng thái tồn tại 4s; flag `element_reactions` mặc định tắt.
 - Client (heroHit): choáng/nổ lan 120px. Session: choáng 2 tick, nổ +50% damage.
+
+## 2.14 Nối chiêu combo
+
+- `js/combo.js`: dùng skill A mở cửa sổ 2s cho các skill được A bổ trợ
+  (qua `skillSupportLinks`); dùng skill đích trong cửa sổ +25% sát thương.
+- UI: chỉ báo combo nhỏ trên màn hình combat (tên skill và đếm ngược).
