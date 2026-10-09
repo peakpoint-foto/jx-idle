@@ -17,6 +17,7 @@ import {challenge} from './challenge.js';
 import {sessions} from './sessions.js';
 import {moderation,adminModeration} from './moderation.js';
 import {chat} from './chat.js';
+import {telemetry, adminTelemetry} from './telemetry.js';
 
 const ROUTES = {
   "GET /api/sessions": sessions,
@@ -51,6 +52,8 @@ const ROUTES = {
   "POST /api/admin/unflag": adminUnflag,
   "POST /api/feedback": feedback,
   "GET /api/admin/feedback": adminFeedback,
+  "POST /api/telemetry": telemetry,
+  "GET /api/admin/telemetry": adminTelemetry,
   "GET /api/admin/feedback/metrics": adminFeedbackMetrics,
   "POST /api/admin/feedback": adminFeedbackSet,
   "GET /api/moderation": moderation,

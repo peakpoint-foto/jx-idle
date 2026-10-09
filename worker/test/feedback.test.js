@@ -7,7 +7,8 @@ test("cleanFeedback chuẩn hoá nội dung, loại mục lạ", () => {
   assert.equal(r.text, "Nút tháp\nbị lỗi");
   assert.equal(r.cat, "bug");
   assert.equal(r.contact, "zalo 0123");
-  assert.deepEqual(Object.keys(r.ctx).sort(), ["lvl", "mode", "ua"]);
+  assert.deepEqual(Object.keys(r.ctx).sort(), ["feature", "lvl", "mode", "ua"]);
+  assert.equal(r.ctx.feature, "other"); // không gửi feature -> mặc định "other"
   assert.equal(r.ctx.ua.length, 200);
 });
 

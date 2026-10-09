@@ -17,6 +17,7 @@ function fbModal(){
  <p class="desc">Nội dung được gửi tới người vận hành máy chủ trò chơi (Cloudflare) để kiểm tra và khắc phục. Không ghi mật khẩu hay thông tin cá nhân nhạy cảm.</p>
  <div class="card lootf fbbox">
   <div class="row">Loại <select id="fbCat">${CATS.map(([k,n])=>`<option value="${k}" ${d.cat===k?"selected":""}>${n}</option>`).join("")}</select></div>
+ <div class="row">Tính năng <select id="fbFeature">${FB_FEATURES.map(k=>`<option value="${k}" ${d.feature===k?"selected":""}>${FB_FEATURE_NAMES[k]}</option>`).join("")}</select></div>
   <textarea id="fbText" maxlength="${MAX}" rows="6" placeholder="Mô tả vấn đề hoặc ý tưởng: bạn đang làm gì, điều gì xảy ra, bạn mong đợi điều gì…" style="width:100%;box-sizing:border-box">${esc(d.text||"")}</textarea>
   <small class="dim" id="fbCount"></small>
   <div class="row">Liên hệ <input id="fbContact" maxlength="100" placeholder="Không bắt buộc (email, Zalo…)" value="${esc(d.contact||"")}" style="flex:1"></div>
@@ -28,8 +29,8 @@ function fbModal(){
  <p class="reqbad" id="fbErr" hidden></p>
  <div class="btnrow"><button class="btn" id="fbSend">Gửi góp ý</button><button class="btn" id="fbClose">Để sau</button></div>`,()=>{
   const t=$("#fbText"),cnt=()=>{$("#fbCount").textContent=t.value.length+"/"+MAX+" ký tự · bản nháp được giữ lại nếu bạn đóng"};
-  const store=()=>keep({cat:$("#fbCat").value,text:t.value,contact:$("#fbContact").value,allowCtx:$("#fbCtx").checked});
-  ["#fbCat","#fbText","#fbContact","#fbCtx"].forEach(s=>$(s).addEventListener("input",()=>{store();cnt()}));
+  const store=()=>keep({cat:$("#fbCat").value,feature:$("#fbFeature").value,text:t.value,contact:$("#fbContact").value,allowCtx:$("#fbCtx").checked});
+  ["#fbCat","#fbFeature","#fbText","#fbContact","#fbCtx"].forEach(s=>$(s).addEventListener("input",()=>{store();cnt()}));
   $("#fbCtx").addEventListener("change",()=>{store();$("#fbCtxTxt").hidden=!$("#fbCtx").checked});$("#fbCtxTxt").hidden=!$("#fbCtx").checked;
   if($("#fbDiagnostic"))$("#fbDiagnostic").onchange=()=>{$("#fbDiagnosticPreview").hidden=!$("#fbDiagnostic").checked;};
   cnt();$("#fbClose").onclick=()=>closeModal();
@@ -37,7 +38,7 @@ function fbModal(){
    if(text.length<5){err.textContent="Nội dung góp ý quá ngắn (tối thiểu 5 ký tự).";err.hidden=false;return}
    b.disabled=true;b.textContent="Đang gửi…";
    const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),10000);
-   try{const body=feedbackPayload({cat:$("#fbCat").value,text,contact:$("#fbContact").value,includeContext:$("#fbCtx").checked,includeDiagnostics:!!$("#fbDiagnostic")?.checked},c,diagnostic);
+   try{const body=feedbackPayload({cat:$("#fbCat").value,feature:$("#fbFeature").value,text,contact:$("#fbContact").value,includeContext:$("#fbCtx").checked,includeDiagnostics:!!$("#fbDiagnostic")?.checked},c,diagnostic);
     const r=await fetch(onlBase()+"/feedback",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(body),signal:controller.signal});
     const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.msg||"Máy chủ báo lỗi ("+r.status+")");
     if(!ADMV.sandbox)try{localStorage.removeItem(DRAFT)}catch(e){}
