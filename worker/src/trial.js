@@ -2,6 +2,7 @@
 import {assertAccountFeature} from './capabilities.js';
 import {HttpError} from './http.js';
 import {rateLimit} from './db.js';
+import {quotaPeriodDay,quotaStatus} from './quota.js';
 import {GAME} from '../gen/game.js';
 
 export const TRIAL_RULES = Object.freeze({attemptsPerDay: 5, boardSize: 20, resultsKeepWeeks: 12});
@@ -38,9 +39,6 @@ export async function recordTrialResult(db, sessionId, state, now = Date.now()) 
   return !!results[0].meta.changes;
 }
 
-export const trialAttemptsToday = async (db, accountId, now) => (await db.prepare(
-  "SELECT COUNT(*) n FROM combat_sessions q JOIN session_members qm ON qm.session_id=q.id WHERE qm.account_id=?1 AND q.created_at>=?2 AND json_valid(q.state) AND json_extract(q.state,'$.activity')='trial'")
-  .bind(accountId, now - now % DAY).first()).n;
 
 const ORDER = 'r.score DESC,r.created_at,r.account_id';
 const ELIGIBLE = "JOIN chars c ON c.account_id=r.account_id AND c.mode='phlt' AND c.flagged=0 AND c.validation_status='verified'";
@@ -63,7 +61,7 @@ export async function trial(req, env) {
   const c = await db.prepare('SELECT flagged,validation_status,updated_at FROM chars WHERE account_id=?1').bind(account.id).first();
   if (!c || c.flagged || c.validation_status !== 'verified' || !c.updated_at || c.updated_at < now - 30 * DAY) throw new HttpError(403, 'trial_locked');
   if (!await rateLimit(db, 'trial:' + account.id, 120, 60)) throw new HttpError(429, 'rate_limited');
-  const week = trialWeekId(now), used = await trialAttemptsToday(db, account.id, now);
+  const week = trialWeekId(now), used = (await quotaStatus(db, account.id, 'trial', quotaPeriodDay(now))).used;
   return {
     v: 1, now,
     rules: {version: GAME.SESSION_TRIAL.version, attempts_per_day: TRIAL_RULES.attemptsPerDay, lengths: GAME.SESSION_TRIAL.lengths, board_size: TRIAL_RULES.boardSize},

@@ -15,6 +15,8 @@ export const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS trial_results(week INTEGER NOT NULL,length TEXT NOT NULL,account_id TEXT NOT NULL,rules TEXT NOT NULL,session_id TEXT NOT NULL,depth INTEGER NOT NULL,score REAL NOT NULL,ticks INTEGER NOT NULL,created_at INTEGER NOT NULL,PRIMARY KEY(week,length,account_id,rules))`,
   `CREATE INDEX IF NOT EXISTS trial_results_board ON trial_results(week,length,rules,score DESC,created_at)`,
   `CREATE TABLE IF NOT EXISTS trial_recorded(session_id TEXT PRIMARY KEY,recorded_at INTEGER NOT NULL)`,
+  `CREATE TABLE IF NOT EXISTS quota_claims(account_id TEXT NOT NULL,scope TEXT NOT NULL,period TEXT NOT NULL,idem_key TEXT NOT NULL,created_at INTEGER NOT NULL,PRIMARY KEY(account_id,scope,period,idem_key))`,
+  `CREATE INDEX IF NOT EXISTS quota_claims_lookup ON quota_claims(account_id,scope,period)`,
   `CREATE TABLE IF NOT EXISTS challenges(id TEXT PRIMARY KEY,author_id TEXT NOT NULL,preset TEXT NOT NULL,version TEXT NOT NULL,spec TEXT NOT NULL,spec_hash TEXT NOT NULL,status TEXT NOT NULL DEFAULT 'open',created_at INTEGER NOT NULL,UNIQUE(author_id,preset,version,spec_hash))`,
   `CREATE INDEX IF NOT EXISTS challenges_recent ON challenges(status,created_at DESC)`,
   `CREATE INDEX IF NOT EXISTS challenges_author ON challenges(author_id,created_at)`,

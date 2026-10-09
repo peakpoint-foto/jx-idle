@@ -3,7 +3,8 @@ import {HttpError,randomToken} from './http.js';
 import {rateLimit} from './db.js';
 import {GAME} from '../gen/game.js';
 import {duelProfile} from './duel_rules.js';
-import {recordTrialResult,trialAttemptsToday,trialScore,trialSeed,trialWeekId,TRIAL_RULES} from './trial.js';
+import {recordTrialResult,trialScore,trialSeed,trialWeekId,TRIAL_RULES} from './trial.js';
+import {quotaClaimSQL,quotaPeriodDay,quotaRefund,quotaStatus} from './quota.js';
 import {recordChallengeResult,challengeOf} from './challenge.js';
 const IDLE=10000,TTL=300000,STEP=250,MAX_CATCHUP=8;
 // Each mode owns its activities, ledger asset and reward source. PHLT co-op pays rescue marks in its own ledger, never CTC merit.
@@ -95,7 +96,7 @@ async function create(env,acc,now,requestId,activity,mode,length){
   if(activity==='trial'){
     const current=await db.prepare("SELECT s.* FROM combat_sessions s JOIN session_members m ON m.session_id=s.id WHERE m.account_id=?1 AND m.active=1 AND s.status='active' AND s.room_id=?2").bind(acc.id,room.id).first();
     if(current)return current;
-    if(await trialAttemptsToday(db,acc.id,now)>=TRIAL_RULES.attemptsPerDay)throw new HttpError(409,'trial_attempts_used');
+    if((await quotaStatus(db,acc.id,'trial',quotaPeriodDay(now))).used>=TRIAL_RULES.attemptsPerDay)throw new HttpError(409,'trial_attempts_used');
   }
   const actors=roster.map(r=>{
     duelProfile(r,mode);const previous=GAME.getS();try{GAME.setS(JSON.parse(r.snapshot));return GAME.sessionActor(r.id,r.name,GAME.calc(),r.role);}finally{GAME.setS(previous);}
@@ -104,11 +105,15 @@ async function create(env,acc,now,requestId,activity,mode,length){
   const values=[id,room.id,acc.id,now,now+TTL,JSON.stringify(state),roster.length,now-35000,now-30*864e5];
   values.push(mode);
   if(activity==='siege')values.push(weekStart);
-  if(activity==='trial')values.push(now-now%864e5,TRIAL_RULES.attemptsPerDay);
+  const trialQuotaPeriod=activity==='trial'?quotaPeriodDay(now):null;
+  if(activity==='trial')values.push('trial',trialQuotaPeriod,TRIAL_RULES.attemptsPerDay);
   const quotaClause=activity==='siege'?" AND NOT EXISTS(SELECT 1 FROM combat_sessions q JOIN session_members qm ON qm.session_id=q.id WHERE q.status IN ('active','completed') AND q.created_at>=?11 AND json_valid(q.state) AND json_extract(q.state,'$.activity')='siege' AND qm.account_id IN (SELECT account_id FROM room_members WHERE room_id=?2))":'';
-  const trialClause=activity==='trial'?" AND (SELECT COUNT(*) FROM combat_sessions q JOIN session_members qm ON qm.session_id=q.id WHERE qm.account_id=?3 AND q.created_at>=?11 AND json_valid(q.state) AND json_extract(q.state,'$.activity')='trial')<?12":'';
+  const trialClause=activity==='trial'?" AND EXISTS(SELECT 1 FROM quota_claims WHERE account_id=?3 AND scope=?11 AND period=?12 AND idem_key=?1)":'';
   let revisionChecks='';for(const r of roster){values.push(r.id,r.sync_rev);revisionChecks+=` AND EXISTS(SELECT 1 FROM chars WHERE account_id=?${values.length-1} AND sync_rev=?${values.length})`;}
-  const statements=[db.prepare(`INSERT INTO combat_sessions(id,room_id,creator_id,created_at,expires_at,state,status)
+  // Trừ lượt trial bằng quotaClaimSQL: một statement nguyên tử (idem + đếm quota),
+  // cùng transaction với câu tạo session nên hai request đồng thời không vượt quota.
+  const trialQuotaStmt=activity==='trial'?db.prepare(quotaClaimSQL(f=>({accountId:'?3',scope:'?11',period:'?12',idemKey:'?1',now:'?4',limit:'?13'}[f]))).bind(...values):null;
+  const statements=[...(trialQuotaStmt?[trialQuotaStmt]:[]),db.prepare(`INSERT INTO combat_sessions(id,room_id,creator_id,created_at,expires_at,state,status)
     SELECT ?1,?2,?3,?4,?5,?6,'active' FROM rooms r WHERE r.id=?2 AND r.owner_id=?3 AND r.status='open' AND r.expires_at>?4 AND r.mode=?10
     AND (SELECT COUNT(*) FROM room_members WHERE room_id=?2)=?7
     AND NOT EXISTS(SELECT 1 FROM room_members m LEFT JOIN lobby_members l ON l.room_id=m.room_id AND l.account_id=m.account_id LEFT JOIN chars c ON c.account_id=m.account_id
@@ -116,7 +121,14 @@ async function create(env,acc,now,requestId,activity,mode,length){
       CASE WHEN json_valid(c.snapshot) THEN json_extract(c.snapshot,'$.mode')<>?10 OR COALESCE(json_extract(c.snapshot,'$.sandbox'),0)<>0 ELSE 1 END))
     ${quotaClause}${trialClause}${revisionChecks}`).bind(...values)];
   for(const r of roster)statements.push(db.prepare('INSERT INTO session_members(session_id,account_id,active,last_seen,connected_from) SELECT ?1,?2,1,?3,?3 WHERE EXISTS(SELECT 1 FROM combat_sessions WHERE id=?1)').bind(id,r.id,now));
-  try{const result=await db.batch(statements);if(!result[0].meta.changes){if(activity==='siege'&&await siegeQuotaUsed(db,room.id,weekStart))throw new HttpError(409,'siege_quota_used');if(activity==='trial'&&await trialAttemptsToday(db,acc.id,now)>=TRIAL_RULES.attemptsPerDay)throw new HttpError(409,'trial_attempts_used');throw new HttpError(409,'session_not_ready');}}
+  try{const result=await db.batch(statements);const sessionResult=result[activity==='trial'?1:0];
+    if(!sessionResult.meta.changes){if(activity==='siege'&&await siegeQuotaUsed(db,room.id,weekStart))throw new HttpError(409,'siege_quota_used');
+      if(activity==='trial'){
+        // Trừ được lượt nhưng session không tạo (đua trạng thái phòng/roster): hoàn lượt, không mất oan.
+        if(result[0].meta.changes)await quotaRefund(db,{accountId:acc.id,scope:'trial',period:trialQuotaPeriod,idemKey:id});
+        if((await quotaStatus(db,acc.id,'trial',trialQuotaPeriod)).used>=TRIAL_RULES.attemptsPerDay)throw new HttpError(409,'trial_attempts_used');
+      }
+      throw new HttpError(409,'session_not_ready');}}
   catch(e){if(requestId){const previous=await db.prepare('SELECT * FROM combat_sessions WHERE id=?1 AND creator_id=?2').bind(requestId,acc.id).first();if(previous)return previous;}const current=await db.prepare("SELECT s.* FROM combat_sessions s JOIN session_members m ON m.session_id=s.id WHERE m.account_id=?1 AND m.active=1 AND s.status='active'").bind(acc.id).first();if(current&&current.room_id===room.id)return current;if(e instanceof HttpError)throw e;throw new HttpError(409,'session_member_busy');}
   return await db.prepare('SELECT * FROM combat_sessions WHERE id=?1').bind(id).first();
 }
