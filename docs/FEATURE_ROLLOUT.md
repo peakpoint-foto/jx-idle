@@ -257,3 +257,11 @@ Chi tiết từng tính năng xem các mục dưới.
 - API `/api/league` (join/fight); thắng +25 điểm, thua +5; lên bậc tự động.
 - Replay ngắn hạn: lưu seed + rules_version (`power-v1`) trong `league_matches`.
 - Flag `duel_league` tắt mặc định.
+
+## 3.3 World boss
+
+- Boss thế giới 100M HP, 2 lần/tuần (T4/T7 20h-22h VN).
+- `worker/src/world_boss.js`: lượt đánh async qua quota (5 lượt/boss),
+  damage từ snapshot đã xác thực, idempotent theo nonce.
+- Thưởng theo hạng (top 1/10/50/100); API `/api/world-boss`.
+- Flag `world_boss` tắt mặc định.

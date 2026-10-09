@@ -102,6 +102,7 @@ test("return guide is silent during a clock rollback, in another mode, and in sa
 });
 
 test("welcome-back modal embeds the return guide behind a typeof guard", () => {
-  const main=readFileSync(new URL("../js/main.js",import.meta.url),"utf8");
-  assert.match(main,/typeof weeklyReturnGuideHTML==="function"\?weeklyReturnGuideHTML\(\):""/);
+  // 2.5: modal dùng offlineDetailHTML (js/offline_report.js), guard vẫn giữ.
+  const src=readFileSync(new URL("../js/offline_report.js",import.meta.url),"utf8");
+  assert.match(src,/typeof weeklyReturnGuideHTML\s*===\s*"function"\s*\?\s*weeklyReturnGuideHTML\(\)\s*:\s*""/);
 });

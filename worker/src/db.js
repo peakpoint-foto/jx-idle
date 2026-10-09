@@ -163,6 +163,9 @@ export const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS league_seasons(idx INTEGER PRIMARY KEY,start_at INTEGER NOT NULL,end_at INTEGER NOT NULL,status TEXT NOT NULL DEFAULT 'active')`,
   `CREATE TABLE IF NOT EXISTS league_standings(season_idx INTEGER NOT NULL,account_id TEXT NOT NULL,tier TEXT NOT NULL,points INTEGER NOT NULL DEFAULT 0,wins INTEGER NOT NULL DEFAULT 0,losses INTEGER NOT NULL DEFAULT 0,PRIMARY KEY(season_idx,account_id))`,
   `CREATE TABLE IF NOT EXISTS league_matches(id TEXT PRIMARY KEY,season_idx INTEGER NOT NULL,tier TEXT NOT NULL,p1 TEXT NOT NULL,p2 TEXT NOT NULL,winner TEXT,seed INTEGER NOT NULL,rules_version TEXT NOT NULL,created_at INTEGER NOT NULL,resolved_at INTEGER)`,
+  `CREATE TABLE IF NOT EXISTS world_boss(id TEXT PRIMARY KEY,starts_at INTEGER NOT NULL,ends_at INTEGER NOT NULL,hp INTEGER NOT NULL,max_hp INTEGER NOT NULL,status TEXT NOT NULL DEFAULT 'active')`,
+  `CREATE TABLE IF NOT EXISTS world_boss_hits(id TEXT PRIMARY KEY,boss_id TEXT NOT NULL,account_id TEXT NOT NULL,damage INTEGER NOT NULL,created_at INTEGER NOT NULL)`,
+  `CREATE INDEX IF NOT EXISTS wb_hits_boss ON world_boss_hits(boss_id,account_id)`,
   `CREATE TABLE IF NOT EXISTS mentorships(
     mentor_id TEXT NOT NULL,
     disciple_id TEXT NOT NULL,
