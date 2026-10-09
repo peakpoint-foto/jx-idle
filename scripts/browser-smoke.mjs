@@ -43,9 +43,13 @@ try {
   }
   if (!ready) throw new Error("Game scripts did not load");
   await evaluate("document.fonts.ready.then(()=>true)");
+  await command("Emulation.setEmulatedMedia",{features:[{name:"prefers-reduced-motion",value:"reduce"}]});
+  const motion=await evaluate("(() => {const b=document.getElementById('giftBtn');b.classList.add('on');const animation=getComputedStyle(b,'::after').animationName;b.classList.remove('on');return animation})()");
+  if(motion!=='none')throw new Error('Reduced-motion preference not respected: '+motion);
   const results = [];
-  for (const width of [360, 1280]) {
-    await command("Emulation.setDeviceMetricsOverride", { width, height: 800, deviceScaleFactor: 1, mobile: width < 600 });
+  for (const viewport of [{width:360,height:800,orientation:"portrait",mobile:true},{width:800,height:360,orientation:"landscape",mobile:true},{width:1280,height:800,orientation:"desktop",mobile:false}]) {
+    const {width,height}=viewport;
+    await command("Emulation.setDeviceMetricsOverride", { width, height, deviceScaleFactor: 1, mobile: viewport.mobile });
     for (const mode of ["ctc", "phlt", "g2"]) {
       const result = await evaluate(`(() => {
         closeModal(true);S=Object.assign(newSave(),{fac:'shaolin',mode:'${mode}',lvl:100,sexSet:1,sk:{10:10,319:1,271:1},skPts:50});
@@ -58,9 +62,28 @@ try {
         if(!text.includes('ID 1083')||!text.includes('chưa được hỗ trợ')||!text.includes('Hoành Tảo Thiên Quân'))throw Error('Wrong graph text');
         const button=graph.querySelector('[data-graph-skill="10"]');if(!button)throw Error('Missing skill link');button.click();
         if(!document.getElementById('mBody').textContent.includes('Bổ trợ Hoành Tảo Thiên Quân'))throw Error('Missing support modal');
-        closeModal(true);
-        const rect=graph.getBoundingClientRect();
-        return {mode:S.mode,width:${width},graphWidth:Math.round(rect.width),linkedModal:true,unsupportedVisible:true};
+        closeModal(true);const rect=graph.getBoundingClientRect();
+        showTab('more');renderMore();const search=document.getElementById('fieldSearchInput');if(!search)throw Error('Field search missing');
+        search.value='Hoành Tảo';search.dispatchEvent(new Event('input',{bubbles:true}));
+        const searchButton=document.querySelector('#fieldSearchResults button');if(!searchButton||!searchButton.textContent.includes('Hoành Tảo'))throw Error('Skill search result missing');
+        if(search.getBoundingClientRect().height<43.9||searchButton.getBoundingClientRect().height<43.9)throw Error('Field search touch target '+search.getBoundingClientRect().height+'/'+searchButton.getBoundingClientRect().height+' '+S.mode+'/'+innerWidth);
+        searchButton.click();if(curTab!=='skill')throw Error('Skill search navigation failed');
+        showTab('more');setFeatureFlags(${mode==='phlt'?'{expedition:true}':mode==='g2'?'{skill_mutators:true,training_lab:true}':'{resource_summary:true}'});renderMore();
+        const search2=document.getElementById('fieldSearchInput'),itemName=J.items[0].list[0].n;search2.value=itemName;search2.dispatchEvent(new Event('input',{bubbles:true}));
+        if(!document.querySelector('#fieldSearchResults button')?.textContent.includes(itemName))throw Error('Item search result missing');
+        document.querySelector('#fieldSearchResults button').click();if(curTab!=='inv'||lootFilter().kw!==itemName.slice(0,20))throw Error('Item search navigation/filter failed');
+        showTab('more');renderMore();
+        const search3=document.getElementById('fieldSearchInput');${mode==='ctc'?`search3.value='Công thành';search3.dispatchEvent(new Event('input',{bubbles:true}));const activity=document.querySelector('#fieldSearchResults button');if(!activity?.textContent.includes('Công thành'))throw Error('CTC activity search result missing');activity.click();if(!document.getElementById('giftTabs'))throw Error('CTC activity route failed '+typeof giftModal+' '+giftTab);closeModal(true);`:`search3.value=${mode==='phlt'?"'Hành trình'":"'Bí cảnh'"};search3.dispatchEvent(new Event('input',{bubbles:true}));if(!document.querySelector('#fieldSearchResults button')?.textContent.includes(${mode==='phlt'?"'Hành trình'":"'Bí cảnh'"}))throw Error('Activity search result missing ${mode} '+modeId()+' button:'+!!document.getElementById('${mode==='phlt'?'expeditionOpen':'riftOpen'}'));`}
+        showTab('skill');
+        showTab('skill');document.dispatchEvent(new KeyboardEvent('keydown',{key:'/',bubbles:true}));
+        if(curTab!=='more'||document.activeElement!==document.getElementById('fieldSearchInput'))throw Error('Global search keyboard shortcut failed');
+        setUiPref({hand:'left'});if(!document.body.classList.contains('jxleft'))throw Error('Left-hand preference failed');setUiPref({hand:'right'});
+        showTab('more');renderMore();const weekly=document.getElementById('weeklyTaskCard');if(!weekly)throw Error('Weekly task panel missing '+S.mode);
+        const firstTask=WEEKLY_TASKS[S.mode][0],choose=weekly.querySelector('[data-week-select="'+firstTask.id+'"]');if(!choose||choose.getBoundingClientRect().height<43.9)throw Error('Weekly task touch target missing');
+        choose.click();weeklyRecord(firstTask.event,firstTask.need);weeklyRenderCard();const weeklyClaimButton=document.querySelector('#weeklyTaskCard [data-week-claim]');
+        if(!weeklyClaimButton)throw Error('Weekly claim unavailable '+S.mode);weeklyClaimButton.click();if(weeklyRead().claims.length!==1)throw Error('Weekly receipt missing '+S.mode);
+        showTab('skill');
+        return {mode:S.mode,width:${width},height:${height},orientation:${JSON.stringify(viewport.orientation)},graphWidth:Math.round(rect.width),linkedModal:true,unsupportedVisible:true,fieldSearch:true,weeklyTask:true};
       })()`);
       if (result.graphWidth <= 0) throw new Error("Graph is not laid out: " + JSON.stringify(result));
       results.push(result);
@@ -435,6 +458,15 @@ try {
         closeModal(true);setFeatureFlags({});return {modeSummary:true,journalEntry:true,selectedExport:true};
       })()`);
       result.combatReports=reportsCheck;
+      const longSession=await evaluate(`(() => {
+        closeModal(true);S=Object.assign(newSave(),{fac:'shaolin',mode:'${mode}',lvl:100,sexSet:1});
+        R.tower=null;R.tk=null;R.logs=[];SV.on=false;R.dirty=true;recalc();
+        const heap0=performance.memory?.usedJSHeapSize||0,started=performance.now();simulate(300,.25);const elapsed=performance.now()-started,heap1=performance.memory?.usedJSHeapSize||0;
+        if(elapsed>15000)throw Error('20-minute simulated session too slow: '+Math.round(elapsed)+'ms '+S.mode+'/'+${width}+'x'+${height});
+        if(R.logs.length>40)throw Error('Long session log is unbounded');
+        return {elapsedMs:Math.round(elapsed),heapDelta:heap0&&heap1?heap1-heap0:null,logs:R.logs.length};
+      })()`);
+      result.longSession=longSession;
     }
   }
   console.log(JSON.stringify({ browser: "Chromium", results }, null, 2));

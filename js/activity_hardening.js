@@ -100,15 +100,72 @@ function activityFinish(interrupted = false) {
   ACTIVITY_SAVING = true;
   try { if (typeof save === "function") save(); } finally { ACTIVITY_SAVING = false; }
 }
-function activityReportOnline(run) {
-  if (typeof onlEligible !== "function" || !onlEligible() || typeof onlGet !== "function" || !onlGet() || typeof onlApi !== "function") return;
-  const stage = run.stage || {}, contribution = run.contribution || {};
-  onlApi("/activity/claim", { method: "POST", keepalive: true, body: {
-    event_key: run.id, activity: run.kind, contribution: Math.max(0, Math.floor(contribution.kills || 0)),
-    cleared: Math.max(0, Math.floor(contribution.cleared || 0)),
-    won: run.kind === "survival" ? stage.seconds >= 600 : !!run.won,
-  } }).catch(() => {});
+const ACTIVITY_RECEIPT_LIMIT = 16;
+let ACTIVITY_RECEIPT_RETRYING = false;
+function activityReceiptKey() {
+  try { return `${typeof saveKey === "function" ? saveKey() : "jx"}_activity_receipts`; } catch (_) { return "jx_activity_receipts"; }
 }
+function activityReceiptRead() {
+  try {
+    const rows = JSON.parse(localStorage.getItem(activityReceiptKey()) || "[]");
+    if (!Array.isArray(rows)) return [];
+    return rows.filter(x => x && typeof x.event_key === "string" && x.event_key.length <= 100 &&
+      ["siege", "tk", "tower", "survival"].includes(x.activity) && Number.isSafeInteger(x.contribution) &&
+      x.contribution >= 0 && Number.isSafeInteger(x.cleared) && x.cleared >= 0 && (x.won === 0 || x.won === 1)).slice(-ACTIVITY_RECEIPT_LIMIT);
+  } catch (_) { return []; }
+}
+function activityReceiptWrite(rows) {
+  try { localStorage.setItem(activityReceiptKey(), JSON.stringify(rows.slice(-ACTIVITY_RECEIPT_LIMIT))); return true; }
+  catch (_) { return false; }
+}
+function activityReceiptEnqueue(run) {
+  if (!run || activityMode() !== "ctc" || !["siege", "tk", "tower", "survival"].includes(run.kind)) return false;
+  const stage = run.stage || {}, contribution = run.contribution || {};
+  const row = {
+    event_key: String(run.id || ""), activity: run.kind, contribution: Math.max(0, Math.floor(contribution.kills || 0)),
+    cleared: Math.max(0, Math.floor(contribution.cleared || 0)),
+    won: (run.kind === "survival" ? stage.seconds >= 600 : !!run.won) ? 1 : 0,
+  };
+  if (!/^[A-Za-z0-9:_-]{8,100}$/.test(row.event_key)) return false;
+  const rows = activityReceiptRead();
+  if (!rows.some(x => x.event_key === row.event_key)) rows.push(row);
+  return activityReceiptWrite(rows);
+}
+async function activityRetryReceipts() {
+  if (ACTIVITY_RECEIPT_RETRYING || typeof onlEligible !== "function" || !onlEligible() ||
+      typeof onlGet !== "function" || !onlGet() || typeof onlApi !== "function") return 0;
+  ACTIVITY_RECEIPT_RETRYING = true;
+  let sent = 0;
+  try {
+    let rows = activityReceiptRead();
+    while (rows.length) {
+      try {
+        const result = await onlApi("/activity/claim", { method: "POST", keepalive: true, body: rows[0] });
+        if (!result || result.accepted !== true) break;
+        rows.shift(); activityReceiptWrite(rows); sent++;
+      } catch (error) {
+        // Quota is authoritative and cannot recover within this period; retain
+        // transient failures and stop so retries stay ordered and bounded.
+        if (error && error.code === "quota_exhausted") { rows.shift(); activityReceiptWrite(rows); continue; }
+        break;
+      }
+    }
+  } finally { ACTIVITY_RECEIPT_RETRYING = false; }
+  return sent;
+}
+function activityReportOnline(run) {
+  if (!activityReceiptEnqueue(run)) return;
+  activityRetryReceipts();
+}
+if (typeof onlRefreshMe === "function") {
+  const activityOldRefreshMe = onlRefreshMe;
+  onlRefreshMe = async function (...args) {
+    const result = await activityOldRefreshMe.apply(this, args);
+    if (result) await activityRetryReceipts();
+    return result;
+  };
+}
+if (typeof window !== "undefined" && window.addEventListener) window.addEventListener("online", activityRetryReceipts);
 function activityRestoreOnLoad() {
   if (!S) return;
   const pending = S.activityRun || S.siege;

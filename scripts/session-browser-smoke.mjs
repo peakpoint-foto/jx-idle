@@ -26,6 +26,7 @@ async function navigate(c,url,game=false){
 }
 try{
   const f=await sessionFixture(DB,2);
+  f.env.FEATURE_FLAGS.party_dungeon=true;
   server=http.createServer(async(req,res)=>{inFlight++;try{
     const url=new URL(req.url,'http://127.0.0.1');
     if(url.pathname.startsWith('/api/')){const parts=[];for await(const chunk of req)parts.push(chunk);const body=Buffer.concat(parts);
@@ -44,6 +45,23 @@ try{
     let ready=false;for(let n=0;n<100;n++){ready=await evaluate(c,"document.readyState==='complete'&&typeof partyPoll==='function'&&typeof closeModal==='function'");if(ready)break;await new Promise(r=>setTimeout(r,100));}assert.ok(ready);
     await evaluate(c,`closeModal(true);S=${JSON.stringify(f.players[i].state)};onlSet(${JSON.stringify({id:f.players[i].id,token:f.players[i].token,name:'Smoke'+i})});ONL.lastSync=Date.now();setFeatureFlags(${JSON.stringify(f.env.FEATURE_FLAGS)});recalc();document.querySelector('#tabs [data-t="more"]').click();renderMore();partyRender();partyPoll(true)`);
   }
+  await DB.prepare("INSERT INTO friendships(a,b,requester,status,created_at,expires_at) VALUES(?1,?2,?1,'accepted',?3,?4)").bind(f.players[0].id,f.players[1].id,Date.now(),Date.now()+864e5).run();
+  await DB.batch([
+    DB.prepare("INSERT INTO guilds(id,name,owner_id,week,created_at,updated_at) VALUES('guildsmoke','Smoke guild',?1,'w1',?2,?2)").bind(f.players[0].id,Date.now()),
+    DB.prepare("INSERT INTO guild_members(guild_id,account_id,role,joined_at,last_seen) VALUES('guildsmoke',?1,'owner',?2,?2)").bind(f.players[0].id,Date.now()),
+    DB.prepare("INSERT INTO guild_members(guild_id,account_id,role,joined_at,last_seen) VALUES('guildsmoke',?1,'member',?2,?2)").bind(f.players[1].id,Date.now()),
+  ]);
+  for(const [i,c] of clients.entries()){
+    const ui=await evaluate(c,`(async()=>{await onlRenderRoom(true);const b=document.querySelector('#onlRoomPanel [data-moderate="mute"]');return {admin:!!document.querySelector('#moderationAdminPanel input[type=password]'),selfService:!!b,safeText:!!b&&b.innerHTML===b.textContent}})()`);
+    assert.ok(ui.admin&&ui.selfService&&ui.safeText,JSON.stringify({i,ui}));
+  }
+  await evaluate(clients[0],`(async()=>{await onlRenderGuild();const input=document.querySelector('#guildChatInput');if(!input)throw Error('guild chat UI missing');input.value='<b>safe chat</b>';document.querySelector('#guildChatSend').click();for(let i=0;i<30&&!document.querySelector('#guildChatMessages')?.textContent.includes('safe chat');i++)await new Promise(r=>setTimeout(r,50));if(!document.querySelector('#guildChatMessages')?.textContent.includes('safe chat'))throw Error('guild chat roundtrip failed')})()`);
+  assert.equal((await DB.prepare("SELECT COUNT(*) n FROM room_chat WHERE scope='guild' AND room_id='guildsmoke'").first()).n,1);
+  await evaluate(clients[0],`(async()=>{await onlApi('/moderation',{body:{action:'mute',target_id:${JSON.stringify(f.players[1].id)},duration_ms:3600000}});await onlRenderRoom(true);if(!document.querySelector('#onlRoomPanel [data-moderate="unmute"]'))throw Error('mute state not reflected in lobby UI');await onlApi('/moderation',{body:{action:'unmute',target_id:${JSON.stringify(f.players[1].id)}}});await onlApi('/moderation',{body:{action:'report',target_id:${JSON.stringify(f.players[1].id)},reason:'spam',details:'browser moderation smoke'}})})()`);
+  assert.equal((await DB.prepare("SELECT COUNT(*) n FROM player_reports WHERE reporter_id=?1 AND target_id=?2").bind(f.players[0].id,f.players[1].id).first()).n,1);
+  const queued=await evaluate(clients[0],`(async()=>{const realFetch=window.fetch;activityReceiptEnqueue({id:'tower-'+Date.now()+'-smoke1234',kind:'tower',stage:{floor:2},contribution:{kills:4,cleared:1}});window.fetch=async()=>{throw new TypeError('offline smoke')};const offlineSent=await activityRetryReceipts();const pending=activityReceiptRead().length;window.fetch=realFetch;const retried=await activityRetryReceipts();return {offlineSent,pending,retried,left:activityReceiptRead().length}})()`);
+  assert.deepEqual(queued,{offlineSent:0,pending:1,retried:1,left:0});
+  assert.equal((await DB.prepare("SELECT COUNT(*) n FROM activity_events WHERE account_id=?1 AND activity='tower'").bind(f.players[0].id).first()).n,1);
   await evaluate(clients[0],"partyWrite('create')");const created=await evaluate(clients[0],'({session:PARTY_CLIENT.session,error:PARTY_CLIENT.error,pending:PARTY_CLIENT.pending?.body})');assert.ok(created.session,JSON.stringify(created));const id=created.session.id;await evaluate(clients[1],'partyPoll(true)');
   assert.equal(await evaluate(clients[1],'PARTY_CLIENT.session.id'),id);
   for(let n=0;n<6;n++){clock+=500;for(const c of clients)await evaluate(c,'partyPoll(true)');}
@@ -57,13 +75,31 @@ try{
   await navigate(clients[1],'about:blank');await navigate(clients[1],origin,true);
   await evaluate(clients[1],`S=${JSON.stringify(f.players[1].state)};setFeatureFlags(${JSON.stringify(f.env.FEATURE_FLAGS)});recalc();document.querySelector('#tabs [data-t="more"]').click();renderMore();partyPoll(true)`);
   assert.equal(await evaluate(clients[1],'PARTY_CLIENT.session.id'),id);
+  const bossRow=await DB.prepare('SELECT state FROM combat_sessions WHERE id=?1').bind(id).first(),bossState=JSON.parse(bossRow.state);
+  bossState.boss.hp=Math.min(bossState.boss.hp,bossState.boss.max*.25);bossState.boss.def=0;
+  await DB.prepare('UPDATE combat_sessions SET state=?2 WHERE id=?1').bind(id,JSON.stringify(bossState)).run();
   for(let n=0;n<120;n++){const s=await evaluate(clients[0],'PARTY_CLIENT.session');if(s.status!=='active')break;clock+=1000;for(const c of clients)await evaluate(c,'partyPoll(true)');}
   assert.equal(await evaluate(clients[0],'PARTY_CLIENT.session.status'),'completed','Real boss must be defeated');
   for(const c of clients){await evaluate(c,"partyWrite('claim')");await evaluate(c,"partyWrite('claim')");}
   assert.equal((await DB.prepare('SELECT COUNT(*) n FROM session_rewards WHERE session_id=?1').bind(id).first()).n,2);
   const amounts=(await DB.prepare('SELECT amount FROM session_rewards WHERE session_id=?1').bind(id).all()).results;assert.ok(amounts.every(r=>r.amount===1));
-  const touch=await evaluate(clients[0],"[...document.querySelectorAll('#onlineSessionPanel button')].every(b=>b.getBoundingClientRect().height>=44)");assert.ok(touch);
-  console.log(JSON.stringify({runtime:process.env.JX_D1_RUNTIME==='1'?'D1 local':'SQLite local',clients:2,isolatedContexts:true,viewports:[360,1280],sharedState:true,ackLossRetry:true,reloadReconnect:true,realBossCompletion:true,receiptsOnce:true,touch:true},null,2));
+  for(const c of clients)await evaluate(c,"document.querySelector('[data-party=\"dismiss\"]')?.click();true");
+  await evaluate(clients[0],"partyWrite('dungeon')");
+  const dungeon=await evaluate(clients[0],'({session:PARTY_CLIENT.session,error:PARTY_CLIENT.error,pending:PARTY_CLIENT.pending})');assert.equal(dungeon.session.activity,'dungeon',JSON.stringify(dungeon));
+  const dungeonId=dungeon.session.id;
+  await evaluate(clients[1],'partyPoll(true)');assert.equal(await evaluate(clients[1],'PARTY_CLIENT.session.activity'),'dungeon');
+  assert.ok(await evaluate(clients[0],"document.querySelector('#onlineSessionPanel').textContent.includes('Phụ bản CTC · Phá trận')"));
+  const stateRow=await DB.prepare('SELECT state FROM combat_sessions WHERE id=?1').bind(dungeonId).first(),dungeonState=JSON.parse(stateRow.state);
+  dungeonState.boss.hp=dungeonState.boss.max*.65;for(const a of dungeonState.actors)a.cooldown=10;
+  await DB.prepare('UPDATE combat_sessions SET state=?2 WHERE id=?1').bind(dungeonId,JSON.stringify(dungeonState)).run();
+  clock+=250;for(const c of clients)await evaluate(c,'partyPoll(true)');
+  assert.equal(await evaluate(clients[0],'PARTY_CLIENT.session.boss.ward'),1);
+  await evaluate(clients[0],"partyWrite('guard')");await evaluate(clients[1],"partyWrite('guard')");
+  clock+=250;for(const c of clients)await evaluate(c,'partyPoll(true)');
+  assert.equal(await evaluate(clients[0],'PARTY_CLIENT.session.objectives.breaks'),1);
+  assert.equal(await evaluate(clients[1],'PARTY_CLIENT.session.boss.ward'),0);
+  const touch=await evaluate(clients[0],"[...document.querySelectorAll('#onlineSessionPanel button')].map(b=>({text:b.textContent,height:b.getBoundingClientRect().height}))");assert.ok(touch.every(b=>b.height>=44),JSON.stringify(touch));
+  console.log(JSON.stringify({runtime:process.env.JX_D1_RUNTIME==='1'?'D1 local':'SQLite local',clients:2,isolatedContexts:true,viewports:[360,1280],sharedState:true,ackLossRetry:true,reloadReconnect:true,realBossCompletion:true,receiptsOnce:true,dungeonFormation:true,dungeonFlagOff:true,activityReceiptOfflineRetry:true,moderationUI:true,muteReportServerRoundtrip:true,roomAndGuildChat:true,touch:touch.every(b=>b.height>=44)},null,2));
 }finally{
   for(const c of clients)c.close();if(browser){for(const id of contexts)await browser.command('Target.disposeBrowserContext',{browserContextId:id}).catch(()=>{});browser.close();}
   if(server)await new Promise(r=>server.close(r));while(inFlight)await new Promise(r=>setTimeout(r,20));Date.now=realNow;await DB.close();

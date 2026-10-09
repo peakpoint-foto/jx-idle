@@ -25,7 +25,7 @@ Tiến độ thực thi: 30/43 task (F01–F07, B01–B05, G01/G02/G03/G05, E01/
 - [x] **F05** Save có phiên bản, migration và phục hồi — P0, shared; phụ thuộc: F01. Evidence: SAVE_SCHEMA.md và test/save_schema.test.mjs; session mới phải bổ sung migration/resume trong task tạo session.
 - [x] **F06** Gia cố nền online hiện có — P0, ctc; phlt/g2 opt-in sau; phụ thuộc: F01,F04,F05. Evidence: ONLINE_INVARIANTS.md; 11 integration case trên SQLite và D1 runtime local; chưa benchmark production.
 - [x] **F07** Capability và feature flags theo mode — P0, shared; phụ thuộc: F01,F04. Evidence: CAPABILITIES.md, worker/test/capabilities.test.js; tính năng mới vẫn tắt.
-- [ ] **O04** CI, release flags và rollback — P0 release gate, shared; online theo mode được bật; phụ thuộc: F05,F07,O02.
+- [ ] **O04** CI, release flags và rollback — P0 release gate, shared; online theo mode được bật; phụ thuộc: F05,F07,O02. IN_PROGRESS — local clean archive: contracts, full unit/D1 suites, regular audit, Chromium 6 mode/viewport; release contract lặp migration 0001–0010 hai lần trên schema cũ. BLOCKED: chưa có Worker/D1 staging, credential, CI run trên host hoặc rollout/rollback remote; cần cấp staging riêng và thực hiện theo RELEASE_RUNBOOK.md.
 
 ### Đợt 1 — công cụ build và chất lượng trải nghiệm
 
@@ -38,7 +38,7 @@ Tiến độ thực thi: 30/43 task (F01–F07, B01–B05, G01/G02/G03/G05, E01/
 - [x] **G03** Mã chia sẻ build và thư viện — P1, g2; phụ thuộc: G01,B02,F05. Evidence: BUILD_LIBRARY.md, 4 case, Chromium mobile/desktop; no item/token import.
 - [x] **E01** Cẩm nang nguồn rơi và mục tiêu săn đồ — P1, shared; phụ thuộc: F01,F07,B03. Evidence: LOOT_CODEX.md, 4 case và browser sáu mode/viewport; AND/OR/hidden/stale guards.
 - [x] **R01** Onboarding và gợi ý việc tiếp theo — P1, shared UI khác mode; phụ thuộc: F03,B03,E01. Evidence: CONTEXT_GUIDE.md, 4 case và browser sáu mode/viewport; namespace riêng, không popup.
-- [ ] **O01** UX mobile và giảm thao tác — P1, shared layout riêng; phụ thuộc: F03,B04,R01.
+- [x] **O01** UX mobile và giảm thao tác — P1, shared layout riêng; phụ thuộc: F03,B04,R01. DONE local — tìm skill/item/activity theo mode, shortcut `/`, filter Hành trang, activity route, target 44px; browser ba mode × portrait/mobile landscape/desktop, tay thuận và reduced-motion. Receipt CTC queue tối đa 16, retry tuần tự theo event key idempotent; hai client+D1 kiểm chứng offline→online. Mô phỏng 20 phút trên cả 9 mode/viewport: 19–59ms, log bounded (0 trong fixture). Evidence: browser smoke và session browser smoke; không tuyên bố đo trên thiết bị thật.
 - [x] **O02** Góp ý và telemetry có ngữ cảnh — P1, shared opt-in; phụ thuộc: F05,F07,B04. Evidence: FEEDBACK_DIAGNOSTICS.md, client/server tests và Chromium consent/offline flows; rate/retention local.
 
 ### Đợt 2 — MVP riêng từng mode
@@ -55,24 +55,24 @@ Tiến độ thực thi: 30/43 task (F01–F07, B01–B05, G01/G02/G03/G05, E01/
 - [x] **G05** Tiến trình thử nhiều build — P2, g2; phụ thuộc: G02,G03,F05. Evidence: test/build_progression.test.mjs (4 pass), Chromium mobile/desktop; bộ sưu tập hữu hạn, cosmetic local, claim retry/rollback và reset giữ bộ sưu tập.
 - [x] **E02** Tái chế, chế tạo và chỉnh thuộc tính — P1, shared capability riêng; phụ thuộc: E01,F05. Evidence: SAFE_WORKBENCH.md; 7 case, Chromium PHLT/g2 mobile/desktop, CTC denied; pure preview/native caps/receipt/atomic retry/locked/equipped guards.
 - [x] **E04** Ledger tài nguyên và cân bằng sink/source — P1, shared; online economy riêng; phụ thuộc: F06,F07,E02. Evidence: RESOURCE_ECONOMY.md; 3 client +4 SQLite/D1 cases; ledger/wallet/donation/rollback/UTC/rejoin quota and browser ack-loss nonce.
-- [ ] **O03** Quản trị và moderation — P1 trước public online, shared; online theo mode được bật; phụ thuộc: F06,C02,C04,O02.
+- [ ] **O03** Quản trị và moderation — P1 trước public online, shared; online theo mode được bật; phụ thuộc: F06,C02,C04,O02. IN_PROGRESS — Codex / feat/online-multiplayer; migrations 0008–0010, report cap 5/account + 20/hashed-IP/day, block/timed mute, room/guild chat guards, self-service/admin UI, `ADMIN_KEYS` per-admin audit identity; còn cấu hình secrets thật, chủ game duyệt quy trình report/retention và staging release gate.
 
 ### Đợt 3 — chơi chung và tiến trình dài hạn
 
 - [x] **C05** Server quản lý phiên trận và phần thưởng — P0 gate multiplayer, ctc đầu, phlt/g2 qua capability riêng; phụ thuộc: F04,F05,F06,F07,C04. Evidence: PARTY_SESSIONS.md, SESSION_TRANSPORT_ADR.md; UI thật/hai browser context/API-D1, parity10phái, nonce/CAS/expiry/receipt, migration0007/CI và load2/4người. Không đóng O04 remote bằng kết quả local.
-- [ ] **C06** Phụ bản tổ đội đầu tiên — P2, ctc; phụ thuộc: C01,C04,C05.
+- [x] **C06** Phụ bản tổ đội đầu tiên — P2, ctc; phụ thuộc: C01,C04,C05. DONE local — [CTC_DUNGEON.md](CTC_DUNGEON.md): arena/boss phá trận server-authoritative, contribution guard/support, loot policy C05, frozen roster, flag rollback và retry; 10 phái × 2/4 người, D1 integration và hai browser context.
 - [ ] **C07** Công thành và Tống Kim theo mục tiêu — P2, ctc; phụ thuộc: C02,C05,C06.
 - [ ] **C08** Mùa xếp hạng và hậu cần bất đồng bộ — P2, ctc; phụ thuộc: C03,C05,C07.
 - [ ] **P05** Co-op sinh tồn và cứu viện — P2, phlt; phụ thuộc: C05,P03,F07.
 - [ ] **P06** Thử thách tuần đồng điều kiện — P2, phlt; phụ thuộc: P04,C05.
 - [ ] **G04** Giao hữu chuẩn hóa và thử thách cộng đồng — P2, g2; phụ thuộc: C05,G02,G03.
 - [ ] **E03** Hiệu ứng trang bị theo lối chơi — P2, phlt/g2; ctc chỉ đồ hợp lệ; phụ thuộc: F02,F04,E02.
-- [ ] **R02** Nhiệm vụ linh hoạt và thưởng người quay lại — P2, shared luật riêng; phụ thuộc: F01,F05,E04.
+- [ ] **R02** Nhiệm vụ linh hoạt và thưởng người quay lại — P2, shared luật riêng; phụ thuộc: F01,F05,E04. IN_PROGRESS — [WEEKLY_TASKS.md](WEEKLY_TASKS.md), mode-specific selectable tasks, one-mode lock, UTC rollover/rollback guard, 3 weekly claims and one-shot return receipt; 5 unit tests + 6 browser mode/viewport smoke. Còn server-trusted time để chặn forward-clock farming và offline return summary; hiện là progression client-side, không dùng cạnh tranh.
 - [ ] **R03** Thành tựu, ngoại hình và chuyển sinh — P2, shared tách progression; phụ thuộc: F05,C08,P04,G05.
 
 ### Đợt 4 — giao dịch sau xác thực quyền sở hữu
 
-- [ ] **E05** Spike và MVP giao dịch có escrow — P3 gated, ctc trước; mode khác quyết định riêng; phụ thuộc: C05,E04,O03.
+- [ ] **E05** Spike và MVP giao dịch có escrow — P3 gated, ctc trước; mode khác quyết định riêng; phụ thuộc: C05,E04,O03. SPIKE DONE — [TRADE_ESCROW_ADR.md](TRADE_ESCROW_ADR.md) chốt ownership model, atomic accept/cancel/expiry, receipts, fraud cases và rollback. IMPLEMENTATION BLOCKED: chưa có server-owned inventory hoặc policy backfill legacy; không bật trade từ snapshot client.
 
 ## Thứ tự nhận việc từ trạng thái hiện tại
 
@@ -86,7 +86,7 @@ Các hàng dưới là lớp phụ thuộc, không phải yêu cầu chạy nhi�
 | 4 | C08 | Mùa ranked và hậu cần có server xác thực |
 | 5 | R03 | Thành tựu/ngoại hình/chuyển sinh sau tiến trình của cả ba mode |
 
-O04 có thể chuẩn bị CI local ngay; trạng thái hoàn tất toàn task vẫn cần O02 và evidence release/rollback. C05/E05 phải tách spike/ADR, prototype, implementation và kiểm chứng; không đóng task bằng ADR hoặc UI placeholder.
+O04 local gates đã được chạy trong source archive; task còn remote staging/rollback. C05/E05 phải tách spike/ADR, prototype, implementation và kiểm chứng; E05 ADR xong nhưng thiếu server-owned inventory, không đóng task bằng ADR hoặc UI placeholder.
 
 ## Checklist cho từng ticket được nhận
 
@@ -109,7 +109,7 @@ O04 có thể chuẩn bị CI local ngay; trạng thái hoàn tất toàn task v
 
 ## Nhật ký nhận việc
 
-27 task DONE local — Codex / feat/online-multiplayer: F01–F07, B01–B05, G01/G03, E01/E02/E04, R01, O02, C01–C04, P01–P04. C05 IN_PROGRESS theo lệnh tiếp tục; sở hữu js/online_sessions.js, worker/src/sessions.js, shared engine, migration/CI/parity/browser/load tests và docs. O04 có host CI xanh tại9e54e66 (push37764665755/PR37764672297); còn staging/rollout/rollback remote, không đóng checkbox chỉ bằng CI.
+32 task DONE local — Codex / feat/online-multiplayer: F01–F07, B01–B05, G01/G02/G03/G05, E01/E02/E04, R01/O01/O02, C01–C06, P01–P04. O04 requires remote staging/rollback evidence; do not close with local CI alone.
 
 | Task | Trạng thái | Agent / nhánh | File sở hữu | Evidence / blocker |
 |---|---|---|---|---|
