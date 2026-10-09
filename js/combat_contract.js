@@ -1,7 +1,7 @@
 "use strict";
 
 const COMBAT_MODEL_VERSION = "jx-combat-v2";
-const COMBAT_EVENT_KINDS = Object.freeze(["damage", "heal", "mana", "control", "death", "phase"]);
+const COMBAT_EVENT_KINDS = Object.freeze(["damage", "heal", "mana", "control", "death", "phase", "objective"]);
 
 function combatModelDescriptor() {
   return { version: COMBAT_MODEL_VERSION, snapshotVersion: 1,
@@ -44,6 +44,10 @@ function combatEvent(kind, data) {
     const duration = Number(data.duration);
     if (!Number.isFinite(duration) || duration < 0) throw new Error("Invalid control duration");
     event.duration = duration;
+  } else if (kind === "objective") {
+    for (const key of ["phase", "count"]) if (data[key] != null) {
+      const value = Number(data[key]);if(!Number.isSafeInteger(value)||value<0||value>1000)throw new Error("Invalid objective progress");event[key]=value;
+    }
   }
   return event;
 }
