@@ -19,7 +19,7 @@ function storyRead(facKey, idx) {
 }
 function storyHTML() {
   const facKey = S.fac, lvl = S.lvl;
-  const all = (factionStories()[facKey] || []).sort((a, b) => a.level - b.level);
+  const all = (factionStories()[facKey] || []).slice().sort((a, b) => a.level - b.level);
   const read = (RW().stories || {});
   if (!all.length) return `<p class="dim">Chưa có truyện cho phái này.</p>`;
   return `<h4>Truyện phái ${esc((FAC[facKey] || {}).n || facKey)}</h4>` +
