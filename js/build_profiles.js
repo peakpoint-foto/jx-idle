@@ -118,7 +118,13 @@ buildLoad=function(i) {
   const problem=buildChangeProblem();if(problem)return buildResult([problem]);
   const locked=buildSlotProblem(i);if(locked) return buildResult([locked]);
   const preview=buildPreview(i);if(!preview.ok)return preview;
-  const result=buildPersist(preview.candidate);if(result.ok)result.msg=`Đã dùng bộ ${i+1}`;return result;
+  // 2.4 (c): phí đổi loadout/build khi flag gold_sinks bật.
+  // Kiểm tra trước, thu sau persist (candidate là snapshot chụp trước khi trừ).
+  const fee=typeof loadoutSwitchFee==="function"?loadoutSwitchFee():0;
+  if(fee>0&&S.gold<fee)return buildResult(["Không đủ ngân lượng trả phí đổi bộ"]);
+  const result=buildPersist(preview.candidate);
+  if(result.ok&&fee>0)goldSinkSpend("loadout_fee",fee,`đổi sang bộ ${i+1}`);
+  if(result.ok)result.msg=`Đã dùng bộ ${i+1}`;return result;
 };
 
 {

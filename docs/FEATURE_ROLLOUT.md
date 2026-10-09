@@ -119,3 +119,17 @@ Chi tiết từng tính năng xem các mục dưới.
   cấp 60 (`buildSlotLocked`, UI hiện trạng khóa). Migration wave 3 (đợt thứ hai)
   chuẩn hóa `S.builds` trên save cũ.
 - Kill-switch: flag `build_profiles`. Gỡ: trung bình (xóa file + UI hook).
+
+## 2.4 Gold sinks có kiểm soát (`gold_sinks`)
+
+- Ba sink, mọi sink ghi log + sổ cái `S.rw.goldSinks` + telemetry
+  (`gold_sink_spent` kèm loại, `gold_total` bucket):
+  - (a) **Tẩy 1 dòng affix** (`rerollLine`) + tẩy cả món chuyển sang **seed cam
+    kết**: `seed = FNV(uid, rerolls, REROLL_SEED_V)` — save-scum cho ra đúng kết
+    quả cũ. Worker validator kiểm tra "khoảng cho phép" như mọi đồ khác
+    (`worker/test/gold_sinks.test.js`).
+  - (b) **Mở rộng kho**: 5 nấc, mỗi nấc +10 ô, giá `100k × 2.2^nấc × (1+lvl/50)`.
+  - (c) **Phí đổi loadout/build**: `2000 × 1.02^lvl` (thu sau persist để không bị
+    snapshot ghi đè).
+- Kill-switch: flag `gold_sinks` (tắt = miễn phí, ẩn UI sink mới; tẩy cả món cũ
+  vẫn dùng seed cam kết). Gỡ: xóa `js/gold_sinks.js` + hook.
