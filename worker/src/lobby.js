@@ -4,6 +4,9 @@ import {rateLimit} from './db.js';
 
 const IDLE=35000,ROOM_TTL=2*3600e3,INVITE_TTL=10*60e3,FRIEND_TTL=7*864e5;
 async function writes(db,id,scope){if(!await rateLimit(db,scope+':'+id,60,60))throw new HttpError(429,'rate_limited');}
+// A room belongs to exactly one mode (CTC or PHLT co-op); membership, invites and sessions never cross modes.
+const ROOM_OBJECTIVES={ctc:['farm','boss','siege','tk'],phlt:['rescue']};
+function roomMode(row){let s;try{s=JSON.parse(row?.snapshot);}catch(e){}if(!s||s.sandbox||!Object.prototype.hasOwnProperty.call(ROOM_OBJECTIVES,s.mode))throw new HttpError(403,'different_mode');return s.mode;}
 function ctc(row){let s;try{s=JSON.parse(row?.snapshot);}catch(e){}if(!s||s.mode!=='ctc'||s.sandbox)throw new HttpError(403,'different_mode');return row;}
 async function player(db,id){return ctc(await db.prepare('SELECT a.id,a.name,c.snapshot,c.power FROM accounts a JOIN chars c ON c.account_id=a.id WHERE a.id=?1').bind(id).first());}
 async function named(db,name){const row=await db.prepare('SELECT a.id,a.name,c.snapshot,c.power FROM accounts a JOIN chars c ON c.account_id=a.id WHERE a.name=?1 COLLATE NOCASE').bind(cleanName(name)).first();if(!row)throw new HttpError(404,'player_not_found');return ctc(row);}
@@ -70,7 +73,7 @@ async function lobbyView(db,id){
 }
 
 export async function partyRoom(req,env,body,acc,me){
-  const db=env.DB,now=Date.now();ctc(me);
+  const db=env.DB,now=Date.now(),mode=roomMode(me);
   // Reconnect retains membership until the room TTL. Stale members are visible and consume capacity.
   await db.prepare(`DELETE FROM room_members WHERE account_id=?1 AND NOT EXISTS(SELECT 1 FROM rooms WHERE id=room_members.room_id AND status='open' AND expires_at>?2)`).bind(acc.id,now).run();
   if(req.method==='GET')return lobbyView(db,acc.id);
@@ -80,13 +83,14 @@ export async function partyRoom(req,env,body,acc,me){
     if(current)return lobbyView(db,acc.id);
     const id=randomToken(8);
     try{await db.batch([
-      db.prepare('INSERT INTO rooms(id,owner_id,created_at,updated_at,expires_at) VALUES(?1,?2,?3,?3,?4)').bind(id,acc.id,now,now+ROOM_TTL),
+      db.prepare('INSERT INTO rooms(id,owner_id,created_at,updated_at,expires_at,mode) VALUES(?1,?2,?3,?3,?4,?5)').bind(id,acc.id,now,now+ROOM_TTL,mode),
       db.prepare('INSERT INTO room_members(room_id,account_id,name,power,joined_at,last_seen) VALUES(?1,?2,?3,?4,?5,?5)').bind(id,acc.id,me.name,me.power||0,now),
-      db.prepare('INSERT INTO lobby_rooms(room_id) VALUES(?1)').bind(id),
+      db.prepare('INSERT INTO lobby_rooms(room_id,objective) VALUES(?1,?2)').bind(id,ROOM_OBJECTIVES[mode][0]),
       db.prepare('INSERT INTO lobby_members(room_id,account_id) VALUES(?1,?2)').bind(id,acc.id),
     ]);}catch(e){if(!await currentRoom(db,acc.id))throw e;}
     return lobbyView(db,acc.id);
   }
+  if((action==='invite'||action==='invite_accept'||action==='invite_decline')&&mode!=='ctc')throw new HttpError(403,'invites_ctc_only');
   if(action==='invite_accept'||action==='invite_decline'){
     const invite=await db.prepare('SELECT * FROM room_invites WHERE id=?1').bind(String(body.invite_id||'')).first();
     if(!invite||invite.recipient_id!==acc.id)throw new HttpError(403,'invite_forbidden');
@@ -101,14 +105,16 @@ export async function partyRoom(req,env,body,acc,me){
   if(action==='join'||action==='invite_accept'){
     if(current)throw new HttpError(409,'already_in_room');
     const id=String(body.room_id||'');
+    const target=await db.prepare('SELECT mode FROM rooms WHERE id=?1').bind(id).first();
+    if(target&&target.mode!==mode)throw new HttpError(403,'different_mode');
     const results=await db.batch([
       db.prepare(`INSERT INTO room_members(room_id,account_id,name,power,joined_at,last_seen)
         SELECT ?1,?2,?3,?4,?5,?5 WHERE (SELECT COUNT(*) FROM room_members WHERE room_id=?1)<4
-        AND EXISTS(SELECT 1 FROM rooms WHERE id=?1 AND status='open' AND expires_at>?5)
+        AND EXISTS(SELECT 1 FROM rooms WHERE id=?1 AND status='open' AND expires_at>?5 AND mode=?8)
         AND NOT EXISTS(SELECT 1 FROM room_members WHERE account_id=?2)
-        AND EXISTS(SELECT 1 FROM chars WHERE account_id=?2 AND json_extract(snapshot,'$.mode')='ctc' AND COALESCE(json_extract(snapshot,'$.sandbox'),0)=0)
+        AND EXISTS(SELECT 1 FROM chars WHERE account_id=?2 AND json_extract(snapshot,'$.mode')=?8 AND COALESCE(json_extract(snapshot,'$.sandbox'),0)=0)
         AND (?6='join' OR EXISTS(SELECT 1 FROM room_invites i WHERE i.id=?7 AND i.room_id=?1 AND i.recipient_id=?2 AND i.status='pending' AND i.expires_at>?5 AND EXISTS(SELECT 1 FROM room_members m WHERE m.room_id=i.room_id AND m.account_id=i.sender_id)))`)
-        .bind(id,acc.id,me.name,me.power||0,now,action,String(body.invite_id||'')),
+        .bind(id,acc.id,me.name,me.power||0,now,action,String(body.invite_id||''),mode),
       db.prepare('INSERT INTO lobby_rooms(room_id) SELECT ?1 WHERE changes()>0 ON CONFLICT DO UPDATE SET revision=revision+1').bind(id),
       db.prepare("INSERT INTO lobby_members(room_id,account_id) SELECT ?1,?2 WHERE changes()>0 ON CONFLICT DO UPDATE SET role='damage',ready=0").bind(id,acc.id),
       db.prepare('UPDATE lobby_members SET ready=0 WHERE room_id=?1 AND changes()>0').bind(id),
@@ -153,7 +159,7 @@ export async function partyRoom(req,env,body,acc,me){
   if(['objective','transfer','kick'].includes(action)){
     if(current.owner_id!==acc.id)throw new HttpError(403,'leader_only');
     if(action==='objective'){
-      if(!['farm','boss','siege','tk'].includes(body.objective))throw new HttpError(400,'bad_objective');
+      if(!ROOM_OBJECTIVES[mode].includes(body.objective))throw new HttpError(400,'bad_objective');
       await db.batch([
         db.prepare("UPDATE lobby_rooms SET objective=?3,revision=revision+1 WHERE room_id=?1 AND EXISTS(SELECT 1 FROM rooms WHERE id=?1 AND owner_id=?2 AND status='open')").bind(roomId,acc.id,body.objective),
         db.prepare('UPDATE lobby_members SET ready=0 WHERE room_id=?1 AND changes()>0').bind(roomId),

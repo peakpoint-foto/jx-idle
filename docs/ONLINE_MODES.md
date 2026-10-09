@@ -49,7 +49,7 @@ Trước khi sửa, fuzz cho thấy PHLT/2.0 bị gắn cờ oan hàng nghìn l�
 
 ## Giới hạn
 
-- Chỉ là nền: chưa có lobby, phiên, sổ cái hay bảng cho PHLT/2.0. P05/P06/G04 phải thêm từng phần và flag riêng.
+- Chỉ là nền: lobby và phiên cho PHLT do P05 thêm ([COOP_RESCUE.md](COOP_RESCUE.md)); 2.0 chưa có lobby, phiên, sổ cái hay bảng. P06/G04 phải thêm từng phần và flag riêng.
 - Ngưỡng giờ chơi cho PHLT/2.0 rộng; cấp độ có thể bị thổi phồng đến hệ số trên. Cấp thăng hạng Bạch Kim (`plv`) và thông số `lab` chưa được xác thực riêng.
 - Chưa deploy, chưa staging, chưa đo tải.
 

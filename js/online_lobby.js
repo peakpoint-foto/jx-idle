@@ -7,14 +7,15 @@ function lobbyFriendsHTML(data){
     ${(data.invites||[]).map(i=>`<div class="qrow"><span>${esc(i.sender)} mời vào ${esc(i.room_id)} · hạn ${esc(new Date(i.expires_at).toLocaleString('vi-VN'))}</span><button class="btn sm" data-lobby="invite_accept" data-invite="${esc(i.id)}">Vào phòng</button><button class="btn sm" data-lobby="invite_decline" data-invite="${esc(i.id)}">Từ chối</button></div>`).join('')}</details>`;
 }
 function lobbyRoomHTML(room){
-  if(!room)return '<b>Sảnh tổ đội CTC</b><small>Phòng tối đa 4 người, TTL 2 giờ. Sảnh trao đổi trạng thái; combat tổ đội chưa mở.</small><div class="btnrow"><button class="btn sm" data-lobby="create">Tạo phòng</button><input id="lobbyRoomCode" aria-label="Mã phòng" placeholder="Mã phòng"><button class="btn sm" data-lobby="join">Vào phòng</button></div>';
+  const phlt=S.mode==='phlt';
+  if(!room)return (phlt?'<b>Sảnh giải cứu PHLT</b><small>Phòng tối đa 4 người, TTL 2 giờ. Chia sẻ mã phòng để mời người khác vào; PHLT không có bạn bè, lời mời hay chat.</small>':'<b>Sảnh tổ đội CTC</b><small>Phòng tối đa 4 người, TTL 2 giờ. Sảnh trao đổi trạng thái; combat tổ đội chưa mở.</small>')+'<div class="btnrow"><button class="btn sm" data-lobby="create">Tạo phòng</button><input id="lobbyRoomCode" aria-label="Mã phòng" placeholder="Mã phòng"><button class="btn sm" data-lobby="join">Vào phòng</button></div>';
   const me=ONL.me?.id||onlGet()?.id,own=room.members.find(m=>m.account_id===me),leader=room.owner_id===me;
-  const goals={farm:'Săn đồ',boss:'Boss',siege:'Công thành',tk:'Tống Kim'},roles={damage:'Sát thương',control:'Khống chế',support:'Duy trì'};
+  const goals=phlt?{rescue:'Giải cứu'}:{farm:'Săn đồ',boss:'Boss',siege:'Công thành',tk:'Tống Kim'},roles={damage:'Sát thương',control:'Khống chế',support:'Duy trì'};
   return `<b>Sảnh ${esc(room.id)} · ${room.members.length}/4</b><small>Presence phòng trễ tối đa 35 giây. Người mất mạng vẫn giữ chỗ đến TTL; chủ offline sẽ chuyển cho thành viên online. Sẵn sàng chỉ là trạng thái sảnh, không bắt đầu combat.</small>
     <div class="btnrow"><button class="btn sm" data-lobby="leave">Rời phòng</button>${leader?`<label>Mục tiêu<select id="lobbyObjective">${Object.entries(goals).map(([k,n])=>`<option value="${k}" ${k===room.objective?'selected':''}>${n}</option>`).join('')}</select></label><button class="btn sm" data-lobby="objective">Đặt mục tiêu</button>`:`<span>Mục tiêu: ${esc(goals[room.objective]||room.objective)}</span>`}</div>
     ${room.members.map(m=>`<div class="qrow"><span><b>${esc(m.name)} ${m.account_id===room.owner_id?'· Chủ phòng':''}</b><small>${m.online?'Online':'Mất kết nối'} · ${esc(roles[m.role]||m.role)} · ${m.ready?'Sẵn sàng':'Chưa sẵn sàng'}</small></span>${leader&&m.account_id!==me?`<button class="btn sm" data-lobby="transfer" data-target="${esc(m.account_id)}" ${m.online?'':'disabled'}>Chuyển chủ</button><button class="btn sm" data-lobby="kick" data-target="${esc(m.account_id)}">Mời rời phòng</button>`:''}</div>`).join('')}
     ${own?`<div class="btnrow"><label>Vai trò<select id="lobbyRole">${Object.entries(roles).map(([k,n])=>`<option value="${k}" ${own.role===k?'selected':''}>${n}</option>`).join('')}</select></label><button class="btn sm" data-lobby="role">Đổi vai trò</button><button class="btn sm" data-lobby="ready" data-ready="${own.ready?'false':'true'}">${own.ready?'Bỏ sẵn sàng':'Sẵn sàng'}</button></div>`:''}
-    <p>${room.all_ready?'Mọi người sẵn sàng trong sảnh.':'Chờ thành viên sẵn sàng.'} Lượt và phần thưởng hoạt động chưa thay đổi.</p><div class="btnrow"><input id="lobbyInviteName" maxlength="16" aria-label="Tên người được mời" placeholder="Tên bạn/người cùng bang"><button class="btn sm" data-lobby="invite">Mời vào phòng</button></div><small>Lời mời có hạn 10 phút, chỉ người nhận dùng được; không giữ chỗ.</small><section class="room-chat"><h4>Chat phòng · lưu 7 ngày</h4><div id="roomChatMessages" aria-live="polite"></div><div class="btnrow"><textarea id="roomChatInput" maxlength="280" aria-label="Tin nhắn trong phòng" placeholder="Tin nhắn tối đa 280 ký tự"></textarea><button class="btn" id="roomChatSend">Gửi</button></div></section>`;
+    <p>${room.all_ready?'Mọi người sẵn sàng trong sảnh.':'Chờ thành viên sẵn sàng.'} Lượt và phần thưởng hoạt động chưa thay đổi.</p>${phlt?`<small>Mã phòng: <code>${esc(room.id)}</code>. Chủ phòng bắt đầu giải cứu ở bảng Trận khi mọi người sẵn sàng.</small>`:`<div class="btnrow"><input id="lobbyInviteName" maxlength="16" aria-label="Tên người được mời" placeholder="Tên bạn/người cùng bang"><button class="btn sm" data-lobby="invite">Mời vào phòng</button></div><small>Lời mời có hạn 10 phút, chỉ người nhận dùng được; không giữ chỗ.</small><section class="room-chat"><h4>Chat phòng · lưu 7 ngày</h4><div id="roomChatMessages" aria-live="polite"></div><div class="btnrow"><textarea id="roomChatInput" maxlength="280" aria-label="Tin nhắn trong phòng" placeholder="Tin nhắn tối đa 280 ký tự"></textarea><button class="btn" id="roomChatSend">Gửi</button></div></section>`}`;
 }
 function lobbyChatFill(data){
   const list=document.getElementById('roomChatMessages');if(!list)return;list.replaceChildren();
@@ -57,12 +58,14 @@ onlRenderRoom=async function(force=false){
   const identity=onlGet()?.token,mode=S.mode;
   ONL.lobbyReadPromise=(async()=>{try{
     let data=await onlApi('/room');if(data.room)data=await onlApi('/room',{body:{action:'heartbeat',room_id:data.room.id}});
-    const [people,moderation]=await Promise.all([onlApi('/friends'),onlApi('/moderation')]);people.moderation=moderation;
-    const chatData=data.room?await onlApi('/chat?room_id='+encodeURIComponent(data.room.id)):{messages:[]};
+    const ctc=mode==='ctc';
+    let people={friends:[],invites:[]},chatData={messages:[]};
+    if(ctc){const [p,moderation]=await Promise.all([onlApi('/friends'),onlApi('/moderation')]);people=p;people.moderation=moderation;
+      if(data.room)chatData=await onlApi('/chat?room_id='+encodeURIComponent(data.room.id));}
     if(onlGet()?.token!==identity||S.mode!==mode||!featureEnabled('party_lobby')||!box.isConnected)return;
     ONL.room=data.room;const open=box.querySelector('.lobby-friends')?.open;
-    box.innerHTML=lobbyRoomHTML(data.room)+lobbyFriendsHTML(people);box.hidden=false;
-    lobbyChatFill(chatData);box.querySelector('.lobby-friends').open=!!open;lobbyBind(box);
+    box.innerHTML=lobbyRoomHTML(data.room)+(ctc?lobbyFriendsHTML(people):'');box.hidden=false;
+    if(ctc){lobbyChatFill(chatData);box.querySelector('.lobby-friends').open=!!open;}lobbyBind(box);
   }catch(e){box.innerHTML=`<small class="bad">${esc(e.msg||'Không tải được sảnh')}</small>`;box.hidden=false;}
   finally{ONL.lobbyReading=false;}})();
   await ONL.lobbyReadPromise;

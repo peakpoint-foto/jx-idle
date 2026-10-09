@@ -106,3 +106,74 @@ test('siege engine has browser/Worker parity and bounded contributions across al
     }
   }
 });
+function phltActors(ids=['a','b','c']){const g=game();g.run("fixture('phlt',100);recalc()");GAME.setS(g.json('S'));return ids.map(id=>GAME.sessionActor(id,id,GAME.calc()));}
+test('rescue activity belongs to PHLT only and every activity keeps its own mode',()=>{
+  const actors=phltActors();
+  for(const mode of ['ctc','g2'])assert.throws(()=>GAME.sessionCombatNew(mode,actors,1,'rescue'),mode);
+  for(const activity of ['party','dungeon','siege'])assert.throws(()=>GAME.sessionCombatNew('phlt',actors,1,activity),activity);
+  assert.throws(()=>GAME.sessionCombatNew('phlt',actors.slice(0,1),1,'rescue'));assert.throws(()=>GAME.sessionCombatNew('phlt',phltActors(['a','b','c','d','e']),1,'rescue'));
+  for(const activity of ['party','dungeon','siege'])assert.equal(GAME.sessionCombatNew('ctc',actors,1,activity).activity,activity);
+  const state=GAME.sessionCombatNew('phlt',actors,42,'rescue'),plainBoss=GAME.sessionCombatNew('ctc',actors,42);
+  assert.equal(state.activity,'rescue');assert.ok(Math.abs(state.boss.max/plainBoss.boss.max-GAME.SESSION_RESCUE.bossHp)<1e-9);
+  for(const a of state.actors){assert.equal(a.contribution.rescue,0);assert.equal(a.downedUntil,0);assert.equal(a.rescued,0);}
+  for(const activity of ['party','dungeon','siege']){const other=GAME.sessionCombatNew('ctc',actors,42,activity);assert.equal(other.actors[0].downedUntil,undefined);assert.equal(other.actors[0].contribution.rescue,undefined);}
+});
+test('rescue costs the rescuer, revives once inside the window, and resists races and abuse',()=>{
+  const R=GAME.SESSION_RESCUE,step=(s,cmds,conn=['a','b','c'])=>GAME.sessionCombatStep(s,cmds,conn);
+  let s=GAME.sessionCombatNew('phlt',phltActors(),42,'rescue');for(const a of s.actors)a.cooldown=1e6;s.boss.cooldown=1e6;
+  const [A,B,C]=s.actors;
+  const down=(st,id)=>{const x=st.actors.find(a=>a.id===id);x.hp=0;x.downedUntil=st.tick+R.window;return st;};
+  s=down(s,'b');const aLife=A.p.life,aHp0=s.actors[0].hp,aMp0=s.actors[0].mp;
+  // Two rescuers in one tick: the first pays and revives, the second pays nothing.
+  const raced=step(s,[{actor:'a',seq:1,kind:'rescue',target:'b'},{actor:'c',seq:1,kind:'rescue',target:'b'}]);
+  assert.ok(raced.actors[1].hp>0&&Math.abs(raced.actors[1].hp-B.p.life*R.reviveHp)<B.p.life*0.01);assert.equal(raced.actors[1].rescued,1);assert.equal(raced.actors[1].downedUntil,0);
+  assert.equal(raced.actors[0].contribution.rescue,1);assert.equal(raced.actors[2].contribution.rescue,0);
+  assert.ok(Math.abs((aHp0-raced.actors[0].hp)-aLife*R.hpCost)<aLife*0.01+raced.actors[0].p.regen,'rescuer pays ~20% of max HP');
+  assert.ok(raced.actors[0].mp<=aMp0-R.mpCost+raced.actors[0].p.manaRegen*0.25+1e-6);
+  assert.ok(Math.abs(raced.actors[2].hp-C.p.life)<1e-6||raced.actors[2].hp===s.actors[2].hp,'the second rescuer is not charged');
+  assert.ok(raced.events.some(e=>e.reason==='party_rescue'));
+  // A second fall is final: each actor can be rescued once.
+  const again=down(raced,'b');again.actors[1].downedUntil=again.tick+R.window;const second=step(again,[{actor:'a',seq:2,kind:'rescue',target:'b'}]);
+  assert.equal(second.actors[1].hp,0,'rescued once already');assert.equal(second.actors[0].hp>=again.actors[0].hp-1e-6,true,'no cost for a refused rescue');
+  // Window expiry, self, alive target, withdrawn target, broke rescuer.
+  let late=down(GAME.sessionCombatNew('phlt',phltActors(),7,'rescue'),'b');for(const a of late.actors)a.cooldown=1e6;late.boss.cooldown=1e6;late.tick=5;late.actors[1].downedUntil=3;
+  late=step(late,[{actor:'a',seq:1,kind:'rescue',target:'b'}]);assert.equal(late.actors[1].hp,0);assert.ok(late.events.some(e=>e.reason==='party_lost'));assert.equal(late.actors[1].downedUntil,0);
+  const base=()=>{const x=down(GAME.sessionCombatNew('phlt',phltActors(),9,'rescue'),'b');for(const a of x.actors)a.cooldown=1e6;x.boss.cooldown=1e6;return x;};
+  assert.equal(step(base(),[{actor:'a',seq:1,kind:'rescue',target:'a'}]).actors[1].hp,0,'no self rescue');
+  const alive=base();alive.actors[1].hp=alive.actors[1].p.life;alive.actors[1].downedUntil=0;
+  assert.equal(step(alive,[{actor:'a',seq:1,kind:'rescue',target:'b'}]).actors[0].contribution.rescue,0,'an alive ally cannot be rescued');
+  const gone=base();gone.actors[1].withdrawn=true;assert.equal(step(gone,[{actor:'a',seq:1,kind:'rescue',target:'b'}]).actors[1].hp,0,'a player who left cannot be rescued');
+  const weak=base();weak.actors[0].hp=weak.actors[0].p.life*R.hpCost*0.9;const weakAfter=step(weak,[{actor:'a',seq:1,kind:'rescue',target:'b'}]);
+  assert.equal(weakAfter.actors[1].hp,0,'a rescuer must stay standing');assert.ok(weakAfter.actors[0].hp>0);
+  const dry=base();dry.actors[0].mp=0;dry.actors[0].p.manaRegen=0;assert.equal(step(dry,[{actor:'a',seq:1,kind:'rescue',target:'b'}]).actors[1].hp,0,'no MP, no rescue');
+  const dead=base();dead.actors[0].hp=0;assert.equal(step(dead,[{actor:'a',seq:1,kind:'rescue',target:'b'}]).actors[1].hp,0,'a downed player cannot rescue');
+  const wrongKind=GAME.sessionCombatNew('ctc',phltActors(),3,'party');assert.doesNotThrow(()=>step(wrongKind,[{actor:'a',seq:1,kind:'rescue',target:'b'}]));
+  // Everyone down ends the run without a reward.
+  const wipe=base();for(const a of wipe.actors)a.hp=0;assert.equal(step(wipe,[]).status,'aborted');
+});
+test('boss hits really put a character down once, with a window, in the rescue activity',()=>{
+  let s=GAME.sessionCombatNew('phlt',phltActors(['a','b']),11,'rescue');for(const a of s.actors){a.cooldown=1e6;a.hp=1;}s.boss.cooldown=.01;s.boss.ar=1e9;
+  let downed=null;for(let n=0;n<40&&!downed;n++){s=GAME.sessionCombatStep(s,[],['a','b']);downed=s.actors.find(a=>a.hp<=0&&a.downedUntil>0);}
+  assert.ok(downed,'a lethal boss hit sets the rescue window');assert.equal(downed.downedUntil>s.tick-1,true);
+  const plain=GAME.sessionCombatNew('ctc',phltActors(['a','b']),11);for(const a of plain.actors){a.cooldown=1e6;a.hp=1;}plain.boss.cooldown=.01;plain.boss.ar=1e9;
+  let p=plain;for(let n=0;n<40;n++)p=GAME.sessionCombatStep(p,[],['a','b']);assert.ok(p.actors.every(a=>a.downedUntil===undefined),'other activities have no downed window');
+});
+test('rescue engine has browser/Worker parity across all ten factions and party sizes',()=>{
+  const g=game();
+  for(const fac of Object.values(GAME.FAC))for(const count of [2,4]){
+    g.run(`fixture('phlt',100);S.fac='${fac.key}';S.sk=Object.fromEntries(FAC[S.fac].skills.filter(id=>SK[id]).map(id=>[id,Math.min(5,SK[id].max)]));recalc()`);
+    GAME.setS(g.json('S'));
+    const actors=Array.from({length:count},(_,i)=>GAME.sessionActor('a'+i,'P'+i,GAME.calc(),i?'support':'damage'));
+    let state=GAME.sessionCombatNew('phlt',actors,246810,'rescue');for(const a of state.actors){a.hp=a.p.life*.15;}g.run(`var rescueState=${JSON.stringify(state)}`);
+    let downs=0;
+    for(let n=0;n<120&&state.status==='active';n++){
+      const kinds=['rescue','attack','guard','support'],commands=actors.map((a,i)=>({actor:a.id,seq:n+1,kind:kinds[(n+i)%4],target:kinds[(n+i)%4]==='attack'||kinds[(n+i)%4]==='guard'?'boss':actors[(i+1)%count].id})),connected=actors.map(a=>a.id),before=JSON.stringify(state);
+      const next=GAME.sessionCombatStep(state,commands,connected);assert.equal(JSON.stringify(state),before,'Input mutated');state=next;
+      g.run(`rescueState=sessionCombatStep(rescueState,${JSON.stringify(commands)},${JSON.stringify(connected)})`);
+      assert.deepEqual(plain(state),g.json('rescueState'),fac.key+'/'+count+'/'+n);
+      downs+=state.actors.filter(a=>a.downedUntil>0).length;
+      assert.ok(state.events.length<=64);
+      for(const a of state.actors){assert.ok(a.hp>=0&&a.hp<=a.p.life);assert.ok(a.mp>=0&&a.mp<=a.p.mana);assert.ok(a.rescued>=0&&a.rescued<=GAME.SESSION_RESCUE.perActor);for(const x of Object.values(a.contribution))assert.ok(Number.isFinite(x)&&x>=0);}
+    }
+  }
+});

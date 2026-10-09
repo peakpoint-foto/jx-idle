@@ -1,5 +1,7 @@
 "use strict";
 const SESSION_COMBAT=Object.freeze({version:"party-combat-v1",step:.25,maxTicks:480,idleMs:10000,logMax:64});
+const SESSION_RESCUE=Object.freeze({window:24,hpCost:.2,mpCost:8,reviveHp:.35,perActor:1,bossHp:1.5,bossDamage:1.8});
+const SESSION_ACTIVITY_MODE=Object.freeze({party:"ctc",dungeon:"ctc",siege:"ctc",rescue:"phlt"});
 const SESSION_SIEGE=Object.freeze({points:Object.freeze(["p1","p2","p3"]),need:12,decay:.25,gateDamage:.2,supplyBoost:1,supplyTicks:8,supplyCost:5,supplyRestore:.1,supplyCooldown:6});
 function sessionRandom(state){state.rng=(Math.imul(state.rng,1664525)+1013904223)>>>0;return state.rng/4294967296;}
 function sessionEvent(state,kind,data){const e=combatEvent(kind,{mode:state.mode,at:state.tick*SESSION_COMBAT.step,...data});state.events.push(e);state.events=state.events.slice(-64);}
@@ -13,14 +15,19 @@ function sessionActor(id,name,stats,role="damage"){
   return {id,name,role,p,hp:p.life,mp:p.mana,cooldown:0,utilityCooldown:0,guardUntil:0,contribution:{damage:0,control:0,heal:0,prevented:0},lastSeq:0};
 }
 function sessionCombatNew(mode,actors,seed,activity="party"){
-  if(mode!=="ctc"||!Array.isArray(actors)||actors.length<2||actors.length>4||!['party','dungeon','siege'].includes(activity))throw Error("Party snapshot requires2–4CTC actors and a known activity");
-  const hp=Math.max(100,actors.reduce((n,a)=>n+Object.values(a.p.main.parts).reduce((x,y)=>x+y,0)*Math.max(.2,a.p.main.rate),0)*18);
+  if(!Array.isArray(actors)||actors.length<2||actors.length>4||SESSION_ACTIVITY_MODE[activity]!==mode)throw Error("Party snapshot requires 2–4 actors, a known activity and the mode that owns it");
+  const baseHp=Math.max(100,actors.reduce((n,a)=>n+Object.values(a.p.main.parts).reduce((x,y)=>x+y,0)*Math.max(.2,a.p.main.rate),0)*18);
+  const hp=activity==="rescue"?baseHp*SESSION_RESCUE.bossHp:baseHp;
   const state={v:1,model:COMBAT_MODEL_VERSION,rules:SESSION_COMBAT.version,mode,activity,rng:seed>>>0,tick:0,status:"active",actors:JSON.parse(JSON.stringify(actors)),events:[],objectives:{breaks:0,supports:0},
     boss:{hp,max:hp,series:(seed>>>0)%5,res:Object.fromEntries(ELEM.map(k=>[k,10])),def:100,ar:1000,cooldown:1,poison:0,poisonDmg:0,stun:0,stunImm:0,ward:0,wardPhase:0,wardUntil:0,breakers:[]}};
   if(activity==="siege"){
     // Siege-only state: party/dungeon states keep their exact historical shape.
     state.objectives.captured=0;state.objectives.points=SESSION_SIEGE.points.map(id=>({id,need:SESSION_SIEGE.need,progress:0,owned:false,touched:0}));
     state.boss.gate=1;for(const a of state.actors){a.contribution.capture=0;a.contribution.logistics=0;a.supplyUntil=0;}
+  }
+  if(activity==="rescue"){
+    // Rescue-only state: other activities keep their exact historical shape.
+    for(const a of state.actors){a.contribution.rescue=0;a.downedUntil=0;a.rescued=0;}
   }
   return state;
 }
@@ -51,6 +58,16 @@ function sessionCombatUtility(state,actor,command){
     const restored=Math.min(raw,capacity);target.mp+=restored;actor.mp-=SESSION_SIEGE.supplyCost;actor.utilityCooldown=SESSION_SIEGE.supplyCooldown;
     target.supplyUntil=state.tick+SESSION_SIEGE.supplyTicks;actor.contribution.logistics+=restored;
     sessionEvent(state,"heal",{sourceId:actor.id,targetId:target.id,raw,capacity,reason:"siege_supply"});
+    return;
+  }
+  if(state.activity==="rescue"&&command.kind==="rescue"){
+    const target=state.actors.find(a=>a.id===command.target);
+    // Only a downed, un-withdrawn ally inside the window can be rescued, once per actor; the rescuer pays HP and MP and must stay standing.
+    if(!target||target.id===actor.id||target.hp>0||target.withdrawn||!target.downedUntil||target.downedUntil<state.tick||target.rescued>=SESSION_RESCUE.perActor)return;
+    const hpCost=actor.p.life*SESSION_RESCUE.hpCost;if(actor.hp<=hpCost+1||actor.mp<SESSION_RESCUE.mpCost)return;
+    actor.hp-=hpCost;actor.mp-=SESSION_RESCUE.mpCost;
+    target.hp=target.p.life*SESSION_RESCUE.reviveHp;target.mp=Math.max(target.mp,target.p.mana*.2);target.rescued++;target.downedUntil=0;actor.contribution.rescue++;
+    sessionEvent(state,"heal",{sourceId:actor.id,targetId:target.id,raw:target.hp,capacity:target.p.life,reason:"party_rescue"});
     return;
   }
   if(command.kind==="support"&&actor.utilityCooldown<=0&&actor.mp>=5){
@@ -88,12 +105,14 @@ function sessionCombatBossHit(state,target){
   if(sessionRandom(state)*100>=hitPercent(b.ar*(1-p.curseAR),p.def)||sessionRandom(state)*100<p.block)return;
   const el=ELEM[b.series]||"phys",before=target.hp;
   let raw=applyPart(p.life*.045*(.8+sessionRandom(state)*.4),el,b.series,p.series,p.res,PLAYER_RES_MAX,10);
+  if(state.activity==="rescue")raw*=SESSION_RESCUE.bossDamage;
   if(p.res5&&!counters(b.series,p.series))raw=Math.max(1,raw-p.res5);
   if(p.statusRes[el])raw=Math.max(1,raw*(1-p.statusRes[el]/100));if(p.absorb)raw=Math.max(1,raw*(1-p.absorb));
   if(p.curseDR)raw*=1-p.curseDR;if(p.flatDR)raw=Math.max(1,raw-p.flatDR);
   if(p.manaShield>0&&target.mp>0){const absorbed=Math.min(target.mp,raw*p.manaShield/100);target.mp-=absorbed;raw-=absorbed;target.contribution.prevented+=absorbed;}
   if(target.guardUntil>=state.tick){target.contribution.prevented+=raw*.5;raw*=.5;}
   raw=Math.max(0,raw);target.hp=Math.max(0,target.hp-raw);
+  if(state.activity==="rescue"&&target.hp<=0&&!target.rescued)target.downedUntil=state.tick+SESSION_RESCUE.window;
   sessionEvent(state,"damage",{sourceId:"boss",targetId:target.id,raw,capacity:before,element:el,reason:target.hp<=0?"party_fatal":"party_boss"});
 }
 function sessionCombatStep(input,commands=[],connectedIds=[]){
@@ -111,6 +130,7 @@ function sessionCombatStep(input,commands=[],connectedIds=[]){
     sessionCombatUtility(state,actor,commands.find(c=>c.actor===actor.id));
     if(b.hp>0&&actor.cooldown<=0)sessionCombatHit(state,actor);
   }
+  if(state.activity==="rescue")for(const a of state.actors)if(a.hp<=0&&a.downedUntil&&a.downedUntil<state.tick){a.downedUntil=0;sessionEvent(state,"objective",{targetId:a.id,reason:"party_lost"});}
   if(state.activity==="siege")for(const point of state.objectives.points)if(!point.owned&&point.touched!==state.tick)point.progress=Math.max(0,point.progress-SESSION_SIEGE.decay);
   if(state.activity==="dungeon"&&b.hp>0){const ratio=b.hp/b.max,phase=ratio<=.33?2:ratio<=.66?1:0;if(phase>b.wardPhase){b.wardPhase=phase;b.ward=1;b.wardUntil=state.tick+32;b.breakers=[];sessionEvent(state,"objective",{targetId:"boss",reason:"dungeon_formation_started",phase});}}
   if(b.hp<=0){state.status="completed";return state;}

@@ -5,6 +5,8 @@ import assert from 'node:assert/strict';
 import {localD1} from '../worker/test/helpers/d1.js';
 import {sessionFixture} from '../worker/test/helpers/session-fixture.js';
 import worker from '../worker/src/index.js';
+import {GAME} from '../worker/gen/game.js';
+import {sha256Hex} from '../worker/src/http.js';
 const debug=process.env.JX_DEBUG_ORIGIN||'http://127.0.0.1:9229',root=path.resolve(new URL('../',import.meta.url).pathname),DB=await localD1();
 const realNow=Date.now;let clock=realNow();Date.now=()=>clock;
 const contexts=[],clients=[];let server,browser,inFlight=0;
@@ -140,8 +142,54 @@ try{
   const seasonPanels=[];
   for(const c of clients){const panel=await evaluate(c,"({text:document.querySelector('#seasonPanel')?.textContent||'',buttons:[...document.querySelectorAll('#seasonPanel button')].map(b=>b.getBoundingClientRect().height),overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth})");
     assert.match(panel.text,/Mùa xếp hạng CTC · mùa \d+/,JSON.stringify(panel));assert.match(panel.text,/Của bạn/);assert.match(panel.text,/giờ VN/);assert.ok(panel.buttons.length>0&&panel.buttons.every(h=>h>=44),JSON.stringify(panel));assert.equal(panel.overflow,false,'season panel must not overflow the viewport');seasonPanels.push(panel);}
+  // P05: the same two isolated browsers play a PHLT co-op rescue run through the real Worker.
+  f.env.FEATURE_FLAGS.coop_rescue=true;f.env.FEATURE_FLAGS.online_account_phlt=true;
+  const coop=[];
+  for(let i=0;i<2;i++){
+    const id='coop'+i,token='local-coop-smoke-token-'+i,fac=['shaolin','emei'][i];
+    const main=GAME.FAC[fac].skills.find(k=>GAME.SK[k]?.req<=60&&GAME.SK[k]?.kind!=='passive')||GAME.FAC[fac].skills[0];
+    const state={...GAME.newSave(),cid:'c_local_coop_smoke_'+i,mode:'phlt',fac,lvl:60,attrPts:295,skPts:58,main,sk:{[main]:1}};
+    await DB.batch([DB.prepare('INSERT INTO accounts(id,token_hash,name,created_at,play_sec) VALUES(?1,?2,?3,?4,10000000)').bind(id,await sha256Hex(token),'Coop'+i,Date.now()),
+      DB.prepare("INSERT INTO chars(account_id,character_id,snapshot,fac,lvl,power,updated_at,validation_status,mode) VALUES(?1,?2,?3,?4,60,100,?5,'verified','phlt')").bind(id,state.cid,JSON.stringify(state),fac,Date.now())]);
+    coop.push({id,token,state});
+  }
+  for(const [i,c] of clients.entries()){
+    const p=coop[i];
+    await evaluate(c,`S=${JSON.stringify(p.state)};onlSet(${JSON.stringify({id:p.id,token:p.token,name:'Coop'+i})});ONL.lastSync=Date.now();setFeatureFlags(${JSON.stringify(f.env.FEATURE_FLAGS)});recalc();partyReset();(async()=>{await onlRefreshMe();document.querySelector('#tabs [data-t="more"]').click();renderMore()})();true`);
+  }
+  const coopRoom=await evaluate(clients[0],"(async()=>{const d=await onlApi('/room',{body:{action:'create'}});return d.room.id})()");
+  await evaluate(clients[1],`onlApi('/room',{body:{action:'join',room_id:${JSON.stringify(coopRoom)}}}).then(()=>true)`);
+  for(const c of clients)await evaluate(c,"onlApi('/room',{body:{action:'ready',ready:true}}).then(()=>true)");
+  await evaluate(clients[0],"onlRenderRoom(true).then(()=>true)");
+  const lobbyText=await evaluate(clients[0],"document.querySelector('#onlRoomPanel')?.textContent||''");
+  assert.match(lobbyText,/Giải cứu/);assert.match(lobbyText,/Mã phòng/);assert.doesNotMatch(lobbyText,/Bạn bè và lời mời|Chat phòng/,'PHLT lobby has no CTC friends, invites or chat');
+  assert.equal(await evaluate(clients[0],"onlApi('/friends').then(()=>'open',e=>e.error||e.code||'denied')"),'different_mode','friends stay CTC-only');
+  await evaluate(clients[0],"partyWrite('rescueStart')");
+  const coopRun=await evaluate(clients[0],'({session:PARTY_CLIENT.session,error:PARTY_CLIENT.error})');assert.equal(coopRun.session?.activity,'rescue',JSON.stringify(coopRun));
+  const coopId=coopRun.session.id;await evaluate(clients[1],'partyPoll(true)');assert.equal(await evaluate(clients[1],'PARTY_CLIENT.session.id'),coopId);
+  {const row=await DB.prepare('SELECT state FROM combat_sessions WHERE id=?1').bind(coopId).first(),st=JSON.parse(row.state);
+    for(const a of st.actors)a.cooldown=1e6;st.boss.cooldown=1e6;const down=st.actors.find(a=>a.id==='coop1');down.hp=0;down.downedUntil=st.tick+24;
+    await DB.prepare('UPDATE combat_sessions SET state=?2,revision=revision+1 WHERE id=?1').bind(coopId,JSON.stringify(st)).run();}
+  for(const c of clients)await evaluate(c,'partyPoll(true)');
+  assert.ok(await evaluate(clients[0],"document.querySelector('#onlineSessionPanel').textContent.includes('Đang ngã')&&!!document.querySelector('[data-party=\"rescue\"][data-target=\"coop1\"]')"));
+  await evaluate(clients[0],"document.querySelector('#tabs [data-t=more]').click();true");
+  const coopTouch=await evaluate(clients[0],"[...document.querySelectorAll('#onlineSessionPanel button')].map(b=>({text:b.textContent,height:b.getBoundingClientRect().height}))");
+  assert.ok(coopTouch.some(b=>b.text==='Cứu')&&coopTouch.every(b=>b.height>=44),JSON.stringify(coopTouch));
+  clock+=500;await evaluate(clients[0],"partyWrite('rescue','coop1')");clock+=250;for(const c of clients)await evaluate(c,'partyPoll(true)');
+  const rescued=await evaluate(clients[1],'PARTY_CLIENT.session.actors');
+  assert.ok(rescued.find(a=>a.id==='coop1').hp>0&&rescued.find(a=>a.id==='coop1').rescued===1&&rescued.find(a=>a.id==='coop0').contribution.rescue===1,JSON.stringify(rescued));
+  {const row=await DB.prepare('SELECT state FROM combat_sessions WHERE id=?1').bind(coopId).first(),st=JSON.parse(row.state);
+    st.boss.hp=Math.min(st.boss.hp,1);st.boss.def=0;for(const a of st.actors){a.cooldown=0;a.contribution.damage=Math.max(a.contribution.damage,1);}
+    await DB.prepare('UPDATE combat_sessions SET state=?2,revision=revision+1 WHERE id=?1').bind(coopId,JSON.stringify(st)).run();}
+  for(let n=0;n<120;n++){const v=await evaluate(clients[0],'PARTY_CLIENT.session');if(v.status!=='active')break;clock+=1000;for(const c of clients)await evaluate(c,'partyPoll(true)');}
+  assert.equal(await evaluate(clients[0],'PARTY_CLIENT.session.status'),'completed','the PHLT rescue boss must fall');
+  for(const c of clients){await evaluate(c,"partyWrite('claim')");await evaluate(c,"partyWrite('claim')");}
+  const marks=(await DB.prepare("SELECT account_id,mode,asset,source,delta FROM resource_ledger WHERE request_id=?1 ORDER BY account_id").bind('party:'+coopId).all()).results.map(r=>({...r}));
+  assert.deepEqual(marks,[{account_id:'coop0',mode:'phlt',asset:'rescue_mark',source:'rescue_completion',delta:2},{account_id:'coop1',mode:'phlt',asset:'rescue_mark',source:'rescue_completion',delta:1}]);
+  assert.ok(await evaluate(clients[0],"document.querySelector('#onlineSessionPanel').textContent.includes('điểm cứu viện')"));
+  for(const c of clients)await evaluate(c,"document.querySelector('[data-party=\"dismiss\"]')?.click();true");
   const touch=await evaluate(clients[0],"[...document.querySelectorAll('#onlineSessionPanel button')].map(b=>({text:b.textContent,height:b.getBoundingClientRect().height}))");assert.ok(touch.every(b=>b.height>=44),JSON.stringify(touch));
-  console.log(JSON.stringify({runtime:process.env.JX_D1_RUNTIME==='1'?'D1 local':'SQLite local',clients:2,isolatedContexts:true,viewports:[360,1280],sharedState:true,ackLossRetry:true,reloadReconnect:true,realBossCompletion:true,receiptsOnce:true,dungeonFormation:true,dungeonFlagOff:true,siegeCapture:true,siegeGateOpenAfterAllPointsCaptured:true,siegeReceiptsOnce:true,siegeTouch:siegeTouch.every(b=>b.height>=44),rankedSeasonPanel:seasonPanels.length===2,activityReceiptOfflineRetry:true,moderationUI:true,muteReportServerRoundtrip:true,roomAndGuildChat:true,touch:touch.every(b=>b.height>=44)},null,2));
+  console.log(JSON.stringify({runtime:process.env.JX_D1_RUNTIME==='1'?'D1 local':'SQLite local',clients:2,isolatedContexts:true,viewports:[360,1280],sharedState:true,ackLossRetry:true,reloadReconnect:true,realBossCompletion:true,receiptsOnce:true,dungeonFormation:true,dungeonFlagOff:true,siegeCapture:true,siegeGateOpenAfterAllPointsCaptured:true,siegeReceiptsOnce:true,siegeTouch:siegeTouch.every(b=>b.height>=44),rankedSeasonPanel:seasonPanels.length===2,phltCoopLobby:true,phltCoopRescue:true,phltRescueMarksOnce:true,phltTouch:coopTouch.every(b=>b.height>=44),activityReceiptOfflineRetry:true,moderationUI:true,muteReportServerRoundtrip:true,roomAndGuildChat:true,touch:touch.every(b=>b.height>=44)},null,2));
 }finally{
   for(const c of clients)c.close();if(browser){for(const id of contexts)await browser.command('Target.disposeBrowserContext',{browserContextId:id}).catch(()=>{});browser.close();}
   if(server)await new Promise(r=>server.close(r));while(inFlight)await new Promise(r=>setTimeout(r,20));Date.now=realNow;await DB.close();

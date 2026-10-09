@@ -69,7 +69,7 @@ test('CAS batch rollback leaves deterministic step/actions retryable; model/mode
   await f.DB.prepare("CREATE TRIGGER fail_party_update BEFORE UPDATE OF state ON combat_sessions BEGIN SELECT RAISE(ABORT,'test rollback'); END").run();f.tick(250);await assert.rejects(()=>p.get(id));
   assert.equal((await f.DB.prepare('SELECT state FROM combat_sessions WHERE id=?1').bind(id).first()).state,before);assert.equal((await f.DB.prepare('SELECT applied FROM session_actions').first()).applied,0);
   await f.DB.prepare('DROP TRIGGER fail_party_update').run();assert.equal((await p.get(id)).session.tick,1);assert.equal((await f.DB.prepare('SELECT applied FROM session_actions').first()).applied,1);
-  await f.DB.prepare("UPDATE chars SET snapshot=?1 WHERE account_id='party1'").bind(JSON.stringify({mode:'phlt'})).run();await assert.rejects(()=>q.get(id),{code:'session_mode_denied'});
+  await f.DB.prepare("UPDATE chars SET snapshot=?1 WHERE account_id='party1'").bind(JSON.stringify({mode:'g2'})).run();await assert.rejects(()=>q.get(id),{code:'session_mode_denied'});
   const s=JSON.parse((await f.DB.prepare('SELECT state FROM combat_sessions WHERE id=?1').bind(id).first()).state);s.model='future';await f.DB.prepare('UPDATE combat_sessions SET state=?2 WHERE id=?1').bind(id,JSON.stringify(s)).run();f.tick(250);await assert.rejects(()=>p.get(id),{code:'session_model_changed'});
 });
 test('create receipt survives terminal state and expiry releases all roster locks before a new session',async t=>{

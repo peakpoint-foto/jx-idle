@@ -331,7 +331,8 @@ function onlModeCardHTML(acc, recoverBox) {
     ${ONL.conflict ? `<div class="onlflag"><b>Phát hiện bản lưu mới hơn trên máy chủ.</b><div class="btnrow"><button class="btn sm" id="onlPullConflict">Nạp bản máy chủ</button><button class="btn sm" id="onlPushConflict">Ghi đè bằng bản này</button></div></div>` : ""}
     <div class="btnrow"><button class="btn" id="onlSyncBtn">Đồng bộ ngay</button><button class="btn" id="onlCodeBtn">Mã khôi phục</button></div>
     <small class="dim" id="onlCode" hidden>Giữ kín mã này, nó thay cho mật khẩu: <code>${esc(acc.token)}</code></small>
-    <small class="dim">Tài khoản này khóa theo chế độ ${esc(MODES[S.mode].n)}; không vào bảng xếp hạng, PvP, bang hay phòng của Công Thành Chiến.</small></div>`;
+    <small class="dim">Tài khoản này khóa theo chế độ ${esc(MODES[S.mode].n)}; không vào bảng xếp hạng, PvP, bang hay phòng của Công Thành Chiến.</small>
+    ${featureEnabled("room_presence") ? '<div id="onlRoomPanel" class="onlpanel"></div>' : ""}</div>`;
 }
 function onlCardHTML() {
   const recoverBox = `<div class="card"><small class="dim">Đã có mã khôi phục? Nhập để liên kết an toàn với slot này.</small><div class="btnrow"><input id="onlRecoverToken" placeholder="Mã khôi phục" autocomplete="off"><button class="btn" id="onlRecoverBtn">Khôi phục liên kết</button></div></div>`;
@@ -375,7 +376,7 @@ function onlCardBind() {
     catch (e) { toast(e.msg || "Khôi phục liên kết lỗi") }
     btn.disabled = false; renderMore();
   };
-  if (S.mode !== "ctc") return;
+  if (S.mode !== "ctc") { onlRenderRoom(); return; }
   onlRenderDuels();
   onlRenderGuild();
   onlRenderRoom();

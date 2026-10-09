@@ -328,6 +328,7 @@ export async function room(req, env, body) {
   const acc = await auth(req, env);
   const accountChar=await charFor(env.DB,acc.id);
   let state;try{state=JSON.parse(accountChar.snapshot);}catch(e){}
+  if(state&&state.mode!=='ctc'&&!GAME.featureEnabled('party_lobby',state.mode,env.FEATURE_FLAGS,!!state.sandbox))throw new HttpError(403,'feature_disabled','Phòng của chế độ này chưa mở');
   if(state&&GAME.featureEnabled('party_lobby',state.mode,env.FEATURE_FLAGS,!!state.sandbox))return partyRoom(req,env,body,acc,accountChar);
   if (req.method === "GET") return roomView(env.DB, await activeRoom(env.DB, acc.id));
   await limitWrites(env.DB,"room",acc.id);
@@ -356,7 +357,8 @@ export async function room(req, env, body) {
       env.DB.prepare(`INSERT INTO room_members(room_id,account_id,name,power,joined_at,last_seen)
         SELECT ?1,?2,?3,?4,?5,?5 WHERE (SELECT COUNT(*) FROM room_members WHERE room_id=?1)<4
         AND EXISTS(SELECT 1 FROM rooms WHERE id=?1 AND status='open' AND expires_at>?5)
-        AND NOT EXISTS(SELECT 1 FROM room_members WHERE account_id=?2)`).bind(id,acc.id,me.name,me.power||0,now),
+        AND NOT EXISTS(SELECT 1 FROM room_members WHERE account_id=?2)
+        AND EXISTS(SELECT 1 FROM rooms WHERE id=?1 AND mode='ctc')`).bind(id,acc.id,me.name,me.power||0,now),
       env.DB.prepare("UPDATE rooms SET updated_at=?2 WHERE id=?1 AND changes()>0").bind(id,now),
     ]);
     if (!joined[0].meta.changes) throw new HttpError(409,"room_full","Phòng đã đầy, hết hạn hoặc bạn đã vào phòng khác");

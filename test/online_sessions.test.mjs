@@ -49,3 +49,27 @@ test('siege entry needs its own flag; capture/supply commands and the quota erro
   assert.deepEqual(g.json("sent.map(b=>[b.action,b.kind,b.target,b.seq,b.tick])"),[['command','capture','p2',3,6],['command','supply','ally',3,6]]);
   g.run("onlApi=async()=>{throw {error:'bad_session_command',msg:'x'}}");await g.run("partyWrite('capture','p9')");assert.equal(g.run('PARTY_CLIENT.pending'),null,'a malformed command is not retried forever');
 });
+const rescueSnapshot="var rescue={id:'rescue1234567',mode:'phlt',model:COMBAT_MODEL_VERSION,rules:SESSION_COMBAT.version,activity:'rescue',status:'active',revision:2,tick:7,next_seq:2,boss:{hp:80,max:100},objectives:{breaks:0,supports:0},actors:[{id:'me',name:'Tôi',hp:50,maxHp:100,mp:20,down:0,rescued:0,contribution:{damage:3,heal:0,prevented:0,control:0,rescue:1},connected:true},{id:'ally',name:'Bạn',hp:0,maxHp:100,mp:10,down:31,rescued:0,contribution:{damage:1,heal:0,prevented:0,control:0,rescue:0},connected:true},{id:'fine',name:'Ổn',hp:60,maxHp:100,mp:10,down:0,rescued:1,contribution:{damage:1,heal:0,prevented:0,control:0,rescue:0},connected:true}],events:[]}";
+function phltReady(){const g=game();g.run("fixture('phlt',60);setFeatureFlags({party_combat:true,coop_rescue:true,party_lobby:true});onlSet({id:'me',token:'local-test-party-token'});partyRender=()=>{};PARTY_CLIENT.identity=partyIdentity()");return g;}
+test('PHLT panel offers a rescue run, never the CTC activities, and shows rescue marks',()=>{
+  const g=phltReady();assert.ok(g.run('!!partyIdentity()'),'PHLT characters can use the session panel when the features are on');
+  const idle=g.run('partyPanelHTML()');
+  assert.match(idle,/Giải cứu PHLT/);assert.match(idle,/data-party="rescueStart"/);assert.doesNotMatch(idle,/data-party="(create|dungeon|siege)"/);assert.match(idle,/điểm cứu viện/);
+  g.run(rescueSnapshot+";partyAccept({session:rescue},partyIdentity())");
+  const html=g.run('partyPanelHTML()');
+  assert.match(html,/Giải cứu PHLT/);assert.match(html,/Đang ngã/);
+  assert.equal((html.match(/data-party="rescue"/g)||[]).length,1,'only the downed ally can be rescued');assert.match(html,/data-party="rescue" data-target="ally"/);
+  assert.doesNotMatch(html,/data-party="rescue" data-target="(me|fine)"/);assert.match(html,/cứu 1/);
+  g.run("rescue.status='completed';rescue.revision=3;rescue.reward=null;partyAccept({session:rescue},partyIdentity())");
+  const done=g.run('partyPanelHTML()');assert.doesNotMatch(done,/data-party="rescue"/);assert.match(done,/Nhận điểm cứu viện/);
+  g.run("rescue.reward={amount:2,day:'2026-10-08'};rescue.revision=4;partyAccept({session:rescue},partyIdentity())");assert.match(g.run('partyPanelHTML()'),/2 điểm cứu viện/);
+});
+test('PHLT identity needs its flags; rescue commands and the start request are sent as built',async()=>{
+  const g=phltReady();g.run("setFeatureFlags({party_combat:true})");assert.equal(g.run("featureEnabled('party_combat')"),false,'coop_rescue is also required for PHLT');
+  g.run("setFeatureFlags({party_combat:true,coop_rescue:true,party_lobby:true});globalThis.crypto={randomUUID:()=>'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'};PARTY_CLIENT.identity=partyIdentity();var sent=[];onlApi=async(path,opt)=>{sent.push(JSON.parse(JSON.stringify(opt.body)));return {session:{...rescue,revision:9}}}");
+  g.run(rescueSnapshot+";partyAccept({session:{...rescue,id:'rescue1234567'}},partyIdentity())");
+  await g.run("partyWrite('rescue','ally')");assert.deepEqual(g.json("sent[0]"),{action:'command',id:'rescue1234567',seq:2,tick:8,kind:'rescue',target:'ally'});
+  g.run("partyReset();sent=[]");await g.run("partyWrite('rescueStart')");
+  assert.equal(g.json('sent[0].action'),'create');assert.equal(g.json('sent[0].activity'),'rescue');
+  g.run("setFeatureFlags({})");assert.equal(g.run("featureEnabled('party_combat')"),false,'closing the flags closes the panel');
+});

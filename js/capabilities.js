@@ -25,9 +25,11 @@ const FEATURE_REGISTRY = Object.freeze({
   guild_management: { modes: ["ctc"], enabled: false, online: true },
   online_economy: { modes: ["ctc"], enabled: false, online: true },
   resource_summary: { modes: ["ctc","phlt","g2"], enabled: false, online: false },
-  room_presence: { modes: ["ctc"], enabled: true, online: true },
-  party_lobby: { modes: ["ctc"], enabled: false, online: true },
-  party_combat: { modes: ["ctc","phlt","g2"], enabled: false, online: true },
+  // `requires` lists features that must also be on for a given mode, so a mode-specific rollout flag gates a shared feature.
+  room_presence: { modes: ["ctc","phlt"], enabled: true, online: true, requires: { phlt: ["coop_rescue"] } },
+  party_lobby: { modes: ["ctc","phlt"], enabled: false, online: true, requires: { phlt: ["coop_rescue"] } },
+  party_combat: { modes: ["ctc","phlt","g2"], enabled: false, online: true, requires: { phlt: ["coop_rescue","party_lobby"] } },
+  coop_rescue: { modes: ["phlt"], enabled: false, online: true },
   party_dungeon: { modes: ["ctc"], enabled: false, online: true },
   party_siege: { modes: ["ctc"], enabled: false, online: true },
   ranked_seasons: { modes: ["ctc"], enabled: false, online: true },
@@ -55,7 +57,9 @@ function featureEnabled(feature, mode, flags, sandbox) {
   if (!Object.prototype.hasOwnProperty.call(FEATURE_REGISTRY,feature) || !isMode(mode)) return false;
   const rule = FEATURE_REGISTRY[feature];
   if (!rule.modes.includes(mode) || rule.online && sandbox) return false;
-  return Object.prototype.hasOwnProperty.call(flags,feature) ? flags[feature] : rule.enabled;
+  const on = Object.prototype.hasOwnProperty.call(flags,feature) ? flags[feature] : rule.enabled;
+  const need = rule.requires && rule.requires[mode];
+  return on && (!need || need.every(f => featureEnabled(f, mode, flags, sandbox)));
 }
 
 function featureConfigSnapshot(mode, flags, sandbox = false) {

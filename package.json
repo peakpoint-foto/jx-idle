@@ -6,7 +6,7 @@
     "check:contracts": "node scripts/check-contracts.mjs",
     "audit:skills": "node scripts/skill-audit.mjs",
     "audit:skills:strict": "node scripts/skill-audit.mjs --strict",
-    "test:d1": "node worker/build-game.mjs && JX_D1_RUNTIME=1 node --test worker/test/online_invariants.test.js worker/test/guild_management.test.js worker/test/feedback_context.test.js worker/test/duel_modes.test.js worker/test/lobby.test.js worker/test/moderation.test.js worker/test/release_contract.test.js worker/test/economy.test.js worker/test/sessions.test.js worker/test/seasons.test.js worker/test/account_modes.test.js",
+    "test:d1": "node worker/build-game.mjs && JX_D1_RUNTIME=1 node --test worker/test/online_invariants.test.js worker/test/guild_management.test.js worker/test/feedback_context.test.js worker/test/duel_modes.test.js worker/test/lobby.test.js worker/test/moderation.test.js worker/test/release_contract.test.js worker/test/economy.test.js worker/test/sessions.test.js worker/test/seasons.test.js worker/test/account_modes.test.js worker/test/coop_rescue.test.js",
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
     "test": "node worker/build-game.mjs && node --test \"worker/test/*.test.js\" \"test/*.test.mjs\""

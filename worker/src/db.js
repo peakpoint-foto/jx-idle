@@ -191,6 +191,7 @@ const COLUMNS = [
   "ALTER TABLE chars ADD COLUMN character_id TEXT",
   "ALTER TABLE chars ADD COLUMN sync_rev INTEGER NOT NULL DEFAULT 1",
   "ALTER TABLE chars ADD COLUMN mode TEXT NOT NULL DEFAULT 'ctc'",
+  "ALTER TABLE rooms ADD COLUMN mode TEXT NOT NULL DEFAULT 'ctc'",
 ];
 
 const readyByDatabase = new WeakMap();
