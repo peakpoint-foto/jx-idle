@@ -98,8 +98,41 @@ try{
   clock+=250;for(const c of clients)await evaluate(c,'partyPoll(true)');
   assert.equal(await evaluate(clients[0],'PARTY_CLIENT.session.objectives.breaks'),1);
   assert.equal(await evaluate(clients[1],'PARTY_CLIENT.session.boss.ward'),0);
+  // C07 siege: leave the dungeon, then play a real siege through the API with two isolated browsers.
+  for(const c of clients)await evaluate(c,"partyWrite('leave')");
+  assert.equal(await evaluate(clients[0],'PARTY_CLIENT.session'),null);
+  assert.equal(await evaluate(clients[0],"!!document.querySelector('#onlineSessionPanel [data-party=\"siege\"]')"),false,'siege entry stays hidden while its flag is off');
+  f.env.FEATURE_FLAGS.party_siege=true;
+  for(const c of clients)await evaluate(c,`setFeatureFlags(${JSON.stringify(f.env.FEATURE_FLAGS)});partyRender()`);
+  assert.ok(await evaluate(clients[0],"!!document.querySelector('#onlineSessionPanel [data-party=\"siege\"]')"),'siege entry appears with its flag');
+  await evaluate(clients[0],"partyWrite('siege')");
+  const siege=await evaluate(clients[0],'({session:PARTY_CLIENT.session,error:PARTY_CLIENT.error})');assert.equal(siege.session?.activity,'siege',JSON.stringify(siege));
+  const siegeId=siege.session.id;await evaluate(clients[1],'partyPoll(true)');assert.equal(await evaluate(clients[1],'PARTY_CLIENT.session.id'),siegeId);
+  {const row=await DB.prepare('SELECT state FROM combat_sessions WHERE id=?1').bind(siegeId).first(),st=JSON.parse(row.state);
+    for(const a of st.actors){a.cooldown=1e6;a.p.life=1e9;a.hp=1e9;}
+    await DB.prepare('UPDATE combat_sessions SET state=?2,revision=revision+1 WHERE id=?1').bind(siegeId,JSON.stringify(st)).run();}
+  for(const c of clients)await evaluate(c,'partyPoll(true)');
+  assert.ok(await evaluate(clients[0],"document.querySelector('#onlineSessionPanel').textContent.includes('Công thành CTC · Chiếm điểm')&&!!document.querySelector('[data-party=\"capture\"][data-target=\"p1\"]')"));
+  const siegeTouch=await evaluate(clients[0],"[...document.querySelectorAll('#onlineSessionPanel button')].map(b=>({text:b.textContent,height:b.getBoundingClientRect().height}))");
+  assert.ok(siegeTouch.some(b=>b.text==='Chiếm')&&siegeTouch.some(b=>b.text==='Tiếp tế')&&siegeTouch.every(b=>b.height>=44),JSON.stringify(siegeTouch));
+  for(let n=0;n<80;n++){
+    clock+=500;for(const c of clients)await evaluate(c,'partyPoll(true)');
+    const view=await evaluate(clients[0],'PARTY_CLIENT.session');if(view.objectives.captured>=3)break;
+    const point=view.objectives.points.find(x=>!x.owned).id;
+    for(const c of clients)await evaluate(c,`partyWrite('capture',${JSON.stringify(point)})`);
+  }
+  assert.equal(await evaluate(clients[0],'PARTY_CLIENT.session.objectives.captured'),3);assert.equal(await evaluate(clients[1],'PARTY_CLIENT.session.boss.gate'),0);
+  assert.ok((await evaluate(clients[1],'PARTY_CLIENT.session.actors')).every(a=>a.contribution.capture>0),'both browsers contributed captures');
+  {const row=await DB.prepare('SELECT state FROM combat_sessions WHERE id=?1').bind(siegeId).first(),st=JSON.parse(row.state);
+    st.boss.hp=Math.min(st.boss.hp,1);st.boss.def=0;for(const a of st.actors)a.cooldown=0;
+    await DB.prepare('UPDATE combat_sessions SET state=?2,revision=revision+1 WHERE id=?1').bind(siegeId,JSON.stringify(st)).run();}
+  for(let n=0;n<120;n++){const s=await evaluate(clients[0],'PARTY_CLIENT.session');if(s.status!=='active')break;clock+=1000;for(const c of clients)await evaluate(c,'partyPoll(true)');}
+  assert.equal(await evaluate(clients[0],'PARTY_CLIENT.session.status'),'completed','Siege boss must fall once the gate is open');
+  for(const c of clients){await evaluate(c,"partyWrite('claim')");await evaluate(c,"partyWrite('claim')");}
+  assert.equal((await DB.prepare("SELECT COUNT(*) n FROM resource_ledger WHERE source='siege_completion' AND request_id=?1").bind('party:'+siegeId).first()).n,2);
+  for(const c of clients)await evaluate(c,"document.querySelector('[data-party=\"dismiss\"]')?.click();true");
   const touch=await evaluate(clients[0],"[...document.querySelectorAll('#onlineSessionPanel button')].map(b=>({text:b.textContent,height:b.getBoundingClientRect().height}))");assert.ok(touch.every(b=>b.height>=44),JSON.stringify(touch));
-  console.log(JSON.stringify({runtime:process.env.JX_D1_RUNTIME==='1'?'D1 local':'SQLite local',clients:2,isolatedContexts:true,viewports:[360,1280],sharedState:true,ackLossRetry:true,reloadReconnect:true,realBossCompletion:true,receiptsOnce:true,dungeonFormation:true,dungeonFlagOff:true,activityReceiptOfflineRetry:true,moderationUI:true,muteReportServerRoundtrip:true,roomAndGuildChat:true,touch:touch.every(b=>b.height>=44)},null,2));
+  console.log(JSON.stringify({runtime:process.env.JX_D1_RUNTIME==='1'?'D1 local':'SQLite local',clients:2,isolatedContexts:true,viewports:[360,1280],sharedState:true,ackLossRetry:true,reloadReconnect:true,realBossCompletion:true,receiptsOnce:true,dungeonFormation:true,dungeonFlagOff:true,siegeCapture:true,siegeGateOpenAfterAllPointsCaptured:true,siegeReceiptsOnce:true,siegeTouch:siegeTouch.every(b=>b.height>=44),activityReceiptOfflineRetry:true,moderationUI:true,muteReportServerRoundtrip:true,roomAndGuildChat:true,touch:touch.every(b=>b.height>=44)},null,2));
 }finally{
   for(const c of clients)c.close();if(browser){for(const id of contexts)await browser.command('Target.disposeBrowserContext',{browserContextId:id}).catch(()=>{});browser.close();}
   if(server)await new Promise(r=>server.close(r));while(inFlight)await new Promise(r=>setTimeout(r,20));Date.now=realNow;await DB.close();
