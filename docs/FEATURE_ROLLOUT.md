@@ -150,3 +150,16 @@ Chi tiết từng tính năng xem các mục dưới.
   (4 tick, mỗi 10s), enrage sau 90s (damage ×1.5). Sự kiện `boss_phase`,
   `boss_telegraph`, `boss_ultimate`, `boss_enrage` — deterministic theo seed.
 - Client combat (`js/combat.js`) chưa có phase/telegraph — làm sau khi session ổn.
+
+## 2.7 Boss bang async (server sim thật)
+
+- Thay công thức damage giả (`power × random`) bằng **mô phỏng session thật trên
+  server** (`worker/src/guild_boss.js`): build snapshot đã verify →
+  `sessionActor` → activity `guildboss` mới (CTC, 1 actor, 1 boss deterministic
+  theo tuần) → sim tới khi kết thúc → damage = `contribution.damage`.
+  Deterministic theo (tuần, build).
+- Boss HP scale theo số thành viên (`15000 × members`, tối thiểu 15000) khi reset
+  tuần; giữ khung idempotent `boss_receipts` + giới hạn 3 lượt/ngày.
+- Mốc thưởng chung 25/50/75/100% HP (`boss_milestones` trong guildView, UI hiện ✔).
+  Thưởng hiện vật cho mốc: chưa triển khai — cần quyết định ngân sách.
+- Vận hành: boss xoay tự động theo tuần, không cần can thiệp.

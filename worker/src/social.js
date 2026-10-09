@@ -10,6 +10,7 @@ const DUEL_TTL = 3 * 864e5;
 const ROOM_TTL = 2 * 3600e3;
 const ROOM_IDLE = 35e3;
 const BOSS_MAX = 1_000_000;
+import {GUILD_BOSS_RULES, guildBossWeekId, guildBossSeed, simulateGuildBossAttack, guildBossMilestones} from './guild_boss.js';
 const GUILD_MAX_MEMBERS = 30;
 
 const weekKey = (t = Date.now()) => String(Math.floor(t / (7 * 864e5)));
@@ -198,7 +199,10 @@ async function refreshGuildWeek(db, guildRow) {
   const wk = weekKey();
   if (guildRow.week === wk) return guildRow;
   await db.batch([
-    db.prepare("UPDATE guilds SET week=?2,boss_hp=boss_max_hp,updated_at=?3 WHERE id=?1 AND week<>?2").bind(guildRow.id, wk, Date.now()),
+    db.prepare(`UPDATE guilds SET week=?2,
+      boss_max_hp=MAX(?4,?4*(SELECT COUNT(*) FROM guild_members WHERE guild_id=?1)),
+      boss_hp=boss_max_hp,updated_at=?3 WHERE id=?1 AND week<>?2`)
+      .bind(guildRow.id, wk, Date.now(), GUILD_BOSS_RULES.hpPerMember),
     db.prepare("UPDATE guild_members SET weekly_damage=0,attack_day=NULL,attack_count=0 WHERE guild_id=?1 AND changes()>0").bind(guildRow.id),
   ]);
   return {...guildRow,...await db.prepare(`SELECT g.*,m.role,m.contrib,m.weekly_damage,m.attack_day,m.attack_count
@@ -219,6 +223,8 @@ async function guildView(db, accountId) {
       id: g.id,name: g.name,level: g.level,xp: g.xp,boss_hp: g.boss_hp,boss_max_hp: g.boss_max_hp,
       role: g.role,contrib: g.contrib,weekly_damage: g.weekly_damage,attack_count: (await db.prepare('SELECT COUNT(*) AS n FROM boss_receipts WHERE account_id=?1 AND day=?2').bind(accountId,dayKey()).first()).n,
       week: g.week,
+      boss_milestones: guildBossMilestones(g.boss_hp, g.boss_max_hp),
+      boss_rules: {attemptsPerDay: GUILD_BOSS_RULES.attemptsPerDay, milestones: GUILD_BOSS_RULES.milestones},
     },
     members: members.results,
     logs:(await db.prepare('SELECT l.action,l.target_id,l.created_at,a.name AS actor FROM guild_logs l LEFT JOIN accounts a ON a.id=l.account_id WHERE l.guild_id=?1 ORDER BY l.created_at DESC LIMIT 40').bind(g.id).all()).results,
@@ -279,8 +285,14 @@ export async function guild(req, env, body) {
     const today = dayKey();
     const requestId = body.request_id == null ? randomToken(12) : String(body.request_id);
     if (!/^[A-Za-z0-9_-]{8,80}$/.test(requestId)) throw new HttpError(400,"bad_request_id");
-    const damage = Math.max(1,Math.round((me.power||1)*(0.8+(hashSeed(acc.id+today,requestId)%41)/100)));
+    // 2.7: damage từ mô phỏng session thật trên server (deterministic theo tuần + build).
     const now=Date.now();
+    let damage;
+    try {
+      damage = simulateGuildBossAttack(me.snapshot, guildBossWeekId(now));
+    } catch (e) {
+      throw new HttpError(500, "boss_sim_failed");
+    }
     await env.DB.batch([
       env.DB.prepare(`INSERT INTO boss_receipts(account_id,request_id,guild_id,week,day,damage,created_at)
         SELECT ?1,?2,g.id,g.week,?4,MIN(?5,g.boss_hp),?6 FROM guilds g JOIN guild_members m ON m.guild_id=g.id

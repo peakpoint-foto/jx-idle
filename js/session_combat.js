@@ -5,10 +5,10 @@ const SESSION_RESCUE=Object.freeze({window:24,hpCost:.2,mpCost:8,reviveHp:.35,pe
 // 3 phase theo % HP; tuyệt chiêu báo trước 1s (4 tick); enrage sau 90s.
 const SESSION_BOSS_PHASES=Object.freeze({thresholds:[.66,.33],phaseDmgMul:[1,1.15,1.3],
   telegraphTicks:4,telegraphEvery:40,ultimateMul:3,enrageTick:360,enrageMul:1.5});
-const SESSION_ACTIVITY_MODE=Object.freeze({party:"ctc",dungeon:"ctc",siege:"ctc",rescue:"phlt",trial:"phlt",challenge:"g2"});
+const SESSION_ACTIVITY_MODE=Object.freeze({party:"ctc",dungeon:"ctc",siege:"ctc",rescue:"phlt",trial:"phlt",challenge:"g2",guildboss:"ctc"});
 // Both weekly trials (PHLT) and community challenges (2.0) fight one absolute boss chain; only trials and challenges are solo.
 const sessionWaves=state=>state.activity==="trial"||state.activity==="challenge";
-const sessionSolo=activity=>activity==="trial"||activity==="challenge";
+const sessionSolo=activity=>activity==="trial"||activity==="challenge"||activity==="guildboss";
 // Weekly trial (P06): one actor faces the same absolute boss chain as everyone else that week. The rule list is a fixed allowlist indexed by the UTC week.
 // Dữ liệu từ data/content/trial.v1.json (qua js/content.gen.js, validate bởi js/content.js).
 // JSON sai schema -> lỗi rõ ngay lúc nạp, không chạy với dữ liệu hỏng.
@@ -35,6 +35,7 @@ function sessionCombatNew(mode,actors,seed,activity="party",options={}){
   const min=sessionSolo(activity)?1:2,max=sessionSolo(activity)?1:4;
   if(!Array.isArray(actors)||actors.length<min||actors.length>max||SESSION_ACTIVITY_MODE[activity]!==mode)throw Error("Session snapshot requires a known activity, the mode that owns it and the right number of actors");
   if(activity==="trial"&&(!Number.isSafeInteger(options.week)||!Object.prototype.hasOwnProperty.call(SESSION_TRIAL.lengths,options.length)))throw Error("Trial needs a week and a known length");
+  if(activity==="guildboss"&&!Number.isSafeInteger(options.week))throw Error("Guild boss needs a week");
   if(activity==="challenge"&&(!Number.isSafeInteger(options.week)||typeof options.version!=="string"||!Number.isInteger(options.waves)||options.waves<1||options.waves>8||!(typeof options.scale==="number"&&options.scale>=.1&&options.scale<=10)))throw Error("Challenge needs a seed, a version, 1-8 waves and a bounded scale");
   const baseHp=Math.max(100,actors.reduce((n,a)=>n+Object.values(a.p.main.parts).reduce((x,y)=>x+y,0)*Math.max(.2,a.p.main.rate),0)*18);
   const hp=activity==="rescue"?baseHp*SESSION_RESCUE.bossHp:baseHp;
@@ -56,6 +57,13 @@ function sessionCombatNew(mode,actors,seed,activity="party",options={}){
     const mutator=options.mutator||null;
     if(mutator&&!JX_CONTENT.trialMutators.mutators.some(m=>m.id===mutator))throw Error("Unknown trial mutator");
     state.trial={version:SESSION_TRIAL.version,week:options.week,length:options.length,waves:SESSION_TRIAL.lengths[options.length],rule:sessionTrialRule(options.week).id,mutator};
+    state.objectives.depth=0;sessionTrialWave(state);
+  }
+  if(activity==="guildboss"){
+    // 2.7: Boss bang — 1 boss duy nhất, deterministic theo tuần (không waves).
+    // Boss dùng chỉ số trial wave 0; damage người chơi gây ra được ghi vào quỹ bang.
+    const week=options.week;
+    state.trial={version:SESSION_TRIAL.version,week,length:"guildboss",waves:1,rule:sessionTrialRule(week).id,mutator:null};
     state.objectives.depth=0;sessionTrialWave(state);
   }
   if(activity==="rescue"){
@@ -178,7 +186,7 @@ function sessionCombatStep(input,commands=[],connectedIds=[]){
   if(state.activity==="rescue")for(const a of state.actors)if(a.hp<=0&&a.downedUntil&&a.downedUntil<state.tick){a.downedUntil=0;sessionEvent(state,"objective",{targetId:a.id,reason:"party_lost"});}
   if(state.activity==="siege")for(const point of state.objectives.points)if(!point.owned&&point.touched!==state.tick)point.progress=Math.max(0,point.progress-SESSION_SIEGE.decay);
   if(state.activity==="dungeon"&&b.hp>0){const ratio=b.hp/b.max,phase=ratio<=.33?2:ratio<=.66?1:0;if(phase>b.wardPhase){b.wardPhase=phase;b.ward=1;b.wardUntil=state.tick+32;b.breakers=[];sessionEvent(state,"objective",{targetId:"boss",reason:"dungeon_formation_started",phase});}}
-  if(state.activity==="trial"&&b.hp>0){
+  if((state.activity==="trial"||state.activity==="guildboss")&&b.hp>0){
     const PH=SESSION_BOSS_PHASES,ratio=b.hp/b.max;
     const phase=ratio<=PH.thresholds[1]?2:ratio<=PH.thresholds[0]?1:0;
     if(phase>b.phase){b.phase=phase;sessionEvent(state,"objective",{targetId:"boss",reason:"boss_phase",phase});}
