@@ -41,13 +41,15 @@ Trạng thái: spike hoàn tất bằng tài liệu. Chưa có server activity, 
 
 **Reward:** công trạng server qua receipt một lần cho mỗi người, cap chung E04 (3/ngày UTC, ví 30). Không cấp item, không cấp Lệnh công thành đa người trong bước này.
 
-## 4. Quyết định cần người dùng chốt
+## 4. Quyết định (đã chọn theo logic game, chờ xác nhận trước khi implement)
 
-1. **Dùng lại engine C05** (đề xuất) hay viết engine công thành riêng.
-2. **Phần thưởng đa người chỉ là công trạng** (đề xuất) hay cần inventory server trước.
-3. **Quota CTC**: giữ 1 lần/tuần như `activity.js` (đề xuất) hay đổi.
-4. **Xử lý `forceSetItem()` và Lệnh công thành hiện có** trong chế độ đơn: giữ như cũ, hay chuyển dần sang server.
-5. **Số liệu cân bằng** (HP cổng, số điểm, ngưỡng contribution, số lượt tối đa). Đây là quyết định thiết kế, không phải thứ agent tự chọn.
+1. **Dùng lại engine C05**, mở rộng thêm mục tiêu điểm/cổng. Không viết engine thứ hai, vì hai engine sẽ lệch parity.
+2. **Đa người chỉ thưởng công trạng** qua receipt và cap E04. Không cấp trang bị. Lý do: chưa có inventory server, và C06 đã chốt cùng nguyên tắc này.
+3. **Quota CTC giữ 1 lần/tuần** qua `activity.js` (`siege: 1`). Không tăng để tránh farm công trạng.
+4. **Chế độ đơn giữ nguyên** (`siegeStart`, `forceSetItem`, Lệnh công thành phía client). Đường đa người không dùng đường này. Chuyển đơn sang server là việc riêng, không gộp vào C07.
+5. **Số liệu khởi điểm**: cổng có HP lấy từ `SIEGE_TKILL` (8 giây) nhân với `kHp` của thành; điểm chiếm cần giữ tối thiểu 2 tick; mỗi phiên tối đa 3 lớp để khớp với 3 lớp của công thành đơn. Số liệu này cần playtest, không phải kết quả đo.
+
+Trạng thái: chưa bắt đầu implement. Chưa có thay đổi `session_combat.js`, `sessions.js`, `activity.js` hay flag `party_siege`.
 
 ## 5. Kế hoạch kiểm chứng (từ backlog)
 

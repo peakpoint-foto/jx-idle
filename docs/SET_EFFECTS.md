@@ -1,60 +1,52 @@
-# E03 — Hiệu ứng trang bị theo lối chơi (đề xuất, chưa implement)
+# E03 — Hiệu ứng trang bị theo lối chơi (v1 đã triển khai local)
 
-Trạng thái: đề xuất thiết kế. Chưa thay đổi calc, Worker hay dữ liệu. Lý do: E03 thay đổi chỉ số chiến đấu, cần Worker/client parity và các con số cân bằng do người dùng quyết định.
+Trạng thái: v1 là chỉ số tĩnh, bật theo mode, có test client và Worker. Con số cân bằng là giá trị khởi điểm, cần playtest trước khi coi là cân bằng.
 
-## 1. Cơ chế bộ trang bị hiện có (đã đối chiếu code)
+## 1. Cơ chế nền (đã có trước E03)
 
-- `js/sets.js`: đồ bộ có `kind` (`gold` hoặc `platina`), `set.grp` (nhóm bộ), `set.n1` (ngưỡng nâng cấp) và `set.n2` (ngưỡng kích hoạt).
-- `setCounts(eq)` đếm số món theo nhóm, bỏ qua ngựa và không tính trùng nhẫn cùng một bộ.
-- `enoughToActive(eq)` trả về true khi có một nhóm đạt `n2` món. `goldEnhance(it, eq)` trả về `GOLD_EXT = 2` khi đủ ngưỡng kích hoạt, hoặc một phần theo `n1` khi chưa đủ.
-- `js/stats.js` dùng `enoughToActive` 4 lần và `goldEnhance` 1 lần. Đây là nơi bộ đã kích hoạt ảnh hưởng chỉ số.
-- Worker: `worker/build-game.mjs` đóng gói `js/sets.js` và `js/stats.js` vào bundle calc. Parity Worker–client đi qua cùng mã này.
+- `js/sets.js`: đồ bộ có `set.kind` (`gold`/`platina`), `set.grp` (nhóm), `set.n1` (ngưỡng nâng cấp) và `set.n2` (ngưỡng kích hoạt).
+- `setCounts(eq)` đếm món theo nhóm (bỏ ngựa, không đếm trùng nhẫn cùng bộ).
+- `enoughToActive(eq)` / `goldEnhance` nhân đôi dòng `ext` khi bộ đủ ngưỡng. Đây là hiệu ứng nền, không đổi trong E03.
+- Worker đóng gói `js/sets.js` và `js/stats.js` vào `worker/gen/game.js`, nên calc server dùng cùng mã.
 
-Tức là **bộ trang bị đã có một hiệu ứng nền** (nhân đôi phần mở rộng khi kích hoạt). E03 là lớp hiệu ứng theo lối chơi bổ sung trên cơ chế đó, không thay thế nó.
+## 2. Hiệu ứng theo lối chơi (v1)
 
-## 2. Ràng buộc từ backlog
+Thêm trong `js/sets.js` (`setModeBonus`, `setModeText`) và gọi từ `calc()` trong `js/stats.js`:
 
-- PHLT: hiệu ứng hỗ trợ sinh tồn.
-- g2: hiệu ứng đổi combo.
-- CTC: chỉ dùng dòng và đồ Xanh–Vàng đã được phép; không mở Hoàng Kim bằng task này.
-- Không đổi chỉ số nền ngoài mode.
-- Tránh stack phản hồi vô hạn (ví dụ hồi máu kích hoạt hồi máu).
-- Có nguồn và điều kiện rõ; cần test proc cooldown, tương tác DOT, equip/unequip, chuyển mode và parity Worker.
-
-## 3. Đề xuất
-
-Một bảng cấu hình theo mode, đặt trong module mới (ví dụ `js/set_effects.js`), có `version` và chỉ dùng các trường đã allowlist:
-
-| Mode | Điều kiện kích hoạt | Hiệu ứng đề xuất (chỉ để chọn) | Giới hạn |
+| Mode | Điều kiện | Hiệu ứng | Ghi chú |
 |---|---|---|---|
-| PHLT | Đủ `n2` món cùng nhóm | Giảm tiêu hao vật tư hoặc tăng kháng khi ở hành trình | Không cộng thêm khi đã kích hoạt cùng loại |
-| g2 | Đủ `n2` món cùng nhóm | Đổi một kỹ năng nền sang biến thể trong bảng cho sẵn | Một biến thể mỗi nhóm; không chồng |
-| CTC | — | Không có hiệu ứng mới; chỉ dùng dòng Xanh–Vàng | — |
+| CTC | — | Không có | Giữ đúng luật ngoài mode |
+| PHLT (sinh tồn) | Đủ `n2` món cùng nhóm | +6% Sinh lực (`lifemax_p`), +5 kháng toàn bộ (`allres_p`) | Hướng sinh tồn |
+| g2 (combo) | Đủ `n2` món cùng nhóm | +4 Chí mạng (`deadlystrike_p`), +5% sát thương vũ khí (`weapondamageenhance_p`) | Hướng đổi combo |
 
-Các hiệu ứng trong bảng chỉ là ví dụ để thảo luận. **Không chọn số liệu cụ thể trong tài liệu này.**
+Quy tắc không cộng dồn: mỗi nhân vật chỉ nhận hiệu ứng của **một** bộ. Bộ được chọn là bộ đủ `n2` có nhiều món nhất; hòa thì lấy nhóm có số nhỏ hơn. Vì vậy hai bộ đủ ngưỡng cùng lúc chỉ cho một bộ hiệu ứng.
 
-Nguyên tắc chung:
-- Hiệu ứng chỉ đọc trạng thái trang bị đã trang bị, không đọc kho hay save khác.
-- Mỗi hiệu ứng có `id` ổn định để test và log.
-- Proc có cooldown tính theo thời gian combat, không theo số lần tick, để parity client–Worker không lệch khi tốc độ khác nhau.
+Hiển thị: dòng dưới thẻ "Chỉ số" trong `renderChar` (`js/ui.js`) cho biết bộ đang kích hoạt hoặc điều kiện còn thiếu, chỉ ở PHLT và g2.
 
-## 4. Quyết định cần người dùng chốt
+## 3. Lý do thiết kế
 
-1. **Lối chơi cho PHLT và g2**: chọn hiệu ứng nào trong các hướng trên (hoặc hướng khác).
-2. **Số liệu**: tỷ lệ, cooldown, giới hạn stack. Không có căn cứ trong code để tự chọn.
-3. **Có áp dụng cho bộ hiện có không**, hay chỉ cho đồ mới roll sau khi bật. Áp dụng ngược sẽ đổi calc của save cũ.
-4. **Phạm vi CTC**: xác nhận không có hiệu ứng mới ở CTC trong task này.
+- **Chỉ số tĩnh, không proc**: không có cooldown, không có vòng phản hồi, nên không có nguy cơ stack vô hạn. Proc có cooldown cần thay đổi `combat.js` và kiểm chứng DOT riêng; để sang v2.
+- **Dùng `calc()`**: client và Worker dùng cùng một mã, parity có sẵn. Test server xác nhận điều này.
+- **Không lưu vào save**: hiệu ứng tính lại mỗi lần tính chỉ số, nên save cũ không cần migration.
 
-## 5. Kiểm chứng sẽ thực hiện khi implement
+## 4. Thay đổi hành vi cần biết
 
-- Proc cooldown và giới hạn stack, kể cả khi nhiều bộ cùng kích hoạt.
-- Tương tác DOT (hiệu ứng có làm thay đổi damage over time không, và có tính đúng nguồn không).
-- Equip/unequip giữa trận, và khi đổi trang bị ngay trước khi kích hoạt.
-- Chuyển mode: hiệu ứng chỉ hoạt động đúng mode; save CTC không nhận hiệu ứng PHLT/g2.
-- Worker parity: cùng đầu vào cho cùng đầu ra trên 10 phái.
-- Save cũ không đổi chỉ số khi chưa bật flag.
+- Đồ bộ đã đủ ngưỡng trong PHLT và g2 sẽ cho nhân vật có chỉ số cao hơn sau khi cập nhật. Đây là thay đổi cân bằng, không phải lỗi. CTC không đổi.
+- Không đổi dữ liệu, không đổi save, không đổi flag.
 
-## 6. Rủi ro
+## 5. Quan sát, chưa sửa
 
-- Chỉ số do `calc` tính, nên mọi thay đổi ở đây ảnh hưởng toàn bộ trận và báo cáo (B04). Cần regression cho combat policy và combat reports.
-- Phản hồi vô hạn nếu hiệu ứng kích hoạt chính nó. Phải chặn ở mức thiết kế, không chỉ ở test.
+- `enoughToActive(eq)` trả về true khi **bất kỳ** nhóm nào đủ ngưỡng, nên dòng `ext` nhân đôi của mọi đồ bộ vàng được bật theo, không riêng nhóm đủ bộ. Đây là hành vi nền đã có; sửa sẽ đổi chỉ số của mọi save, nên không gộp vào E03.
+
+## 6. Kiểm chứng đã chạy
+
+- `test/set_effects.test.mjs` (7 test): CTC không có bonus; PHLT cần đủ `n2` và áp dụng một lần; g2 dùng bộ riêng; hai bộ không cộng dồn; bỏ trang bị thì bonus biến mất; `calc()` tăng đúng 6% sinh lực; dòng hiển thị đúng; `renderChar` không lỗi với bộ đang kích hoạt.
+- `worker/test/set_effects.test.js` (2 test): server `GAME.calc` cho PHLT tăng đúng 6%; CTC không đổi.
+- `npm test` 282/282, `npm run test:d1` 42/42.
+- `scripts/browser-smoke.mjs` pass 9 tổ hợp mode × viewport (3 mode × 360 dọc, 800 ngang, 1280 desktop). Smoke này **không** kiểm tra dòng hiệu ứng bộ; dòng đó chỉ được kiểm tra bằng test render và chưa được xem bằng mắt trên màn hình nhỏ.
+
+## 7. Chưa làm (v2)
+
+- Hiệu ứng có proc và cooldown, cần kiểm chứng DOT và thứ tự tick.
+- Số liệu cân bằng cần playtest; chưa có đo lường.
+- Bản xem trước hiệu ứng khi đang chọn trang bị (trước khi trang bị).

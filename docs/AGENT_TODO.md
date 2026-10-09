@@ -1,11 +1,11 @@
 # TODO bàn giao agent — Võ Lâm Idle
 
 Nguồn đặc tả: [AGENT_BACKLOG.md](AGENT_BACKLOG.md). Ngày: 08/10/2026 (Asia/Saigon).
-Tiến độ thực thi: 32/43 task (F01–F07, B01–B05, G01/G02/G03/G05, E01/E02/E04, R01, O01, O02, C01–C06, P01/P02/P03/P04) đã nghiệm thu local; 11 task còn lại chưa hoàn thành. F02 dùng nhánh unsupported được backlog cho phép, không tuyên bố khôi phục 15 target thiếu. Không ghi nhận mục tiêu 100% hoặc đủ điều kiện public online. Xem [evidence](EXECUTION_EVIDENCE.md) và [mapping còn thiếu](SKILL_AUDIT.md). Các đợt là nhóm phạm vi, không phải cam kết thời gian; phụ thuộc quyết định thứ tự thực tế.
+Tiến độ thực thi: 33/43 task (F01–F07, B01–B05, G01/G02/G03/G05, E01/E02/E04, R01, O01, O02, C01–C06, E03, P01/P02/P03/P04) đã nghiệm thu local; 10 task còn lại chưa hoàn thành. F02 dùng nhánh unsupported được backlog cho phép, không tuyên bố khôi phục 15 target thiếu. Không ghi nhận mục tiêu 100% hoặc đủ điều kiện public online. Xem [evidence](EXECUTION_EVIDENCE.md) và [mapping còn thiếu](SKILL_AUDIT.md). Các đợt là nhóm phạm vi, không phải cam kết thời gian; phụ thuộc quyết định thứ tự thực tế.
 
 ## Trạng thái và cách nhận
 
-**ACTIVE theo lệnh mới ngày08/10/2026 (Asia/Saigon): tiếp tục từ27task để thực hiện toàn backlog.** C05/G02/G05 DONE local; 32/43 DONE local, 11 task còn mở. Lệnh mới thay trạng thái PAUSED trước đó; rollout production vẫn cần lệnh deploy riêng.
+**ACTIVE theo lệnh mới ngày08/10/2026 (Asia/Saigon): tiếp tục từ27task để thực hiện toàn backlog.** C05/G02/G05 DONE local; 33/43 DONE local, 10 task còn mở. Lệnh mới thay trạng thái PAUSED trước đó; rollout production vẫn cần lệnh deploy riêng.
 
 - `[ ]`: chưa xong. Ghi `IN_PROGRESS` cạnh task khi nhận; vẫn để ô trống.
 - `[x]`: đạt toàn bộ nghiệm thu và đã ghi evidence; không dùng cho task chỉ mới viết code.
@@ -66,7 +66,7 @@ Tiến độ thực thi: 32/43 task (F01–F07, B01–B05, G01/G02/G03/G05, E01/
 - [ ] **P05** Co-op sinh tồn và cứu viện — P2, phlt; phụ thuộc: C05,P03,F07.
 - [ ] **P06** Thử thách tuần đồng điều kiện — P2, phlt; phụ thuộc: P04,C05.
 - [ ] **G04** Giao hữu chuẩn hóa và thử thách cộng đồng — P2, g2; phụ thuộc: C05,G02,G03.
-- [ ] **E03** Hiệu ứng trang bị theo lối chơi — P2, phlt/g2; ctc chỉ đồ hợp lệ; phụ thuộc: F02,F04,E02. IN_PROGRESS — đề xuất [SET_EFFECTS.md](SET_EFFECTS.md) dựa trên cơ chế nhóm bộ/`GOLD_EXT` hiện có; chờ chốt lối chơi và số liệu, chưa đổi calc.
+- [x] **E03** Hiệu ứng trang bị theo lối chơi — P2, phlt/g2; ctc chỉ đồ hợp lệ; phụ thuộc: F02,F04,E02. DONE local — [SET_EFFECTS.md](SET_EFFECTS.md): PHLT +6% sinh lực/+5 kháng, g2 +4 chí mạng/+5% sát thương vũ khí khi đủ bộ; CTC không đổi; không cộng dồn bộ; chỉ số tĩnh, không proc. Kiểm chứng: `test/set_effects.test.mjs` 7 case, `worker/test/set_effects.test.js` 2 case (parity calc server), `npm test` 282/282, D1 42/42, browser smoke 9 mode/viewport. Số liệu cân bằng là khởi điểm, cần playtest; proc để v2.
 - [ ] **R02** Nhiệm vụ linh hoạt và thưởng người quay lại — P2, shared luật riêng; phụ thuộc: F01,F05,E04. IN_PROGRESS — [WEEKLY_TASKS.md](WEEKLY_TASKS.md), mode-specific selectable tasks, one-mode lock, UTC rollover/rollback guard, 3 weekly claims and one-shot return receipt; 5 unit tests + 6 browser mode/viewport smoke. Còn server-trusted time để chặn forward-clock farming và offline return summary; hiện là progression client-side, không dùng cạnh tranh.
 - [ ] **R03** Thành tựu, ngoại hình và chuyển sinh — P2, shared tách progression; phụ thuộc: F05,C08,P04,G05.
 
@@ -80,7 +80,7 @@ Các hàng dưới là lớp phụ thuộc, không phải yêu cầu chạy nhi�
 
 | Lớp | Task còn trống | Mục tiêu bàn giao |
 |---|---|---|
-| 1 | E03, R02, O03, O04 | Hiệu ứng trang bị/nhiệm vụ/moderation; O04 còn gate remote. Chỉ nhận khi người dùng cho tiếp tục |
+| 1 | R02, O03, O04 | Nhiệm vụ/moderation; O04 còn gate remote. Chỉ nhận khi người dùng cho tiếp tục |
 | 2 | P05, P06, G04 | Co-op/thử thách mode riêng sau các phụ thuộc lớp1 và tài khoản đa mode |
 | 3 | C07, E05 | Chiến trường mục tiêu và escrow sau session/ledger/moderation |
 | 4 | C08 | Mùa ranked và hậu cần có server xác thực |
