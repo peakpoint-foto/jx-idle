@@ -188,8 +188,29 @@ try{
   assert.deepEqual(marks,[{account_id:'coop0',mode:'phlt',asset:'rescue_mark',source:'rescue_completion',delta:2},{account_id:'coop1',mode:'phlt',asset:'rescue_mark',source:'rescue_completion',delta:1}]);
   assert.ok(await evaluate(clients[0],"document.querySelector('#onlineSessionPanel').textContent.includes('điểm cứu viện')"));
   for(const c of clients)await evaluate(c,"document.querySelector('[data-party=\"dismiss\"]')?.click();true");
+  // P06: the weekly trial is simulated by the server and lands on a board both browsers read.
+  f.env.FEATURE_FLAGS.weekly_trial=true;
+  for(const c of clients)await evaluate(c,`setFeatureFlags(${JSON.stringify(f.env.FEATURE_FLAGS)});document.querySelector('#tabs [data-t=more]').click();renderMore();true`);
+  await evaluate(clients[1],"onlApi('/room',{body:{action:'leave'}}).then(()=>true)");
+  await evaluate(clients[0],"trialStart('short').then(()=>true)");
+  const trialRun=await evaluate(clients[0],'({session:PARTY_CLIENT.session,error:PARTY_CLIENT.error,trialError:TRIAL_CLIENT.error})');
+  assert.equal(trialRun.session?.activity,'trial',JSON.stringify(trialRun));
+  const trialId=trialRun.session.id;
+  {const row=await DB.prepare('SELECT state FROM combat_sessions WHERE id=?1').bind(trialId).first(),st=JSON.parse(row.state);
+    st.actors[0].cooldown=1e6;st.actors[0].hp=0.001;st.objectives.depth=2;
+    await DB.prepare('UPDATE combat_sessions SET state=?2,revision=revision+1 WHERE id=?1').bind(trialId,JSON.stringify(st)).run();}
+  for(let n=0;n<120;n++){const v=await evaluate(clients[0],'PARTY_CLIENT.session');if(v.status!=='active')break;clock+=1000;await evaluate(clients[0],'partyPoll(true)');}
+  assert.equal(await evaluate(clients[0],'PARTY_CLIENT.session.status'),'aborted');assert.equal(await evaluate(clients[0],'PARTY_CLIENT.session.objectives.depth'),2);
+  assert.equal((await DB.prepare("SELECT COUNT(*) n FROM trial_results WHERE session_id=?1 AND depth=2").bind(trialId).first()).n,1,'the server recorded the finished run once');
+  for(const c of clients)await evaluate(c,'trialLoad(true).then(()=>true)');
+  for(const c of clients){const text=await evaluate(c,"document.querySelector('#trialPanel')?.textContent||''");assert.match(text,/Thử thách tuần PHLT/);assert.match(text,/Coop0/);assert.match(text,/chặng 2/);assert.match(text,/Không có thưởng/);}
+  await evaluate(clients[0],"document.querySelector('#tabs [data-t=more]').click();true");
+  const trialTouch=await evaluate(clients[0],"[...document.querySelectorAll('#trialPanel button')].map(b=>({text:b.textContent,height:b.getBoundingClientRect().height}))");
+  assert.ok(trialTouch.length>=3&&trialTouch.every(b=>b.height>=44),JSON.stringify(trialTouch));
+  assert.equal(await evaluate(clients[0],"document.documentElement.scrollWidth<=document.documentElement.clientWidth"),true,'the trial panel must not overflow the viewport');
+  assert.equal((await DB.prepare("SELECT COUNT(*) n FROM resource_ledger WHERE request_id=?1").bind('party:'+trialId).first()).n,0,'the trial pays nothing');
   const touch=await evaluate(clients[0],"[...document.querySelectorAll('#onlineSessionPanel button')].map(b=>({text:b.textContent,height:b.getBoundingClientRect().height}))");assert.ok(touch.every(b=>b.height>=44),JSON.stringify(touch));
-  console.log(JSON.stringify({runtime:process.env.JX_D1_RUNTIME==='1'?'D1 local':'SQLite local',clients:2,isolatedContexts:true,viewports:[360,1280],sharedState:true,ackLossRetry:true,reloadReconnect:true,realBossCompletion:true,receiptsOnce:true,dungeonFormation:true,dungeonFlagOff:true,siegeCapture:true,siegeGateOpenAfterAllPointsCaptured:true,siegeReceiptsOnce:true,siegeTouch:siegeTouch.every(b=>b.height>=44),rankedSeasonPanel:seasonPanels.length===2,phltCoopLobby:true,phltCoopRescue:true,phltRescueMarksOnce:true,phltTouch:coopTouch.every(b=>b.height>=44),activityReceiptOfflineRetry:true,moderationUI:true,muteReportServerRoundtrip:true,roomAndGuildChat:true,touch:touch.every(b=>b.height>=44)},null,2));
+  console.log(JSON.stringify({runtime:process.env.JX_D1_RUNTIME==='1'?'D1 local':'SQLite local',clients:2,isolatedContexts:true,viewports:[360,1280],sharedState:true,ackLossRetry:true,reloadReconnect:true,realBossCompletion:true,receiptsOnce:true,dungeonFormation:true,dungeonFlagOff:true,siegeCapture:true,siegeGateOpenAfterAllPointsCaptured:true,siegeReceiptsOnce:true,siegeTouch:siegeTouch.every(b=>b.height>=44),rankedSeasonPanel:seasonPanels.length===2,phltCoopLobby:true,phltCoopRescue:true,phltRescueMarksOnce:true,phltTouch:coopTouch.every(b=>b.height>=44),phltWeeklyTrial:true,trialBoardShared:true,trialTouch:trialTouch.every(b=>b.height>=44),activityReceiptOfflineRetry:true,moderationUI:true,muteReportServerRoundtrip:true,roomAndGuildChat:true,touch:touch.every(b=>b.height>=44)},null,2));
 }finally{
   for(const c of clients)c.close();if(browser){for(const id of contexts)await browser.command('Target.disposeBrowserContext',{browserContextId:id}).catch(()=>{});browser.close();}
   if(server)await new Promise(r=>server.close(r));while(inFlight)await new Promise(r=>setTimeout(r,20));Date.now=realNow;await DB.close();

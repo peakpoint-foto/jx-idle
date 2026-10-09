@@ -177,3 +177,47 @@ test('rescue engine has browser/Worker parity across all ten factions and party 
     }
   }
 });
+test('weekly trial engine: solo PHLT only, absolute boss chain, versioned weekly rules, wave transitions',()=>{
+  const T=GAME.SESSION_TRIAL,one=phltActors(['a']),week=2900;
+  assert.throws(()=>GAME.sessionCombatNew('phlt',phltActors(['a','b']),1,'trial',{week,length:'short'}),'two actors');
+  assert.throws(()=>GAME.sessionCombatNew('ctc',one,1,'trial',{week,length:'short'}),'CTC');assert.throws(()=>GAME.sessionCombatNew('phlt',one,1,'trial',{week,length:'forever'}));
+  assert.throws(()=>GAME.sessionCombatNew('phlt',one,1,'trial',{length:'short'}),'week is required');assert.throws(()=>GAME.sessionCombatNew('phlt',one,1,'trial'));
+  assert.deepEqual(Object.keys(T.lengths),['short','long']);assert.equal(T.rules.length,4);
+  // The boss chain does not depend on who plays: the same week gives the same bosses for a weak and a strong actor.
+  const weak=phltActors(['a']),strong=phltActors(['a']);strong[0].p.main.rate*=50;strong[0].p.life*=3;strong[0].hp=strong[0].p.life;
+  const sw=GAME.sessionCombatNew('phlt',weak,7,'trial',{week,length:'long'}),ss=GAME.sessionCombatNew('phlt',strong,7,'trial',{week,length:'long'});
+  assert.equal(sw.boss.max,ss.boss.max);assert.equal(sw.boss.series,ss.boss.series);assert.equal(sw.trial.waves,6);assert.equal(sw.objectives.depth,0);assert.equal(sw.trial.version,T.version);
+  // Rules rotate with the week and change exactly what they promise.
+  const rules=[0,1,2,3].map(i=>GAME.sessionCombatNew('phlt',phltActors(['a']),1,'trial',{week:week+i,length:'short'}));
+  const base=Math.round(T.baseHp);assert.deepEqual(rules.map(s=>s.trial.rule),[0,1,2,3].map(i=>GAME.sessionTrialRule(week+i).id));assert.equal(new Set(rules.map(s=>s.trial.rule)).size,4);
+  for(const s of rules){const rule=GAME.sessionTrialRule(s.trial.week);
+    assert.equal(s.boss.max,Math.round(base*(rule.hp||1)));assert.equal(s.boss.def,100*(rule.def||1));assert.equal(s.boss.interval,rule.interval||1);assert.ok(Math.abs(s.boss.dmgMul-(rule.taken||1))<1e-12);}
+  // A cleared wave moves to the next, harder boss, and the final wave completes the run.
+  let s=GAME.sessionCombatNew('phlt',phltActors(['a']),7,'trial',{week,length:'short'});const rule=GAME.sessionTrialRule(week);
+  for(let d=0;d<3;d++){
+    assert.equal(s.objectives.depth,d);assert.equal(s.boss.max,Math.round(T.baseHp*Math.pow(T.growth,d)*(rule.hp||1)));assert.ok(Math.abs(s.boss.dmgMul-(1+T.damageGrowth*d)*(rule.taken||1))<1e-12);
+    s.boss.hp=1;s.boss.def=0;s.actors[0].cooldown=0;s.boss.cooldown=1e6;
+    for(let n=0;n<40&&s.objectives.depth===d&&s.status==='active';n++)s=GAME.sessionCombatStep(s,[],['a']);
+    assert.equal(s.objectives.depth,d+1,'wave '+d+' cleared');assert.ok(s.events.some(e=>e.reason==='trial_wave_cleared'&&e.count===d+1));
+  }
+  assert.equal(s.status,'completed');
+  // Other activities never carry trial state or a boss multiplier.
+  for(const a of ['party','dungeon','siege']){const o=GAME.sessionCombatNew('ctc',phltActors(['a','b']),1,a);assert.equal(o.trial,undefined);assert.equal(o.boss.dmgMul,undefined);assert.equal(o.boss.interval,undefined);}
+});
+test('weekly trial engine has browser/Worker parity across all ten factions',()=>{
+  const g=game();
+  for(const fac of Object.values(GAME.FAC)){
+    g.run(`fixture('phlt',100);S.fac='${fac.key}';S.sk=Object.fromEntries(FAC[S.fac].skills.filter(id=>SK[id]).slice(0,6).map(id=>[id,Math.min(3,SK[id].max)]));recalc()`);
+    GAME.setS(g.json('S'));
+    const actor=GAME.sessionActor('a0','P0',GAME.calc());
+    let state=GAME.sessionCombatNew('phlt',[actor],135790,'trial',{week:2901,length:'long'});g.run(`var trialState=${JSON.stringify(state)}`);
+    for(let n=0;n<160&&state.status==='active';n++){
+      const commands=n%3===0?[{actor:'a0',seq:n+1,kind:n%2?'guard':'support',target:'a0'}]:[],connected=['a0'],before=JSON.stringify(state);
+      const next=GAME.sessionCombatStep(state,commands,connected);assert.equal(JSON.stringify(state),before,'Input mutated');state=next;
+      g.run(`trialState=sessionCombatStep(trialState,${JSON.stringify(commands)},${JSON.stringify(connected)})`);
+      assert.deepEqual(plain(state),g.json('trialState'),fac.key+'/'+n);
+      assert.ok(state.events.length<=64);assert.ok(state.objectives.depth>=0&&state.objectives.depth<=state.trial.waves);
+      const a=state.actors[0];assert.ok(a.hp>=0&&a.hp<=a.p.life);assert.ok(a.mp>=0&&a.mp<=a.p.mana);
+    }
+  }
+});

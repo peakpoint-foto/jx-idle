@@ -1,11 +1,11 @@
 # TODO bàn giao agent — Võ Lâm Idle
 
 Nguồn đặc tả: [AGENT_BACKLOG.md](AGENT_BACKLOG.md). Ngày: 08/10/2026 (Asia/Saigon).
-Tiến độ thực thi: 37/43 task (F01–F07, B01–B05, G01/G02/G03/G05, E01/E02/E04, R01, R02, O01, O02, C01–C08, E03, P01–P05) đã nghiệm thu local; 6 task còn lại chưa hoàn thành. F02 dùng nhánh unsupported được backlog cho phép, không tuyên bố khôi phục 15 target thiếu. Không ghi nhận mục tiêu 100% hoặc đủ điều kiện public online. Xem [evidence](EXECUTION_EVIDENCE.md) và [mapping còn thiếu](SKILL_AUDIT.md). Các đợt là nhóm phạm vi, không phải cam kết thời gian; phụ thuộc quyết định thứ tự thực tế.
+Tiến độ thực thi: 38/43 task (F01–F07, B01–B05, G01/G02/G03/G05, E01/E02/E04, R01, R02, O01, O02, C01–C08, E03, P01–P06) đã nghiệm thu local; 5 task còn lại chưa hoàn thành. F02 dùng nhánh unsupported được backlog cho phép, không tuyên bố khôi phục 15 target thiếu. Không ghi nhận mục tiêu 100% hoặc đủ điều kiện public online. Xem [evidence](EXECUTION_EVIDENCE.md) và [mapping còn thiếu](SKILL_AUDIT.md). Các đợt là nhóm phạm vi, không phải cam kết thời gian; phụ thuộc quyết định thứ tự thực tế.
 
 ## Trạng thái và cách nhận
 
-**ACTIVE theo lệnh mới ngày08/10/2026 (Asia/Saigon): tiếp tục từ27task để thực hiện toàn backlog.** C05/G02/G05 DONE local; 37/43 DONE local, 6 task còn mở. Lệnh mới thay trạng thái PAUSED trước đó; rollout production vẫn cần lệnh deploy riêng.
+**ACTIVE theo lệnh mới ngày08/10/2026 (Asia/Saigon): tiếp tục từ27task để thực hiện toàn backlog.** C05/G02/G05 DONE local; 38/43 DONE local, 5 task còn mở. Lệnh mới thay trạng thái PAUSED trước đó; rollout production vẫn cần lệnh deploy riêng.
 
 - `[ ]`: chưa xong. Ghi `IN_PROGRESS` cạnh task khi nhận; vẫn để ô trống.
 - `[x]`: đạt toàn bộ nghiệm thu và đã ghi evidence; không dùng cho task chỉ mới viết code.
@@ -64,7 +64,7 @@ Tiến độ thực thi: 37/43 task (F01–F07, B01–B05, G01/G02/G03/G05, E01/
 - [x] **C07** Công thành và Tống Kim theo mục tiêu — P2, ctc; phụ thuộc: C02,C05,C06. DONE local — [SIEGE_CTC.md](SIEGE_CTC.md): `party_siege` default-off trên nền C05; 3 điểm chiếm + cổng khóa chủ tướng + tiếp tế, server quyết định score/thưởng, quota 1 phiên/tuần UTC (hủy hoàn lượt), thưởng công trạng cap E04 nguồn `siege_completion`. Kiểm chứng: engine parity 10 phái × 2/4, 3 case D1/SQLite, 2 case client, session smoke hai context 360/1280. Giới hạn: số liệu chưa playtest, chưa đo tải riêng, chưa staging.
 - [x] **C08** Mùa xếp hạng và hậu cần bất đồng bộ — P2, ctc; phụ thuộc: C03,C05,C07. DONE local — [RANKED_SEASONS.md](RANKED_SEASONS.md): flag `ranked_seasons` default-off; mùa 28 ngày (4 tuần C03) ranh giới Thứ Năm 00:00 UTC; bảng phái×bracket có đồng hạng; chốt một lần bất biến; danh hiệu cosmetic nhận idempotent trong 28 ngày; hậu cần bang suy ra có trần 30/người/mùa; migration 0011 chỉ thêm bảng. Kiểm chứng: 6 case D1/SQLite, 6 case client, session smoke 360/1280. Giới hạn: số liệu chưa playtest, bracket theo lúc chốt, chưa staging.
 - [x] **P05** Co-op sinh tồn và cứu viện — P2, phlt; phụ thuộc: C05,P03,F07. DONE local — [COOP_RESCUE.md](COOP_RESCUE.md) trên nền [ONLINE_MODES.md](ONLINE_MODES.md): flag `coop_rescue` default-off với cơ chế `requires`; sảnh/phiên tách mode (rooms.mode, SQL nguyên tử); giải cứu tốn 20% HP + 8 MP, mỗi người chỉ được cứu một lần, tranh chấp an toàn; điểm cứu viện sổ cái PHLT riêng cap 3/ngày + ví 30. Kiểm chứng: engine parity 10 phái, 6 case D1/SQLite, 2 case client, session smoke hai trình duyệt. Chưa làm được: chia loot/vật tư (không có kho server), chat/báo cáo PHLT, playtest cân bằng.
-- [ ] **P06** Thử thách tuần đồng điều kiện — P2, phlt; phụ thuộc: P04,C05.
+- [x] **P06** Thử thách tuần đồng điều kiện — P2, phlt; phụ thuộc: P04,C05. DONE local — [WEEKLY_TRIAL.md](WEEKLY_TRIAL.md): flag `weekly_trial` default-off; máy chủ tự mô phỏng chuyến chạy từ snapshot xác thực (không nhận điểm từ client); seed và luật tuần là hàm thuần của phiên bản + tuần UTC; chuỗi chủ tướng tuyệt đối, ngắn 3/dài 6 chặng; bảng theo độ sâu có hòa điểm và chỉ nhân vật PHLT hợp lệ; 5 lượt/ngày UTC nguyên tử; đổi tuần không đổi seed; migration 0012 chỉ thêm bảng. Kiểm chứng: engine parity 10 phái, 7 case D1/SQLite, 6 case client, session smoke hai trình duyệt. Giới hạn: không thưởng, hệ số chưa playtest.
 - [ ] **G04** Giao hữu chuẩn hóa và thử thách cộng đồng — P2, g2; phụ thuộc: C05,G02,G03.
 - [x] **E03** Hiệu ứng trang bị theo lối chơi — P2, phlt/g2; ctc chỉ đồ hợp lệ; phụ thuộc: F02,F04,E02. DONE local — [SET_EFFECTS.md](SET_EFFECTS.md): PHLT +6% sinh lực/+5 kháng, g2 +4 chí mạng/+5% sát thương vũ khí khi đủ bộ; CTC không đổi; không cộng dồn bộ; chỉ số tĩnh, không proc. Kiểm chứng: `test/set_effects.test.mjs` 7 case, `worker/test/set_effects.test.js` 2 case (parity calc server), `npm test` 282/282, D1 42/42, browser smoke 9 mode/viewport. Số liệu cân bằng là khởi điểm, cần playtest; proc để v2.
 - [x] **R02** Nhiệm vụ linh hoạt và thưởng người quay lại — P2, shared luật riêng; phụ thuộc: F01,F05,E04. DONE local — [WEEKLY_TASKS.md](WEEKLY_TASKS.md): nhiệm vụ tuần theo mode (khóa một mode/tuần UTC, tối đa 3 claim, rollback đồng hồ), quà quay lại một lần, và gợi ý quay lại nhúng vào modal tóm tắt offline sẵn có; 9 test + browser smoke. Giới hạn: client-side, tua đồng hồ tiến chỉ bỏ qua nhịp tuần, không dùng cho xếp hạng/thưởng server.
@@ -81,7 +81,7 @@ Các hàng dưới là lớp phụ thuộc, không phải yêu cầu chạy nhi�
 | Lớp | Task còn trống | Mục tiêu bàn giao |
 |---|---|---|
 | 1 | O03, O04 | Moderation; O04 còn gate remote. Chỉ nhận khi người dùng cho tiếp tục |
-| 2 | P06, G04 | Co-op/thử thách mode riêng sau các phụ thuộc lớp1 và tài khoản đa mode |
+| 2 | G04 | Co-op/thử thách mode riêng sau các phụ thuộc lớp1 và tài khoản đa mode |
 | 3 | E05 | Chiến trường mục tiêu và escrow sau session/ledger/moderation |
 | 4 | R03 | Thành tựu/ngoại hình/chuyển sinh sau tiến trình của cả ba mode |
 
