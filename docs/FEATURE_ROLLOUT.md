@@ -235,3 +235,9 @@ Chi tiết từng tính năng xem các mục dưới.
 - `data/content/faction_stories.v1.json`: 11 phái × 6 mẩu (cấp 30/60/90/120/150/180);
   thuần text, không thưởng sức mạnh.
 - `js/faction_stories_ui.js`: đọc trong codex, mở dần theo cấp; telemetry `story_read`.
+
+## 3.5 Võ học tạp
+
+- `js/cross_skill.js`: học 1 skill tấn công ngoại phái (cấp 100, 1M vàng);
+  nâng tối đa cấp 5 (tốn vàng + 5 điểm kỹ năng/cấp).
+- Không nhận bonus hệ (seriesLv) của phái mình; `skillLv` và `lvOf` đều tôn trọng.
