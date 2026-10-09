@@ -1,5 +1,7 @@
 # Evidence thực thi
 
+Tiến độ tiếp tục ngày 09/10/2026: 36/43 task DONE local. R03 đã được nghiệm thu bằng [PROGRESSION_REVIEW.md](PROGRESSION_REVIEW.md), tổng hợp bằng chứng các hệ thống CTC/PHLT/2.0 đã có và chốt đề xuất rebirth ngang không tác động ngân sách. Còn P05, P06, G04, R02, O03, O04, E05.
+
 E03 DONE local — `equipment_playstyles` default-off capability theo mode, dùng chung `calc()` client/Worker. PHLT đạt 2 món cùng bộ Hoàng Kim: +8% regen, +5 điểm kháng poison/cold/light; 2.0 đạt 2 món cùng bộ Bạch Kim: +5% tốc độ đánh, giữ clamp ASPD hiện có. Không áp dụng CTC, sai họ trang bị, hoặc khi flag off. Bonus là passive xác định nên không có proc/cooldown và không sửa DOT tick; kiểm tra unequip trả chỉ số về gốc, mode transfer, cap/flag/family guards. `node --test test/equipment_playstyles.test.mjs` (3/3), `node --test worker/test/equipment_playstyles.test.js` (1/1) xác nhận client/Worker parity, `npm run test:d1` (43/43), `npm run check:contracts` (43 task, 35 done). Flag vẫn tắt mặc định; cần cân bằng gameplay trước khi bật.
 
 Baseline HEAD68124fe, nhánh feat/online-multiplayer. Lệnh mới08/10/2026 (Asia/Saigon) tiếp tục toàn backlog từ27task; hiện30/43 DONE local sau C05/G02/G05. PR https://github.com/peakpoint-foto/jx-idle/pull/19; CI push37764665755/PR37764672297 xanh tại9e54e66. Chưa deploy production. Đoạn checkpoint/historical phía dưới giữ số liệu đúng thời điểm, không thay snapshot mới.
