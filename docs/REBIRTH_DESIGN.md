@@ -4,7 +4,7 @@
 
 ## 1. Hiện trạng (đọc từ mã)
 
-- **Chuyển sinh** (`doReborn`, `js/rewards.js`): cần cấp tối thiểu `REBORN_LV`, tối đa `REBORN_MAX = 5` lần. Mỗi lần: về cấp 1, xóa điểm chỉ số đã cộng và cấp `reborn × 50` điểm tiềm năng, quay về chặng 1, **giữ trang bị, võ công và điểm kỹ năng**, cộng một điểm Tâm Pháp (`tpPend`). Thưởng cố định theo số lần (`rebornBonus`): kinh nghiệm +20%/lần và sát thương +10%/lần (hiệu lực qua `P.rebDmg` trong `js/stats.js` và `gainXp` trong `js/combat.js`). Tham số này nằm sẵn trong mã; tài liệu không đề nghị đổi.
+- **Chuyển sinh** (`doReborn`, `js/rewards.js`): cần đạt cấp tối đa (`REBORN_LV = MAX_LEVEL`, 180), tối đa `REBORN_MAX = 5` lần. Mỗi lần: về cấp 1, xóa điểm chỉ số đã cộng và cấp `reborn × 50` điểm tiềm năng, quay về chặng 1, **giữ trang bị, võ công và điểm kỹ năng**, cộng một điểm Tâm Pháp (`tpPend`). Thưởng cố định theo số lần (`rebornBonus`): kinh nghiệm +20%/lần và sát thương +10%/lần (hiệu lực qua `P.rebDmg` trong `js/stats.js` và `gainXp` trong `js/combat.js`). Tham số này nằm sẵn trong mã; tài liệu không đề nghị đổi.
 - **Mở khóa theo chuyển sinh:** `unlocked(lv)` coi `stat.reborn > 0` là đã qua mọi mốc cấp; nhiều thành tựu cấp (`lv30`, `m_ctc_60`… `m_ctc_180`) tính `reborn > 0` là đã đạt.
 - **Thành tựu:** danh sách chung trong `ACH` (`js/rewards.js`) cộng danh sách theo mode ở `js/modes_play.js` (CTC có chuỗi Bách Phu Trưởng… Thành Chủ). Trạng thái ở `S.rw.ach`, lượt nhận ở `S.rw`; **toàn bộ nằm trong save của client**, không có bản ghi server.
 - **Ngoại hình:** `js/doll.js`, `js/doll-data.js`. Danh hiệu mùa C08 là biên nhận cosmetic phía server cho CTC, không cộng chỉ số.
