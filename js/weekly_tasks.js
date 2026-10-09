@@ -98,6 +98,35 @@ function weeklyReturnClaim(){
   try{S.extensions||={v:1};S.extensions.weeklyReturn=p;S.gold+=Math.round(1500*(1+S.lvl/10));RW().fd+=10;if(!save())throw Error("Không lưu được thưởng quay lại");toast("Chào mừng trở lại · đã nhận 1.500 lượng cơ bản và 10 Phúc Duyên");return {ok:true};}
   catch(e){S=before;return {ok:false,msg:e.message};}
 }
+// R02 return guide: points the player at what is waiting after an absence. Read-only except weeklyObserveReturn(), which only records eligibility in memory; the next save persists it.
+function weeklyReturnGuideLines(){
+  if(!S||!S.fac||ADMV.sandbox)return []
+
+  weeklyObserveReturn()
+
+  const lines=[],ret=weeklyReturnRead()
+
+  if(ret?.eligibleAt&&ret.claimedAt<ret.eligibleAt)lines.push("Quà quay lại đang chờ ở tab Khác.")
+
+  const p=weeklyRead()
+
+  if(!p||p.mode!==modeId()||weeklyWeekId()<p.week)return lines
+
+  const row=p.tasks.find(x=>x.id===p.selected),spec=WEEKLY_TASKS[p.mode].find(x=>x.id===p.selected)
+
+  if(row&&spec&&!row.claimed&&row.have>=spec.need)lines.push("Có thưởng nhiệm vụ tuần chưa nhận ở tab Khác.")
+
+  else if(!p.selected&&p.claims.length<WEEKLY_CLAIM_CAP)lines.push("Tuần này chưa chọn nhiệm vụ: chọn một trong "+WEEKLY_TASKS[p.mode].length+" nhiệm vụ ở tab Khác.")
+
+  return lines
+
+}
+function weeklyReturnGuideHTML(){
+  const lines=weeklyReturnGuideLines()
+
+  return lines.length?'<div class="card weekly-return-guide"><b>Gợi ý khi quay lại</b>'+lines.map(t=>"<p>"+t+"</p>").join("")+"</div>":""
+
+}
 function weeklyCardHTML(){
   const p=weeklyRead();if(!p)return `<section class="card" id="weeklyTaskCard"><b>Nhiệm vụ tuần</b><p class="bad">Dữ liệu tuần chưa hỗ trợ; bản lưu được giữ nguyên.</p></section>`;
   const current=modeId(),defs=WEEKLY_TASKS[p.mode],selected=p.tasks.find(x=>x.id===p.selected),spec=defs.find(x=>x.id===p.selected),rollback=weeklyWeekId()<p.week;
