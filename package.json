@@ -9,6 +9,8 @@
     "sim": "node worker/build-game.mjs && node scripts/sim/run.mjs",
     "sim:baseline": "node worker/build-game.mjs && node scripts/sim/run.mjs --update-baseline",
     "balance": "node worker/build-game.mjs && node scripts/sim/check.mjs",
+    "content": "node scripts/build-content.mjs",
+    "content:verify": "node scripts/build-content.mjs && git diff --exit-code -- js/content.gen.js",
     "test:d1": "node worker/build-game.mjs && JX_D1_RUNTIME=1 node --test worker/test/online_invariants.test.js worker/test/guild_management.test.js worker/test/feedback_context.test.js worker/test/duel_modes.test.js worker/test/lobby.test.js worker/test/moderation.test.js worker/test/release_contract.test.js worker/test/economy.test.js worker/test/sessions.test.js worker/test/seasons.test.js worker/test/account_modes.test.js worker/test/coop_rescue.test.js worker/test/weekly_trial.test.js worker/test/community_challenge.test.js worker/test/standard_challenge.test.js",
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",

@@ -6,8 +6,10 @@ const SESSION_ACTIVITY_MODE=Object.freeze({party:"ctc",dungeon:"ctc",siege:"ctc"
 const sessionWaves=state=>state.activity==="trial"||state.activity==="challenge";
 const sessionSolo=activity=>activity==="trial"||activity==="challenge";
 // Weekly trial (P06): one actor faces the same absolute boss chain as everyone else that week. The rule list is a fixed allowlist indexed by the UTC week.
-const SESSION_TRIAL=Object.freeze({version:"trial-v1",baseHp:1200,growth:1.35,damageGrowth:.3,lengths:Object.freeze({short:3,long:6}),
-  rules:Object.freeze([Object.freeze({id:"iron",def:2}),Object.freeze({id:"swift",interval:.75}),Object.freeze({id:"tough",hp:1.25}),Object.freeze({id:"ward",taken:.9})])});
+// Dữ liệu từ data/content/trial.v1.json (qua js/content.gen.js, validate bởi js/content.js).
+// JSON sai schema -> lỗi rõ ngay lúc nạp, không chạy với dữ liệu hỏng.
+validateTrialRules(JX_CONTENT.trial);
+const SESSION_TRIAL=JX_CONTENT.trial;
 const sessionTrialRule=week=>SESSION_TRIAL.rules[((week%SESSION_TRIAL.rules.length)+SESSION_TRIAL.rules.length)%SESSION_TRIAL.rules.length];
 const SESSION_SIEGE=Object.freeze({points:Object.freeze(["p1","p2","p3"]),need:12,decay:.25,gateDamage:.2,supplyBoost:1,supplyTicks:8,supplyCost:5,supplyRestore:.1,supplyCooldown:6});
 function sessionRandom(state){state.rng=(Math.imul(state.rng,1664525)+1013904223)>>>0;return state.rng/4294967296;}

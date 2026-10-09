@@ -12,7 +12,7 @@ const OUT = path.join(ROOT, "worker/gen/game.js");
 
 // Đúng thứ tự trong index.html. Chỉ những file calc() và kiểm định cần.
 const FILES = [
-  "data.js", "world.js", "js/core.js", "js/skill_graph.js", "js/modes.js", "js/capabilities.js", "js/stats.js", "js/combat_contract.js", "js/rift_rules.js", "js/session_combat.js", "js/feedback_context.js", "js/loot.js",
+  "data.js", "world.js", "js/core.js", "js/skill_graph.js", "js/modes.js", "js/capabilities.js", "js/stats.js", "js/combat_contract.js", "js/rift_rules.js", "js/content.js", "js/session_combat.js", "js/feedback_context.js", "js/loot.js",
   "js/sets.js", "js/combat.js", "js/save.js", "js/save_schema.js", "js/rewards.js", "js/depth.js", "js/standard_gear.js",
 ];
 // File chỉ chứa một object dữ liệu lớn: nhúng dạng chuỗi JSON (JSON.parse nhanh hơn literal JS).
@@ -29,7 +29,7 @@ const EXPORTS = [
   "applyPart", "hitPercent", "heroGuard",
   "tickEnemyStatuses",
   "CHALLENGE_VERSION", "CHALLENGE_PRESETS", "challengeBudgets", "challengeSpecCheck", "challengeSave", "standardGear",
-  "SESSION_COMBAT", "SESSION_SIEGE", "SESSION_RESCUE", "SESSION_TRIAL", "sessionTrialRule", "sessionActor", "sessionCombatNew", "sessionCombatStep",
+  "JX_CONTENT", "SESSION_COMBAT", "SESSION_SIEGE", "SESSION_RESCUE", "SESSION_TRIAL", "sessionTrialRule", "sessionActor", "sessionCombatNew", "sessionCombatStep",
   "RIFT_RULES", "RIFT_MODIFIERS", "riftModifiersValid", "riftStats", "riftChoices",
   "featureEnabled", "featureConfigSnapshot", "parseFeatureFlags",
   "redactFeedbackText", "cleanFeedbackDiagnostics", "cleanFeedbackContext",
@@ -53,7 +53,26 @@ function dataFile(file, key) {
   return `window.${key}=JSON.parse(${JSON.stringify(json)});\n`;
 }
 
-let body = "";
+// Content data-driven (mục 0.2): JSON là nguồn duy nhất, validate ở build time.
+// Build fail ngay nếu JSON sai schema — worker và client đọc cùng định nghĩa.
+const __contentSrc = fs.readFileSync(path.join(ROOT, "js/content.js"), "utf8");
+const __contentCtx = {};
+vm.runInNewContext(__contentSrc, __contentCtx, { filename: "js/content.js" });
+function __loadContent(file, validate) {
+  const data = JSON.parse(fs.readFileSync(path.join(ROOT, file), "utf8"));
+  validate(data);
+  return data;
+}
+const __contentData = {
+  trial: __loadContent("data/content/trial.v1.json", __contentCtx.validateTrialRules),
+  events: __loadContent("data/content/events.v1.json", __contentCtx.validateEventFlags),
+};
+// JX_CONTENT có mặt trong bundle trước mọi file game (kể cả js/content.js và js/session_combat.js).
+// Deep-freeze để giữ nguyên semantics bất biến như bản hardcode Object.freeze lồng nhau trước đây.
+let body = `const JX_CONTENT=${JSON.stringify(__contentData)};\n` +
+  `Object.freeze(JX_CONTENT);Object.freeze(JX_CONTENT.trial);Object.freeze(JX_CONTENT.trial.rules);` +
+  `for(const r of JX_CONTENT.trial.rules)Object.freeze(r);` +
+  `Object.freeze(JX_CONTENT.trial.lengths);Object.freeze(JX_CONTENT.events);Object.freeze(JX_CONTENT.events.slots);\n`;
 for (const f of FILES) {
   body += `// ---- ${f}\n`;
   body += DATA[f] ? dataFile(f, DATA[f]) : fs.readFileSync(path.join(ROOT, f), "utf8") + "\n";

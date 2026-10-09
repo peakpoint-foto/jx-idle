@@ -1,6 +1,7 @@
 "use strict";
 // P06 client: the server simulates every run and owns the board. This panel only starts a run and shows what the server recorded.
-const TRIAL_RULE_TEXT={iron:"Giáp sắt: phòng thủ chủ tướng ×2",swift:"Ra đòn nhanh: chủ tướng đánh mỗi 0,75 giây",tough:"Trâu bò: HP chủ tướng ×1,25",ward:"Hộ thể: sát thương chủ tướng ×0,9"};
+// Mô tả luật đọc từ content JSON (data-driven); text khớp bản hardcode cũ từng chữ.
+const TRIAL_RULE_TEXT=Object.fromEntries(SESSION_TRIAL.rules.map(r=>[r.id,`${r.name}: ${r.desc}`]));
 const TRIAL_ERRORS={trial_attempts_used:"Hết lượt thử hôm nay.",trial_solo_only:"Rời phòng nhóm trước: thử thách chỉ chạy một mình.",trial_locked:"Cần đồng bộ nhân vật hợp lệ gần đây.",feature_disabled:"Thử thách tuần chưa mở.",session_not_ready:"Phòng chưa sẵn sàng, thử lại."};
 const TRIAL_CLIENT={data:null,busy:false,error:"",loadedAt:0,identity:null,generation:0};
 function trialIdentity(){const a=onlGet();return a?.token&&S?.mode==="phlt"&&!ADMV.sandbox&&featureEnabled("weekly_trial")?[a.token,S.cid||"",S.mode].join(":"):null;}
@@ -34,7 +35,7 @@ async function trialLoad(force=false){
   if(TRIAL_CLIENT.identity!==identity){TRIAL_CLIENT.identity=identity;TRIAL_CLIENT.data=null;TRIAL_CLIENT.error="";TRIAL_CLIENT.generation++;}
   if(TRIAL_CLIENT.busy||(!force&&TRIAL_CLIENT.data&&Date.now()-TRIAL_CLIENT.loadedAt<30000))return;
   const generation=++TRIAL_CLIENT.generation;TRIAL_CLIENT.busy=true;trialRender();
-  try{const d=await onlApi("/trial");if(identity===trialIdentity()&&generation===TRIAL_CLIENT.generation){TRIAL_CLIENT.data=d;TRIAL_CLIENT.loadedAt=Date.now();TRIAL_CLIENT.error="";}}
+  try{const d=await onlApi("/trial");if(identity===trialIdentity()&&generation===TRIAL_CLIENT.generation){TRIAL_CLIENT.data=d;TRIAL_CLIENT.loadedAt=Date.now();TRIAL_CLIENT.error="";if(d&&d.rules&&contentVersionMismatch(SESSION_TRIAL.version,d.rules.version))contentReloadBanner("Thử thách tuần");}}
   catch(e){if(identity===trialIdentity()&&generation===TRIAL_CLIENT.generation)TRIAL_CLIENT.error=TRIAL_ERRORS[e.error||e.code]||e.msg||e.message||"Mất kết nối; thử lại sau";}
   finally{if(generation===TRIAL_CLIENT.generation){TRIAL_CLIENT.busy=false;trialRender();}}
 }

@@ -20,6 +20,7 @@ jobs:
       - run: npm run test:d1
       - run: npm run audit:skills
       - run: npm run balance
+      - run: npm run content:verify
       - run: git diff --exit-code -- package-lock.json data.js
       - name: Browser smoke in all three modes
         run: |
