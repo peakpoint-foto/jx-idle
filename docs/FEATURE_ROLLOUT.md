@@ -142,3 +142,11 @@ Chi tiết từng tính năng xem các mục dưới.
 - Lý do delta = 0 (`offlineZeroReason`): dưới 60 giây / đạt cấp tối đa / hết
   quota 12h ngày — hiện modal giải thích thay vì im lặng.
 - Không flag (cải tiến UI hiện có). Gỡ: xóa file + revert `showOffline`.
+
+## 2.6 Boss trial nhiều phase (session engine)
+
+- `SESSION_BOSS_PHASES` trong `js/session_combat.js` (đã vào worker bundle):
+  3 phase theo % HP (66%/33%, damage ×1/×1.15/×1.3), tuyệt chiêu báo trước 1s
+  (4 tick, mỗi 10s), enrage sau 90s (damage ×1.5). Sự kiện `boss_phase`,
+  `boss_telegraph`, `boss_ultimate`, `boss_enrage` — deterministic theo seed.
+- Client combat (`js/combat.js`) chưa có phase/telegraph — làm sau khi session ổn.

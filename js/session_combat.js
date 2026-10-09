@@ -1,6 +1,10 @@
 "use strict";
 const SESSION_COMBAT=Object.freeze({version:"party-combat-v1",step:.25,maxTicks:480,idleMs:10000,logMax:64});
 const SESSION_RESCUE=Object.freeze({window:24,hpCost:.2,mpCost:8,reviveHp:.35,perActor:1,bossHp:1.5,bossDamage:1.8});
+// 2.6: Boss nhiều phase (session engine, deterministic).
+// 3 phase theo % HP; tuyệt chiêu báo trước 1s (4 tick); enrage sau 90s.
+const SESSION_BOSS_PHASES=Object.freeze({thresholds:[.66,.33],phaseDmgMul:[1,1.15,1.3],
+  telegraphTicks:4,telegraphEvery:40,ultimateMul:3,enrageTick:360,enrageMul:1.5});
 const SESSION_ACTIVITY_MODE=Object.freeze({party:"ctc",dungeon:"ctc",siege:"ctc",rescue:"phlt",trial:"phlt",challenge:"g2"});
 // Both weekly trials (PHLT) and community challenges (2.0) fight one absolute boss chain; only trials and challenges are solo.
 const sessionWaves=state=>state.activity==="trial"||state.activity==="challenge";
@@ -35,7 +39,8 @@ function sessionCombatNew(mode,actors,seed,activity="party",options={}){
   const baseHp=Math.max(100,actors.reduce((n,a)=>n+Object.values(a.p.main.parts).reduce((x,y)=>x+y,0)*Math.max(.2,a.p.main.rate),0)*18);
   const hp=activity==="rescue"?baseHp*SESSION_RESCUE.bossHp:baseHp;
   const state={v:1,model:COMBAT_MODEL_VERSION,rules:SESSION_COMBAT.version,mode,activity,rng:seed>>>0,tick:0,status:"active",actors:JSON.parse(JSON.stringify(actors)),events:[],objectives:{breaks:0,supports:0},
-    boss:{hp,max:hp,series:(seed>>>0)%5,res:Object.fromEntries(ELEM.map(k=>[k,10])),def:100,ar:1000,cooldown:1,poison:0,poisonDmg:0,stun:0,stunImm:0,ward:0,wardPhase:0,wardUntil:0,breakers:[]}};
+    boss:{hp,max:hp,series:(seed>>>0)%5,res:Object.fromEntries(ELEM.map(k=>[k,10])),def:100,ar:1000,cooldown:1,poison:0,poisonDmg:0,stun:0,stunImm:0,ward:0,wardPhase:0,wardUntil:0,breakers:[],
+    phase:0,telegraphUntil:0,enraged:false}};
   if(activity==="siege"){
     // Siege-only state: party/dungeon states keep their exact historical shape.
     state.objectives.captured=0;state.objectives.points=SESSION_SIEGE.points.map(id=>({id,need:SESSION_SIEGE.need,progress:0,owned:false,touched:0}));
@@ -135,11 +140,15 @@ function sessionCombatHit(state,actor){
   if(p.leech){const amount=raw*p.leech/100,cap=p.life-actor.hp;actor.hp=Math.min(p.life,actor.hp+amount);actor.contribution.heal+=Math.min(amount,cap);sessionEvent(state,"heal",{sourceId:actor.id,targetId:actor.id,raw:amount,capacity:cap,reason:"party_leech"});}
   if(p.manaLeech)actor.mp=Math.min(p.mana,actor.mp+raw*p.manaLeech/100);
 }
-function sessionCombatBossHit(state,target){
+function sessionBossDmgMul(state){
+  const b=state.boss,PH=SESSION_BOSS_PHASES;
+  return PH.phaseDmgMul[b.phase]||1*(b.enraged?PH.enrageMul:1);
+}
+function sessionCombatBossHit(state,target,mul=1){
   const p=target.p,b=state.boss;
   if(sessionRandom(state)*100>=hitPercent(b.ar*(1-p.curseAR),p.def)||sessionRandom(state)*100<p.block)return;
   const el=ELEM[b.series]||"phys",before=target.hp;
-  let raw=applyPart(p.life*.045*(.8+sessionRandom(state)*.4),el,b.series,p.series,p.res,PLAYER_RES_MAX,10);
+  let raw=applyPart(p.life*.045*(.8+sessionRandom(state)*.4),el,b.series,p.series,p.res,PLAYER_RES_MAX,10)*sessionBossDmgMul(state)*mul;
   if(state.activity==="rescue")raw*=SESSION_RESCUE.bossDamage;
   if(sessionWaves(state))raw*=b.dmgMul;
   if(p.res5&&!counters(b.series,p.series))raw=Math.max(1,raw-p.res5);
@@ -169,6 +178,19 @@ function sessionCombatStep(input,commands=[],connectedIds=[]){
   if(state.activity==="rescue")for(const a of state.actors)if(a.hp<=0&&a.downedUntil&&a.downedUntil<state.tick){a.downedUntil=0;sessionEvent(state,"objective",{targetId:a.id,reason:"party_lost"});}
   if(state.activity==="siege")for(const point of state.objectives.points)if(!point.owned&&point.touched!==state.tick)point.progress=Math.max(0,point.progress-SESSION_SIEGE.decay);
   if(state.activity==="dungeon"&&b.hp>0){const ratio=b.hp/b.max,phase=ratio<=.33?2:ratio<=.66?1:0;if(phase>b.wardPhase){b.wardPhase=phase;b.ward=1;b.wardUntil=state.tick+32;b.breakers=[];sessionEvent(state,"objective",{targetId:"boss",reason:"dungeon_formation_started",phase});}}
+  if(state.activity==="trial"&&b.hp>0){
+    const PH=SESSION_BOSS_PHASES,ratio=b.hp/b.max;
+    const phase=ratio<=PH.thresholds[1]?2:ratio<=PH.thresholds[0]?1:0;
+    if(phase>b.phase){b.phase=phase;sessionEvent(state,"objective",{targetId:"boss",reason:"boss_phase",phase});}
+    if(!b.enraged&&state.tick>=PH.enrageTick){b.enraged=true;sessionEvent(state,"objective",{targetId:"boss",reason:"boss_enrage"});}
+    if(b.telegraphUntil>0&&state.tick>=b.telegraphUntil){
+      b.telegraphUntil=0;
+      const live=state.actors.filter(a=>a.hp>0);
+      if(live.length){const t=live[Math.floor(sessionRandom(state)*live.length)];sessionCombatBossHit(state,t,PH.ultimateMul);sessionEvent(state,"objective",{targetId:"boss",reason:"boss_ultimate",targetId2:t.id});}
+    }else if(b.telegraphUntil===0&&state.tick>0&&state.tick%PH.telegraphEvery===0){
+      b.telegraphUntil=state.tick+PH.telegraphTicks;sessionEvent(state,"objective",{targetId:"boss",reason:"boss_telegraph",until:b.telegraphUntil});
+    }
+  }
   if(b.hp<=0){
     if(sessionWaves(state)){
       state.objectives.depth++;sessionEvent(state,"objective",{targetId:"boss",reason:"trial_wave_cleared",count:state.objectives.depth});
