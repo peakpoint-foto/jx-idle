@@ -32,6 +32,7 @@ const FEATURE_REGISTRY = Object.freeze({
   party_siege: { modes: ["ctc"], enabled: false, online: true },
   seasonal_challenge: { modes: ["ctc","phlt","g2"], enabled: false, online: true },
   trading: { modes: ["ctc"], enabled: false, online: true },
+  equipment_playstyles: { modes: ["phlt","g2"], enabled: false, online: false },
 });
 let FEATURE_FLAGS = Object.freeze({});
 

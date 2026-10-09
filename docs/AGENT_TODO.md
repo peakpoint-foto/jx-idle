@@ -1,11 +1,11 @@
 # TODO bàn giao agent — Võ Lâm Idle
 
 Nguồn đặc tả: [AGENT_BACKLOG.md](AGENT_BACKLOG.md). Ngày: 08/10/2026 (Asia/Saigon).
-Tiến độ thực thi: 30/43 task (F01–F07, B01–B05, G01/G02/G03/G05, E01/E02/E04, R01, O02, C01–C05, P01/P02/P03/P04) đã nghiệm thu local; 13 task còn lại chưa hoàn thành. F02 dùng nhánh unsupported được backlog cho phép, không tuyên bố khôi phục 15 target thiếu. Không ghi nhận mục tiêu 100% hoặc đủ điều kiện public online. Xem [evidence](EXECUTION_EVIDENCE.md) và [mapping còn thiếu](SKILL_AUDIT.md). Các đợt là nhóm phạm vi, không phải cam kết thời gian; phụ thuộc quyết định thứ tự thực tế.
+Tiến độ thực thi: 35/43 task đã nghiệm thu local; 8 task còn mở hoặc bị chặn. F02 dùng nhánh unsupported được backlog cho phép, không tuyên bố khôi phục 15 target thiếu. Không ghi nhận mục tiêu 100% hoặc đủ điều kiện public online. Xem [evidence](EXECUTION_EVIDENCE.md) và [mapping còn thiếu](SKILL_AUDIT.md). Các đợt là nhóm phạm vi, không phải cam kết thời gian; phụ thuộc quyết định thứ tự thực tế.
 
 ## Trạng thái và cách nhận
 
-**ACTIVE theo lệnh mới ngày08/10/2026 (Asia/Saigon): tiếp tục từ27task để thực hiện toàn backlog.** C05/G02/G05 DONE local; 30/43 DONE local,13task còn mở. Lệnh mới thay trạng thái PAUSED trước đó; rollout production vẫn cần lệnh deploy riêng.
+**ACTIVE theo lệnh mới ngày09/10/2026 (UTC): tiếp tục từ task 31 đến 43.** C05–C08, O01, E03 đã nghiệm thu local; 35/43 DONE local, 8 task còn mở. Rollout production vẫn cần staging và lệnh deploy riêng.
 
 - `[ ]`: chưa xong. Ghi `IN_PROGRESS` cạnh task khi nhận; vẫn để ô trống.
 - `[x]`: đạt toàn bộ nghiệm thu và đã ghi evidence; không dùng cho task chỉ mới viết code.
@@ -66,7 +66,7 @@ Tiến độ thực thi: 30/43 task (F01–F07, B01–B05, G01/G02/G03/G05, E01/
 - [ ] **P05** Co-op sinh tồn và cứu viện — P2, phlt; phụ thuộc: C05,P03,F07.
 - [ ] **P06** Thử thách tuần đồng điều kiện — P2, phlt; phụ thuộc: P04,C05.
 - [ ] **G04** Giao hữu chuẩn hóa và thử thách cộng đồng — P2, g2; phụ thuộc: C05,G02,G03.
-- [ ] **E03** Hiệu ứng trang bị theo lối chơi — P2, phlt/g2; ctc chỉ đồ hợp lệ; phụ thuộc: F02,F04,E02.
+- [x] **E03** Hiệu ứng trang bị theo lối chơi — P2, phlt/g2; ctc chỉ đồ hợp lệ; phụ thuộc: F02,F04,E02. DONE local — PHLT cùng bộ Hoàng Kim ≥2 món: hồi phục +8%, kháng trạng thái +5 điểm; 2.0 cùng bộ Bạch Kim ≥2 món: tốc độ đánh +5% (cap hiện hành). Chỉ số tĩnh, flag `equipment_playstyles` mặc định tắt và chỉ cho PHLT/g2; không có proc/cooldown và không thay đổi tick DOT. Có kiểm tra equip/unequip, đổi mode, family sai, flag off, CTC và client/Worker parity; xem EXECUTION_EVIDENCE.md.
 - [ ] **R02** Nhiệm vụ linh hoạt và thưởng người quay lại — P2, shared luật riêng; phụ thuộc: F01,F05,E04. IN_PROGRESS — [WEEKLY_TASKS.md](WEEKLY_TASKS.md), mode-specific selectable tasks, one-mode lock, UTC rollover/rollback guard, 3 weekly claims and one-shot return receipt; 5 unit tests + 6 browser mode/viewport smoke. Còn server-trusted time để chặn forward-clock farming và offline return summary; hiện là progression client-side, không dùng cạnh tranh.
 - [ ] **R03** Thành tựu, ngoại hình và chuyển sinh — P2, shared tách progression; phụ thuộc: F05,C08,P04,G05.
 
@@ -109,7 +109,7 @@ O04 local gates đã được chạy trong source archive; task còn remote stag
 
 ## Nhật ký nhận việc
 
-34 task DONE local — Codex / feat/online-multiplayer: F01–F07, B01–B05, G01/G02/G03/G05, E01/E02/E04, R01/O01/O02, C01–C08, P01–P04. O04 requires remote staging/rollback evidence; do not close with local CI alone.
+35 task DONE local — Codex / feat/online-multiplayer: F01–F07, B01–B05, G01/G02/G03/G05, E01–E04, R01/O01/O02, C01–C08, P01–P04. Remaining: P05, P06, G04, R02, R03, O03, O04, E05. O04 requires remote staging/rollback evidence; do not close with local CI alone.
 
 | Task | Trạng thái | Agent / nhánh | File sở hữu | Evidence / blocker |
 |---|---|---|---|---|
