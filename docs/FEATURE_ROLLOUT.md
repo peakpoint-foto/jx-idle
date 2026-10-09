@@ -133,3 +133,12 @@ Chi tiết từng tính năng xem các mục dưới.
     snapshot ghi đè).
 - Kill-switch: flag `gold_sinks` (tắt = miễn phí, ẩn UI sink mới; tẩy cả món cũ
   vẫn dùng seed cam kết). Gỡ: xóa `js/gold_sinks.js` + hook.
+
+## 2.5 Báo cáo treo máy chi tiết
+
+- `js/offline_report.js`: `offlineGains()` giờ theo dõi món hiếm nhất đã rơi;
+  modal chào mừng hiện thêm: tiến độ lên cấp (% hoặc số cấp đã lên), thời gian
+  hiệu quả so với trần 8h, món hiếm nhất, lịch sử 7 lần gần nhất.
+- Lý do delta = 0 (`offlineZeroReason`): dưới 60 giây / đạt cấp tối đa / hết
+  quota 12h ngày — hiện modal giải thích thay vì im lặng.
+- Không flag (cải tiến UI hiện có). Gỡ: xóa file + revert `showOffline`.
