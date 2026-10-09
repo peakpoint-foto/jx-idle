@@ -183,3 +183,13 @@ Chi tiết từng tính năng xem các mục dưới.
   idempotent (INSERT OR IGNORE + quota 0.3 cho claim); client nhận vàng khi claim.
 - Flag `mentor` (CTC, online), mặc định tắt. UI panel trong tab online.
 - Ngân sách: tối đa 1.25M vàng/sư phụ/đồ đệ/trọn đời — đã đăng ký ở đây.
+
+## 2.10 Legendary affix
+
+- `data/content/legendary_affixes.v1.json` + `validateLegendaryAffixes`: 3 affix
+  (La Hán Kim Thân +12% giảm ST, Phượng Hoàng +25% HP, Hấp Huyết +8% leech);
+  rate 0.1%/dòng, pity 500 món.
+- Chỉ trên đồ vàng (3+ dòng), thay 1 dòng thường (không tăng ngân sách dòng);
+  flag `legendary_affix` mặc định tắt; tooltip render riêng màu cam.
+- Worker validator cho phép id trong JSON, gắn cờ id lạ.
+- Sim Balance CI vẫn xanh; legendary hiếm nên không ảnh hưởng baseline.

@@ -38,6 +38,18 @@ test("sửa chỉ số trang bị bị gắn cờ", () => {
   const s3 = makeChar(60);
   Object.values(s3.eq)[0].enh = 99;
   assert.ok(codes(validateChar(s3, 1e7)).includes("item_enh"));
+
+// 2.10: dòng legendary hợp lệ qua validator, id lạ bị gắn cờ.
+test("legendary affix hợp lệ không bị gắn cờ, id lạ bị gắn cờ", () => {
+  const s = makeChar(60);
+  const it = Object.values(s.eq).find((x) => x.mag.length) || Object.values(s.eq)[0];
+  it.mag = [{a: 900, p: [1, -1, 0], pre: 1, n: "La Hán Kim Thân", leg: "lahan_kimthan"}];
+  assert.ok(!codes(validateChar(s, 1e7)).includes("item_affix"), "legendary hợp lệ");
+  const s2 = makeChar(60);
+  const it2 = Object.values(s2.eq).find((x) => x.mag.length) || Object.values(s2.eq)[0];
+  it2.mag = [{a: 900, p: [1, -1, 0], pre: 1, n: "Fake", leg: "khong_ton_tai"}];
+  assert.ok(codes(validateChar(s2, 1e7)).includes("item_affix"), "legendary lạ bị gắn cờ");
+});
 });
 
 test("dòng cộng cấp kỹ năng hệ cũ chờ xác minh thay vì gắn cờ gian lận", () => {

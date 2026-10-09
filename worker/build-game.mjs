@@ -69,6 +69,8 @@ const __contentData = {
   events: __loadContent("data/content/events.v2.json", __contentCtx.validateEventFlags),
   trialMutators: __loadContent("data/content/trial_mutators.v1.json", __contentCtx.validateTrialMutators),
   riftModifiers: __loadContent("data/content/rift_modifiers.v1.json", __contentCtx.validateRiftModifiers),
+  seasonThemes: __loadContent("data/content/season_themes.v1.json", __contentCtx.validateSeasonThemes),
+  legendaryAffixes: __loadContent("data/content/legendary_affixes.v1.json", __contentCtx.validateLegendaryAffixes),
 };
 // JX_CONTENT có mặt trong bundle trước mọi file game (kể cả js/content.js và js/session_combat.js).
 // Deep-freeze để giữ nguyên semantics bất biến như bản hardcode Object.freeze lồng nhau trước đây.

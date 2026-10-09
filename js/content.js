@@ -130,6 +130,33 @@ function validateSeasonThemes(data) {
   });
   return data;
 }
+// Legendary affixes (2.10): affix cực hiếm đổi lối chơi.
+function validateLegendaryAffixes(data) {
+  const what = "legendary-affixes";
+  if (!isPlainObj(data)) throw contentError(what, "phải là object");
+  checkVersion(data.version, "legendary-affixes", what);
+  if (typeof data.rate !== "number" || !(data.rate > 0 && data.rate <= 0.01))
+    throw contentError(what, "rate phải là 0-0.01");
+  if (!Number.isInteger(data.pity) || data.pity < 100 || data.pity > 10000)
+    throw contentError(what, "pity phải là 100-10000");
+  if (!Array.isArray(data.affixes) || data.affixes.length === 0)
+    throw contentError(what, "affixes phải là mảng không rỗng");
+  const ids = new Set(), allowed = new Set(["dr", "lifePct", "leech"]);
+  data.affixes.forEach((a, i) => {
+    const at = `affixes[${i}]`;
+    if (!isPlainObj(a)) throw contentError(what, `${at} phải là object`);
+    if (typeof a.id !== "string" || !/^[a-z0-9_]{1,24}$/.test(a.id)) throw contentError(what, `${at}.id không hợp lệ`);
+    if (ids.has(a.id)) throw contentError(what, `${at}.id trùng: ${a.id}`);
+    ids.add(a.id);
+    if (typeof a.name !== "string" || !a.name.trim() || a.name.length > 40) throw contentError(what, `${at}.name không hợp lệ`);
+    if (typeof a.desc !== "string" || a.desc.length > 140) throw contentError(what, `${at}.desc không hợp lệ`);
+    if (!isPlainObj(a.effect) || !Object.keys(a.effect).every(k => allowed.has(k)))
+      throw contentError(what, `${at}.effect chỉ dùng: dr, revive, skillLeech`);
+    for (const [k, v] of Object.entries(a.effect))
+      if (typeof v !== "number" || !(v > 0 && v <= 100)) throw contentError(what, `${at}.effect.${k} phải là 0-100`);
+  });
+  return data;
+}
 // Event flags: danh mục slot sự kiện định kỳ hiện có.
 const EVENT_KINDS = ["trial", "challenge", "boss", "bonus"];
 const EVENT_CADENCE = ["weekly", "monthly"];

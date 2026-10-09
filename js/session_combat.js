@@ -161,7 +161,7 @@ function sessionCombatBossHit(state,target,mul=1){
   if(sessionWaves(state))raw*=b.dmgMul;
   if(p.res5&&!counters(b.series,p.series))raw=Math.max(1,raw-p.res5);
   if(p.statusRes[el])raw=Math.max(1,raw*(1-p.statusRes[el]/100));if(p.absorb)raw=Math.max(1,raw*(1-p.absorb));
-  if(p.curseDR)raw*=1-p.curseDR;if(p.flatDR)raw=Math.max(1,raw-p.flatDR);
+  if(p.curseDR)raw*=1-p.curseDR;if(p.legDR)raw*=1-Math.min(50,p.legDR)/100;if(p.flatDR)raw=Math.max(1,raw-p.flatDR);
   if(p.manaShield>0&&target.mp>0){const absorbed=Math.min(target.mp,raw*p.manaShield/100);target.mp-=absorbed;raw-=absorbed;target.contribution.prevented+=absorbed;}
   if(target.guardUntil>=state.tick){target.contribution.prevented+=raw*.5;raw*=.5;}
   raw=Math.max(0,raw);target.hp=Math.max(0,target.hp-raw);
