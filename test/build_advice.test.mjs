@@ -35,3 +35,32 @@ test('flag/sandbox/activity guards and support graph do not remap missing skills
   g.run('var row=buildAdvice("survival").results[0];ADMV.sandbox=true');assert.equal(g.run("buildAdviceApply('survival',row.source).ok"),false);
   g.run('ADMV.sandbox=false;S.siege={on:true}');assert.equal(g.run("buildAdviceApply('survival',row.source).ok"),false);
 });
+for (const fac of ['shaolin', 'emei', 'tangmen', 'wudang', 'gaibang']) test(`${fac}: gợi ý đúng, mỗi gợi ý có lý do ngắn gọn, không gợi ý đồ sai mode`, () => {
+  const g = game();
+  g.run(`fixture('ctc',100);setFeatureFlags({build_advice:true});S.fac='${fac}';S.sk={};S.sk[FAC['${fac}'].starter]=1;S.main=FAC['${fac}'].starter;S.inv.push(makeItem(2,0,10,2));S.inv[0].req=[];recalc()`);
+  const advice = g.json("buildAdvice('survival')");
+  assert.ok(advice.results.length > 0, 'có gợi ý');
+  for (const r of advice.results) {
+    assert.ok(typeof r.reason === 'string' && r.reason.length > 0 && r.reason.length <= 40, 'lý do ngắn gọn: ' + r.reason);
+    if (r.source.kind === 'item') {
+      const item = g.json(`S.inv.find(i=>i.uid===${JSON.stringify(r.source.uid)})`);
+      assert.ok(item, 'đồ gợi ý thuộc về người chơi');
+      assert.equal(g.run(`modeItemOk(${JSON.stringify(item).replace(/`/g, '')},modeId())`), true, 'không gợi ý đồ sai mode');
+    }
+  }
+});
+test('nút tắt: tắt gợi ý thì panel không hiện mục tiêu, bật lại thì hiện', () => {
+  const g = game();
+  g.run("fixture('ctc',60);setFeatureFlags({build_advice:true});renderSkill=()=>{}"); // harness thiếu suggestModal
+  assert.ok(g.run("buildAdvicePanelHTML()").includes('data-advice-goal'), 'mặc định hiện nút mục tiêu');
+  assert.ok(g.run("buildAdvicePanelHTML()").includes('data-advice-toggle="off"'), 'mặc định có nút tắt');
+  g.run("setAdviceDismissed(true)");
+  assert.equal(g.run("adviceDismissed()"), true);
+  assert.equal(g.run("localStorage.getItem('jx_advice_off')"), '1');
+  const off = g.run("buildAdvicePanelHTML()");
+  assert.ok(!off.includes('data-advice-goal'), 'tắt: không còn nút mục tiêu');
+  assert.ok(off.includes('data-advice-toggle="on"'), 'tắt: hiện nút bật lại');
+  g.run("setAdviceDismissed(false)");
+  assert.equal(g.run("adviceDismissed()"), false);
+  assert.ok(g.run("buildAdvicePanelHTML()").includes('data-advice-goal'), 'bật lại: hiện nút mục tiêu');
+});
