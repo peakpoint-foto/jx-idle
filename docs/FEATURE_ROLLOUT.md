@@ -173,3 +173,13 @@ Chi tiết từng tính năng xem các mục dưới.
 - UI panel mùa hiện chủ đề + modifier + số tuần còn lại.
 - Danh hiệu mùa vẫn thuần cosmetic có nhãn mode (không đổi).
 - Vận hành: thêm/sửa theme = sửa JSON + build content, không cần deploy code.
+
+## 2.9 Sư phụ / đồ đệ
+
+- `worker/src/mentor.js` + D1 (`mentorships`, `mentor_codes`, `mentor_milestones`,
+  `mentor_rewards`): mã mời 8 ký tự; 1 sư phụ nhiều đồ đệ, mỗi đồ đệ 1 sư phụ
+  (UNIQUE); đồ đệ dưới cấp 100 khi bái sư, sư phụ từ cấp 60.
+- Milestone đồ đệ lên 60/100/180: thưởng cả hai 50k/200k/1M vàng; ghi
+  idempotent (INSERT OR IGNORE + quota 0.3 cho claim); client nhận vàng khi claim.
+- Flag `mentor` (CTC, online), mặc định tắt. UI panel trong tab online.
+- Ngân sách: tối đa 1.25M vàng/sư phụ/đồ đệ/trọn đời — đã đăng ký ở đây.

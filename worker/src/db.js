@@ -159,6 +159,35 @@ export const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS guild_receipts(account_id TEXT NOT NULL,request_id TEXT NOT NULL,guild_id TEXT NOT NULL,action TEXT NOT NULL,payload TEXT NOT NULL,created_at INTEGER NOT NULL,PRIMARY KEY(account_id,request_id))`,
   `CREATE TABLE IF NOT EXISTS guild_logs(account_id TEXT NOT NULL,request_id TEXT NOT NULL,guild_id TEXT NOT NULL,action TEXT NOT NULL,target_id TEXT,created_at INTEGER NOT NULL,PRIMARY KEY(account_id,request_id))`,
   `CREATE INDEX IF NOT EXISTS guild_logs_recent ON guild_logs(guild_id,created_at)`,
+  `CREATE TABLE IF NOT EXISTS mentorships(
+    mentor_id TEXT NOT NULL,
+    disciple_id TEXT NOT NULL,
+    created_at INTEGER NOT NULL,
+    PRIMARY KEY(mentor_id, disciple_id)
+  )`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS mentorship_disciple ON mentorships(disciple_id)`,
+  `CREATE TABLE IF NOT EXISTS mentor_codes(
+    account_id TEXT PRIMARY KEY,
+    code TEXT NOT NULL UNIQUE,
+    created_at INTEGER NOT NULL
+  )`,
+  `CREATE TABLE IF NOT EXISTS mentor_milestones(
+    mentor_id TEXT NOT NULL,
+    disciple_id TEXT NOT NULL,
+    milestone INTEGER NOT NULL,
+    created_at INTEGER NOT NULL,
+    PRIMARY KEY(mentor_id, disciple_id, milestone)
+  )`,
+  `CREATE TABLE IF NOT EXISTS mentor_rewards(
+    account_id TEXT NOT NULL,
+    milestone INTEGER NOT NULL,
+    disciple_id TEXT NOT NULL,
+    gold INTEGER NOT NULL,
+    claimed_at INTEGER,
+    request_id TEXT,
+    created_at INTEGER NOT NULL,
+    PRIMARY KEY(account_id, milestone, disciple_id)
+  )`,
   `CREATE TABLE IF NOT EXISTS guild_calendar(id TEXT PRIMARY KEY,guild_id TEXT NOT NULL,actor_id TEXT NOT NULL,title TEXT NOT NULL,activity TEXT NOT NULL,starts_at INTEGER NOT NULL,cancelled INTEGER NOT NULL DEFAULT 0)`,
   `CREATE INDEX IF NOT EXISTS guild_calendar_next ON guild_calendar(guild_id,starts_at)`,
   `CREATE TABLE IF NOT EXISTS rooms(

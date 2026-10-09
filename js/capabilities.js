@@ -24,6 +24,7 @@ const FEATURE_REGISTRY = Object.freeze({
   async_duels: { modes: ["ctc"], enabled: true, online: true },
   duel_modes: { modes: ["ctc"], enabled: false, online: true },
   guild_online: { modes: ["ctc"], enabled: true, online: true },
+  mentor: { modes: ["ctc"], enabled: false, online: true },
   guild_management: { modes: ["ctc"], enabled: false, online: true },
   online_economy: { modes: ["ctc"], enabled: false, online: true },
   resource_summary: { modes: ["ctc","phlt","g2"], enabled: false, online: false },

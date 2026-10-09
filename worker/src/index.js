@@ -8,6 +8,7 @@ import { feedback, adminFeedback, adminFeedbackSet, adminFeedbackMetrics } from 
 import { activityClaim } from "./activity.js";
 import { profile } from "./ladder.js";
 import { duels, guild, room } from "./social.js";
+import { mentor } from "./mentor.js";
 import { featureConfig, guardedFeature } from "./capabilities.js";
 import {friends} from './lobby.js';
 import {economy} from './economy.js';
@@ -43,6 +44,8 @@ const ROUTES = {
   "GET /api/duels": guardedFeature("async_duels", duels),
   "POST /api/duel": guardedFeature("async_duels", duels),
   "GET /api/guild": guardedFeature("guild_online", guild),
+  "GET /api/mentor": guardedFeature("mentor", mentor),
+  "POST /api/mentor": guardedFeature("mentor", mentor),
   "POST /api/guild": guardedFeature("guild_online", guild),
   "GET /api/room": guardedFeature("room_presence", room),
   "POST /api/room": guardedFeature("room_presence", room),
