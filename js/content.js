@@ -85,6 +85,25 @@ function validateTrialMutators(data) {
   });
   return data;
 }
+// Rift modifiers (2.0): metadata hiển thị đọc từ JSON; behavior trong riftStats key theo id.
+function validateRiftModifiers(data) {
+  const what = "rift-modifiers";
+  if (!isPlainObj(data)) throw contentError(what, "phải là object");
+  checkVersion(data.version, "rift-modifiers", what);
+  if (!Array.isArray(data.modifiers) || data.modifiers.length === 0) throw contentError(what, "modifiers phải là mảng không rỗng");
+  const ids = new Set();
+  data.modifiers.forEach((m, i) => {
+    const at = `modifiers[${i}]`;
+    if (!isPlainObj(m)) throw contentError(what, `${at} phải là object`);
+    if (typeof m.id !== "string" || !/^[a-z0-9_]{1,24}$/.test(m.id)) throw contentError(what, `${at}.id không hợp lệ`);
+    if (ids.has(m.id)) throw contentError(what, `${at}.id trùng: ${m.id}`);
+    ids.add(m.id);
+    if (typeof m.name !== "string" || !m.name.trim() || m.name.length > 40) throw contentError(what, `${at}.name không hợp lệ`);
+    if (typeof m.desc !== "string" || !m.desc.trim() || m.desc.length > 140) throw contentError(what, `${at}.desc không hợp lệ`);
+    if (typeof m.axis !== "string" || !m.axis.trim() || m.axis.length > 24) throw contentError(what, `${at}.axis không hợp lệ`);
+  });
+  return data;
+}
 // Event flags: danh mục slot sự kiện định kỳ hiện có.
 const EVENT_KINDS = ["trial", "challenge", "boss", "bonus"];
 const EVENT_CADENCE = ["weekly", "monthly"];

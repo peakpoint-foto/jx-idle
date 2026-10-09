@@ -1,13 +1,11 @@
 "use strict";
 const RIFT_RULES=Object.freeze({v:1,version:'rift-v1',stages:5,maxModifiers:5,maxCopies:2,stageSeconds:60});
-const RIFT_MODIFIERS=Object.freeze({
-  tempo:{name:'Nhịp liên chiêu',axis:'tốc độ',note:'+15% tốc đánh, +10% mana mỗi chiêu'},
-  venom:{name:'Độc mạch',axis:'DOT',note:'Thêm độc bằng12% sát thương đòn; chỉ trong bí cảnh'},
-  sustain:{name:'Hồi nguyên',axis:'sinh tồn',note:'+10% HP tối đa, hồi1% HP mỗi giây'},
-  reserve:{name:'Tụ khí',axis:'mana',note:'Giảm15% mana mỗi chiêu, hồi thêm1% mana tối đa mỗi giây'},
-  control:{name:'Định thân',axis:'khống chế',note:'+10 điểm % choáng (tối đa80%), -5% damage trực tiếp'},
-  echo:{name:'Phân ảnh',axis:'đa mục tiêu',note:'+1 mục tiêu (tối đa8), -10% damage mỗi đòn'},
-});
+// Metadata đọc từ data/content/rift_modifiers.v1.json (schema 2.0); behavior trong riftStats key theo id.
+// Guard typeof vì file này nạp trước js/content.js ở client (build đã validate).
+const RIFT_MODIFIERS=(()=>{
+  if(typeof validateRiftModifiers==="function")validateRiftModifiers(JX_CONTENT.riftModifiers);
+  return Object.freeze(Object.fromEntries(JX_CONTENT.riftModifiers.modifiers.map(m=>[m.id,Object.freeze({name:m.name,axis:m.axis,note:m.desc})])));
+})();
 function riftModifiersValid(list){return Array.isArray(list)&&list.length<=5&&list.every(k=>typeof k==='string'&&Object.hasOwn(RIFT_MODIFIERS,k)&&list.filter(x=>x===k).length<=2);}
 function riftStats(input,modifiers=[]){
   if(!riftModifiersValid(modifiers))throw Error('Modifier bí cảnh không hợp lệ');
