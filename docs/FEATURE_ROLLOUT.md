@@ -265,3 +265,11 @@ Chi tiết từng tính năng xem các mục dưới.
   damage từ snapshot đã xác thực, idempotent theo nonce.
 - Thưởng theo hạng (top 1/10/50/100); API `/api/world-boss`.
 - Flag `world_boss` tắt mặc định.
+
+## 3.1 Chất phái (framework + 3 mẫu)
+
+- `js/faction_mechanics.js`: framework `FAC_MECHANICS` với hook
+  `onTakeDamage`/`onAttack`/`onTakeDamageReflect`.
+- 3 phái mẫu: Thiếu Lâm (La Hán: -20% damage khi HP<30%),
+  Đường Môn (Ám Khí: 15% đòn thêm), Võ Đang (Thái Cực: phản 10%).
+- 8 phái còn lại làm từng PR theo roadmap. Flag `faction_mechanics` tắt mặc định.
