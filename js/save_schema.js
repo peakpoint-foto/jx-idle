@@ -19,6 +19,8 @@ function migrateSaveSchema(state) {
     throw new Error("Dữ liệu mở rộng của bản lưu không hợp lệ");
   if (extensions && extensions.v !== 1) throw new Error("Phiên bản dữ liệu mở rộng chưa được hỗ trợ");
   copy.extensions = extensions || { v: 1 };
+  // Migration wave (1.4): save mới lẫn save cũ nhiều version đều đi qua đây.
+  if (typeof runSaveWaves === "function") runSaveWaves(copy);
   copy.v = SAVE_V;
   return copy;
 }

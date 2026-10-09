@@ -33,6 +33,8 @@ const FEATURE_REGISTRY = Object.freeze({
   weekly_trial: { modes: ["phlt"], enabled: false, online: true, requires: { phlt: ["coop_rescue"] } },
   trial_mutators: { modes: ["phlt"], enabled: false, online: false },
   event_calendar: { modes: ["ctc", "phlt", "g2"], enabled: false, online: false },
+  codex_waves: { modes: ["ctc", "phlt", "g2"], enabled: false, online: false },
+  onboarding_goals: { modes: ["ctc", "phlt", "g2"], enabled: false, online: false },
   community_challenge: { modes: ["g2"], enabled: false, online: true, requires: { g2: ["online_account_g2"] } },
   party_dungeon: { modes: ["ctc"], enabled: false, online: true },
   party_siege: { modes: ["ctc"], enabled: false, online: true },

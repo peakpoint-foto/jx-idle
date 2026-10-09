@@ -52,6 +52,27 @@ Chi tiết từng tính năng xem các mục dưới.
 - Test: `test/event_calendar.test.mjs` (v1/v2, all/even/odd, mốc tuần, HTML đúng
   tuần) + worker (ngoài lịch bị từ chối và không trừ quota, trong lịch chạy).
 
+## 1.4 Migration wave codex + mục tiêu 7 ngày (`codex_waves`, `onboarding_goals`)
+
+- Khung migration nhỏ (`js/save_waves.js`): `registerSaveWave(version, id, up)` —
+  version tăng dần, id duy nhất, `up(state)` chỉ chạm vùng extensions của wave
+  mình, idempotent. `runSaveWaves` được gọi trong `migrateSaveSchema` nên save
+  mới lẫn save cũ nhiều version đều đi qua, không mất dữ liệu. Wave hiện tại:
+  v1 `codex_waves` (mở khóa đợt bách khoa), v2 `onboarding_goals` (khởi tạo mốc
+  7 ngày). State migration luôn chạy (kể cả khi flag UI tắt) để bật flag sau
+  vẫn có dữ liệu.
+- Codex theo đợt (`js/codex_waves.js`, flag `codex_waves`): card "Bách khoa theo
+  đợt" ở tab Khác. Đợt 1 = bách khoa hiện có; đợt 2 (mở ở cấp 30) = mẹo chơi
+  nâng cao từ các hệ thống thật trong game.
+- Mục tiêu 7 ngày (`js/onboarding_goals.js`, flag `onboarding_goals`): checklist
+  7 ngày (cấp 10 → cấp 30), **không thưởng** (tránh ảnh hưởng cân bằng). Hoàn
+  thành ghi nhận lazy khi render. Card ở tab Khác hiện tiến độ x/7.
+- Kill-switch: từng flag `false`. Gỡ: xóa 3 file + 2 dòng registry + 1 dòng hook
+  trong `save_schema.js` (các wave đã chạy để lại `extensions.wv`, vô hại).
+- Test: `test/save_waves.test.mjs` — fixture v1 không mất dữ liệu, idempotent,
+  thứ tự version, mục tiêu 7 ngày trên save mới (mở theo ngày, ghi nhận xong),
+  codex đợt 1/2 theo cấp và flag.
+
 ## 1.1 Cố vấn build (`build_advice`)
 
 - Gating: `featureEnabled("build_advice")` chặn cả `buildAdvice()` (ném lỗi "chưa mở")
