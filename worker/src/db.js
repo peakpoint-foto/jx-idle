@@ -190,6 +190,7 @@ const COLUMNS = [
   "ALTER TABLE chars ADD COLUMN validation_note TEXT",
   "ALTER TABLE chars ADD COLUMN character_id TEXT",
   "ALTER TABLE chars ADD COLUMN sync_rev INTEGER NOT NULL DEFAULT 1",
+  "ALTER TABLE chars ADD COLUMN mode TEXT NOT NULL DEFAULT 'ctc'",
 ];
 
 const readyByDatabase = new WeakMap();
@@ -206,6 +207,7 @@ export function ensureSchema(db) {
           });
         await db.prepare("CREATE INDEX IF NOT EXISTS chars_ladder ON chars(validation_status, bracket, flagged, power)").run();
         await db.prepare("CREATE UNIQUE INDEX IF NOT EXISTS chars_character_id ON chars(character_id) WHERE character_id IS NOT NULL").run();
+        await db.prepare("CREATE INDEX IF NOT EXISTS chars_mode ON chars(mode, bracket, validation_status)").run();
       })
       .catch((e) => {
         readyByDatabase.delete(db);

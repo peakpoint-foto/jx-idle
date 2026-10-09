@@ -81,7 +81,7 @@ async function duelList(db, accountId, advanced=false) {
   let matches=[],rankedReady=false;
   if(advanced){try{
     let me=await charFor(db,accountId);requireVerified(me);me=duelProfile(me);rankedReady=!!me.bracket;
-    if(rankedReady)matches=(await db.prepare("SELECT a.name,c.lvl,c.power,c.bracket FROM accounts a JOIN chars c ON c.account_id=a.id WHERE a.id<>?1 AND c.bracket=?2 AND c.validation_status='verified' AND c.flagged=0 AND c.updated_at>=?3 AND c.power BETWEEN ?4 AND ?5 AND json_extract(c.snapshot,'$.mode')='ctc' AND COALESCE(json_extract(c.snapshot,'$.sandbox'),0)=0 ORDER BY ABS(c.power-?6) LIMIT 10").bind(accountId,me.bracket,now-30*864e5,me.power/DUEL_RULES.powerRatio,me.power*DUEL_RULES.powerRatio,me.power).all()).results;
+    if(rankedReady)matches=(await db.prepare("SELECT a.name,c.lvl,c.power,c.bracket FROM accounts a JOIN chars c ON c.account_id=a.id WHERE a.id<>?1 AND c.mode='ctc' AND c.bracket=?2 AND c.validation_status='verified' AND c.flagged=0 AND c.updated_at>=?3 AND c.power BETWEEN ?4 AND ?5 AND json_extract(c.snapshot,'$.mode')='ctc' AND COALESCE(json_extract(c.snapshot,'$.sandbox'),0)=0 ORDER BY ABS(c.power-?6) LIMIT 10").bind(accountId,me.bracket,now-30*864e5,me.power/DUEL_RULES.powerRatio,me.power*DUEL_RULES.powerRatio,me.power).all()).results;
   }catch(e){if(!(e instanceof HttpError))throw e;}}
   return { season,season_start:Number(season)*7*864e5,season_end:(Number(season)+1)*7*864e5,ttl_ms:DUEL_TTL,pair_daily_cap:advanced?DUEL_RULES.pairDaily:null,
     ranked_ready:rankedReady,matches,score: {...(score || { points: 0, wins: 0, losses: 0 }),draws:draws?.n||0}, duels: rows.results.map(r => duelView(r, accountId)) };

@@ -33,7 +33,7 @@ export async function ladder(req, env, body, url) {
   const cutoff = Date.now() - 30 * 864e5;
   const rows = await env.DB.prepare(
     `SELECT a.name, c.fac, c.lvl, c.power, c.updated_at AS last_sync FROM chars c JOIN accounts a ON a.id=c.account_id
-     WHERE c.bracket=?1 AND c.flagged=0 AND c.validation_status='verified' AND (c.updated_at IS NULL OR c.updated_at>?2)
+     WHERE c.mode='ctc' AND c.bracket=?1 AND c.flagged=0 AND c.validation_status='verified' AND (c.updated_at IS NULL OR c.updated_at>?2)
      ORDER BY c.power DESC, c.lvl DESC LIMIT 100`
   ).bind(b, cutoff).all();
   return {
@@ -47,7 +47,7 @@ export async function profile(req, env, body, url) {
   const name = String(url.searchParams.get("name") || "").trim();
   if (!name) throw new HttpError(400, "missing_name");
   const row = await env.DB.prepare(
-    `SELECT a.name,c.fac,c.lvl,c.power,c.bracket,c.flagged,c.validation_status,c.updated_at AS last_sync
+    `SELECT a.name,c.fac,c.lvl,c.power,c.bracket,c.flagged,c.validation_status,c.mode,c.updated_at AS last_sync
      FROM accounts a JOIN chars c ON c.account_id=a.id WHERE a.name=?1 COLLATE NOCASE`
   ).bind(name).first();
   if (!row) throw new HttpError(404, "not_found");
@@ -57,7 +57,8 @@ export async function profile(req, env, body, url) {
     lvl: row.lvl,
     power: row.power,
     bracket: row.bracket,
-    ranked: row.validation_status === "verified" && !row.flagged && !!row.bracket,
+    mode: row.mode || "ctc",
+    ranked: (row.mode || "ctc") === "ctc" && row.validation_status === "verified" && !row.flagged && !!row.bracket,
     validation_status: row.validation_status || (row.flagged ? "flagged" : "verified"),
     last_sync: row.last_sync,
   };
