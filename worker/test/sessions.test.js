@@ -151,7 +151,10 @@ test('siege: simultaneous captures count, supply boosts capture and logistics, c
   await q.post({action:'command',id,seq:2,tick:now+1,kind:'capture',target:'p2'});
   f.tick(250);view=(await p.get(id)).session;
   assert.ok(view.actors[0].contribution.logistics>0);assert.ok(view.actors[1].mp>0);assert.equal(view.objectives.points[1].progress,2,'supplied capturer adds 1+1');
-  await editState(f,id,s=>{for(const x of s.objectives.points){x.owned=true;x.progress=x.need;}s.objectives.captured=3;s.boss.gate=0;s.boss.hp=1;for(const a of s.actors)a.cooldown=0;});
+  // Pin the session RNG before the kill phase: each session gets a random seed
+  // (crypto.getRandomValues in sessions.js) and sessionCombatHit can miss its
+  // hitPercent roll, so without this the 'completed' assertion below is flaky.
+  await editState(f,id,s=>{for(const x of s.objectives.points){x.owned=true;x.progress=x.need;}s.objectives.captured=3;s.boss.gate=0;s.boss.hp=1;for(const a of s.actors)a.cooldown=0;s.rng=1;});
   for(let i=0;i<80&&view.status!=='completed';i++){f.tick(250);await q.get(id);view=(await p.get(id)).session;}
   assert.equal(view.status,'completed');
   const receipts=[await p.post({action:'claim',id}),await q.post({action:'claim',id}),await p.post({action:'claim',id})];
