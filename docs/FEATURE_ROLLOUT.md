@@ -16,6 +16,25 @@ nhau đủ cửa sổ để đọc telemetry):
 
 Chi tiết từng tính năng xem các mục dưới.
 
+## 1.2 Mutator trial (`trial_mutators`)
+
+- Gating: `trial_mutators` trong `FEATURE_REGISTRY` (mặc định tắt, mode PHLT).
+  Flag chỉ đọc ở caller (worker `trial.js`/`sessions.js`); engine
+  (`sessionTrialWave`) thuần theo `options.mutator` nên deterministic theo input,
+  giữ nguyên tắc parity client ↔ worker.
+- Dữ liệu: `data/content/trial_mutators.v1.json`, validate bởi
+  `validateTrialMutators` (build fail / client lỗi rõ nếu sai). Modifier dùng
+  chung từ vựng rule (`hp`/`def`/`interval`/`taken`) nhưng bị chặn ngưỡng khả thi
+  (hp 0.5–2, taken 0.5–1.5, def 0.5–2, interval 0.5–2).
+- Mutator xoay theo tuần như rule (`sessionTrialMutator`). Khi flag bật, tag bảng
+  xếp hạng thành `version:rule:mutator` (tách bảng khi rollout, như mùa mới);
+  flag tắt tag giữ nguyên `version:rule` — không ảnh hưởng board hiện tại.
+- Không đổi tổng thưởng: trial vốn không thưởng.
+- UI: panel Thử thách tuần hiện "Biến thể tuần: tên — mô tả" khi có.
+- Test: `test/trial_mutators.test.mjs` (JSON, engine, tính khả thi: fixture phái
+  yếu Nga Mi 60 hoàn thành 3 chặng với mọi mutator) + worker gating
+  (flag tắt/bật, tag, boss chịu mutator).
+
 ## 1.1 Cố vấn build (`build_advice`)
 
 - Gating: `featureEnabled("build_advice")` chặn cả `buildAdvice()` (ném lỗi "chưa mở")

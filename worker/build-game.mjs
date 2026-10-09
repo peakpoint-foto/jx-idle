@@ -29,7 +29,7 @@ const EXPORTS = [
   "applyPart", "hitPercent", "heroGuard",
   "tickEnemyStatuses",
   "CHALLENGE_VERSION", "CHALLENGE_PRESETS", "challengeBudgets", "challengeSpecCheck", "challengeSave", "standardGear",
-  "JX_CONTENT", "SESSION_COMBAT", "SESSION_SIEGE", "SESSION_RESCUE", "SESSION_TRIAL", "sessionTrialRule", "sessionActor", "sessionCombatNew", "sessionCombatStep",
+  "JX_CONTENT", "SESSION_COMBAT", "SESSION_SIEGE", "SESSION_RESCUE", "SESSION_TRIAL", "sessionTrialRule", "sessionTrialMutator", "sessionActor", "sessionCombatNew", "sessionCombatStep",
   "RIFT_RULES", "RIFT_MODIFIERS", "riftModifiersValid", "riftStats", "riftChoices",
   "featureEnabled", "featureConfigSnapshot", "parseFeatureFlags",
   "redactFeedbackText", "cleanFeedbackDiagnostics", "cleanFeedbackContext",
@@ -66,13 +66,14 @@ function __loadContent(file, validate) {
 const __contentData = {
   trial: __loadContent("data/content/trial.v1.json", __contentCtx.validateTrialRules),
   events: __loadContent("data/content/events.v1.json", __contentCtx.validateEventFlags),
+  trialMutators: __loadContent("data/content/trial_mutators.v1.json", __contentCtx.validateTrialMutators),
 };
 // JX_CONTENT có mặt trong bundle trước mọi file game (kể cả js/content.js và js/session_combat.js).
 // Deep-freeze để giữ nguyên semantics bất biến như bản hardcode Object.freeze lồng nhau trước đây.
 let body = `const JX_CONTENT=${JSON.stringify(__contentData)};\n` +
   `Object.freeze(JX_CONTENT);Object.freeze(JX_CONTENT.trial);Object.freeze(JX_CONTENT.trial.rules);` +
   `for(const r of JX_CONTENT.trial.rules)Object.freeze(r);` +
-  `Object.freeze(JX_CONTENT.trial.lengths);Object.freeze(JX_CONTENT.events);Object.freeze(JX_CONTENT.events.slots);\n`;
+  `Object.freeze(JX_CONTENT.trial.lengths);Object.freeze(JX_CONTENT.events);Object.freeze(JX_CONTENT.events.slots);Object.freeze(JX_CONTENT.trialMutators);Object.freeze(JX_CONTENT.trialMutators.mutators);for(const m of JX_CONTENT.trialMutators.mutators)Object.freeze(m);\n`;
 for (const f of FILES) {
   body += `// ---- ${f}\n`;
   body += DATA[f] ? dataFile(f, DATA[f]) : fs.readFileSync(path.join(ROOT, f), "utf8") + "\n";

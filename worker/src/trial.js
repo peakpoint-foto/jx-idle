@@ -10,7 +10,9 @@ const DAY = 864e5;
 // UTC Monday 00:00 (07:00 in Vietnam), the same week index as the other weekly systems in activity.js.
 export const trialWeekId = now => Math.floor((Math.floor(now / DAY) + 3) / 7);
 export const trialWeekStart = id => (id * 7 - 3) * DAY;
-export const trialTag = week => GAME.SESSION_TRIAL.version + ':' + GAME.sessionTrialRule(week).id;
+export const trialTag = (week, mutatorId) => GAME.SESSION_TRIAL.version + ':' + GAME.sessionTrialRule(week).id + (mutatorId ? ':' + mutatorId : '');
+// Mutator là một phần của "chuỗi chủ tướng tuyệt đối": cùng flag thì cùng tuần cùng mutator.
+export const trialMutatorId = (env, week) => GAME.featureEnabled('trial_mutators', 'phlt', env.FEATURE_FLAGS, false) ? GAME.sessionTrialMutator(week).id : null;
 // The seed is a pure function of the version and the week, so every player faces the same boss chain and it cannot change mid-week.
 export function trialSeed(week) {
   let h = 2166136261;
@@ -34,7 +36,7 @@ export async function recordTrialResult(db, sessionId, state, now = Date.now()) 
       SELECT ?1,?2,?3,?4,?5,?6,?7,?8,?9 WHERE changes()>0
       ON CONFLICT(week,length,account_id,rules) DO UPDATE SET session_id=excluded.session_id,depth=excluded.depth,score=excluded.score,ticks=excluded.ticks,created_at=excluded.created_at
       WHERE excluded.score>trial_results.score`)
-      .bind(state.trial.week, state.trial.length, account, state.trial.version + ':' + state.trial.rule, sessionId, state.objectives.depth, score, state.tick, now),
+      .bind(state.trial.week, state.trial.length, account, trialTag(state.trial.week, state.trial.mutator), sessionId, state.objectives.depth, score, state.tick, now),
   ]);
   return !!results[0].meta.changes;
 }
@@ -42,8 +44,8 @@ export async function recordTrialResult(db, sessionId, state, now = Date.now()) 
 
 const ORDER = 'r.score DESC,r.created_at,r.account_id';
 const ELIGIBLE = "JOIN chars c ON c.account_id=r.account_id AND c.mode='phlt' AND c.flagged=0 AND c.validation_status='verified'";
-async function board(db, week, length, accountId) {
-  const tag = trialTag(week);
+async function board(db, env, week, length, accountId) {
+  const mutator = trialMutatorInfo(env, week), tag = trialTag(week, mutator && mutator.id);
   const rows = (await db.prepare(`SELECT a.name,r.account_id,r.depth,r.score,r.ticks FROM trial_results r ${ELIGIBLE} JOIN accounts a ON a.id=r.account_id
     WHERE r.week=?1 AND r.length=?2 AND r.rules=?3 ORDER BY ${ORDER} LIMIT ${TRIAL_RULES.boardSize}`).bind(week, length, tag).all()).results;
   const mine = await db.prepare(`SELECT r.depth,r.score,r.ticks,r.session_id,
@@ -56,17 +58,24 @@ async function board(db, week, length, accountId) {
   };
 }
 
+export function trialMutatorInfo(env, week) {
+  const id = trialMutatorId(env, week);
+  if (!id) return null;
+  const m = GAME.sessionTrialMutator(week);
+  return {id: m.id, name: m.name, desc: m.desc};
+}
 export async function trial(req, env) {
   const account = await assertAccountFeature(req, env, 'weekly_trial'), db = env.DB, now = Date.now();
   const c = await db.prepare('SELECT flagged,validation_status,updated_at FROM chars WHERE account_id=?1').bind(account.id).first();
   if (!c || c.flagged || c.validation_status !== 'verified' || !c.updated_at || c.updated_at < now - 30 * DAY) throw new HttpError(403, 'trial_locked');
   if (!await rateLimit(db, 'trial:' + account.id, 120, 60)) throw new HttpError(429, 'rate_limited');
   const week = trialWeekId(now), used = (await quotaStatus(db, account.id, 'trial', quotaPeriodDay(now))).used;
+  const mutator = trialMutatorInfo(env, week), tag = trialTag(week, mutator && mutator.id);
   return {
     v: 1, now,
     rules: {version: GAME.SESSION_TRIAL.version, attempts_per_day: TRIAL_RULES.attemptsPerDay, lengths: GAME.SESSION_TRIAL.lengths, board_size: TRIAL_RULES.boardSize},
-    week: {id: week, start: trialWeekStart(week), end: trialWeekStart(week + 1), rule: GAME.sessionTrialRule(week).id, tag: trialTag(week)},
+    week: {id: week, start: trialWeekStart(week), end: trialWeekStart(week + 1), rule: GAME.sessionTrialRule(week).id, tag, mutator},
     attempts: {used, left: Math.max(0, TRIAL_RULES.attemptsPerDay - used)},
-    boards: {short: await board(db, week, 'short', account.id), long: await board(db, week, 'long', account.id)},
+    boards: {short: await board(db, env, week, 'short', account.id), long: await board(db, env, week, 'long', account.id)},
   };
 }

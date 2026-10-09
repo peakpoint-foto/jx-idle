@@ -14,7 +14,8 @@ function trialPanelHTML(){
   if(!d)return `<h4>Thử thách tuần PHLT</h4><p>${TRIAL_CLIENT.busy?"Đang tải…":"Chưa tải được thử thách."}</p>${error}<button class="btn" data-trial="refresh" ${TRIAL_CLIENT.busy?"disabled":""}>Tải lại</button>`;
   const L=d.rules.lengths,live=PARTY_CLIENT?.session?.status==="active",off=TRIAL_CLIENT.busy||live||d.attempts.left<=0?"disabled":"";
   const mine=len=>{const m=d.boards[len].mine;return m?`Tốt nhất của bạn: ${esc(trialScoreText(m.score,L[len]))}, hạng ${m.placement}`:"Bạn chưa có kết quả.";};
-  return `<h4>Thử thách tuần PHLT</h4><small>Tuần ${d.week.id}: ${esc(trialTime(d.week.start))} → ${esc(trialTime(d.week.end))}. Luật tuần: ${esc(TRIAL_RULE_TEXT[d.week.rule]||d.week.rule)}.</small>
+  const mut=d.week.mutator?` Biến thể tuần: <b>${esc(d.week.mutator.name)}</b> — ${esc(d.week.mutator.desc)}.`:"";
+  return `<h4>Thử thách tuần PHLT</h4><small>Tuần ${d.week.id}: ${esc(trialTime(d.week.start))} → ${esc(trialTime(d.week.end))}. Luật tuần: ${esc(TRIAL_RULE_TEXT[d.week.rule]||d.week.rule)}.${mut}</small>
     <p>Mọi người đối đầu cùng chuỗi chủ tướng (HP cố định, không co theo sức bạn). Máy chủ chạy thật tối đa 120 giây, bạn chỉ điều khiển Phòng thủ và Hồi phục; kết quả tốt nhất mỗi chuyến được ghi vào bảng tuần. Không có thưởng. Còn ${d.attempts.left}/${d.rules.attempts_per_day} lượt hôm nay (ngày UTC).</p>
     <div class="btnrow"><button class="btn" data-trial="short" ${off}>Chạy ngắn (${L.short} chặng)</button><button class="btn" data-trial="long" ${off}>Chạy dài (${L.long} chặng)</button></div>
     <details open><summary>Bảng chuyến ngắn · ${esc(mine("short"))}</summary>${trialBoardHTML(d.boards.short.rows,L.short)}</details>

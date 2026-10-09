@@ -55,6 +55,36 @@ function validateTrialRules(data) {
   });
   return data;
 }
+// Mutator trial: biến thể chủ tướng theo tuần. Modifier dùng chung từ vựng với rule
+// (hp/def/interval/taken) nhưng bị chặn trong ngưỡng khả thi để không tạo boss
+// bất khả thi (test tính khả thi ở test/trial_mutators.test.mjs).
+const TRIAL_MUTATOR_BOUNDS = {hp: [0.5, 2], taken: [0.5, 1.5], def: [0.5, 2], interval: [0.5, 2]};
+function validateTrialMutators(data) {
+  const what = "trial-mutators";
+  if (!isPlainObj(data)) throw contentError(what, "phải là object");
+  checkVersion(data.version, "trial-mutators", what);
+  if (!Array.isArray(data.mutators) || data.mutators.length === 0) throw contentError(what, "mutators phải là mảng không rỗng");
+  const ids = new Set();
+  data.mutators.forEach((m, i) => {
+    const at = `mutators[${i}]`;
+    if (!isPlainObj(m)) throw contentError(what, `${at} phải là object`);
+    if (typeof m.id !== "string" || !/^[a-z0-9_]{1,24}$/.test(m.id)) throw contentError(what, `${at}.id không hợp lệ`);
+    if (ids.has(m.id)) throw contentError(what, `${at}.id trùng: ${m.id}`);
+    ids.add(m.id);
+    if (typeof m.name !== "string" || !m.name.trim() || m.name.length > 40) throw contentError(what, `${at}.name không hợp lệ`);
+    if (typeof m.desc !== "string" || !m.desc.trim() || m.desc.length > 120) throw contentError(what, `${at}.desc không hợp lệ`);
+    let hasMod = false;
+    for (const k of Object.keys(m)) {
+      if (["id", "name", "desc"].includes(k)) continue;
+      const b = TRIAL_MUTATOR_BOUNDS[k];
+      if (!b) throw contentError(what, `${at}: modifier lạ "${k}"`);
+      hasMod = true;
+      checkNum(m, k, `${what}/${at}`, b[0], b[1]);
+    }
+    if (!hasMod) throw contentError(what, `${at} thiếu modifier`);
+  });
+  return data;
+}
 // Event flags: danh mục slot sự kiện định kỳ hiện có.
 const EVENT_KINDS = ["trial", "challenge", "boss", "bonus"];
 const EVENT_CADENCE = ["weekly", "monthly"];

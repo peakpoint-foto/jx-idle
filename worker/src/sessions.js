@@ -101,7 +101,10 @@ async function create(env,acc,now,requestId,activity,mode,length){
   const actors=roster.map(r=>{
     duelProfile(r,mode);const previous=GAME.getS();try{GAME.setS(JSON.parse(r.snapshot));return GAME.sessionActor(r.id,r.name,GAME.calc(),r.role);}finally{GAME.setS(previous);}
   });
-  const seed=crypto.getRandomValues(new Uint32Array(1))[0],id=requestId||randomToken(12),state=GAME.sessionCombatNew(mode,actors,activity==='trial'?trialSeed(trialWeekId(now)):seed,activity,activity==='trial'?{week:trialWeekId(now),length}:undefined);
+  const trialWeek=trialWeekId(now);
+  // Mutator (1.2): flag chỉ quyết định ở caller; engine nhận mutator id qua options nên deterministic theo input.
+  const trialMutator=activity==='trial'&&GAME.featureEnabled('trial_mutators','phlt',env.FEATURE_FLAGS,false)?GAME.sessionTrialMutator(trialWeek).id:null;
+  const seed=crypto.getRandomValues(new Uint32Array(1))[0],id=requestId||randomToken(12),state=GAME.sessionCombatNew(mode,actors,activity==='trial'?trialSeed(trialWeek):seed,activity,activity==='trial'?{week:trialWeek,length,mutator:trialMutator}:undefined);
   const values=[id,room.id,acc.id,now,now+TTL,JSON.stringify(state),roster.length,now-35000,now-30*864e5];
   values.push(mode);
   if(activity==='siege')values.push(weekStart);

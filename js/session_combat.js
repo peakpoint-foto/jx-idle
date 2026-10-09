@@ -11,6 +11,10 @@ const sessionSolo=activity=>activity==="trial"||activity==="challenge";
 validateTrialRules(JX_CONTENT.trial);
 const SESSION_TRIAL=JX_CONTENT.trial;
 const sessionTrialRule=week=>SESSION_TRIAL.rules[((week%SESSION_TRIAL.rules.length)+SESSION_TRIAL.rules.length)%SESSION_TRIAL.rules.length];
+// Mutator trial (1.2): biến thể chủ tướng theo tuần, đọc từ content JSON.
+// Engine thuần theo input (options.mutator) — flag trial_mutators chỉ quyết định ở caller.
+const sessionTrialMutator=week=>{const ms=JX_CONTENT.trialMutators.mutators;return ms[((week%ms.length)+ms.length)%ms.length];};
+const trialMutatorOf=state=>state.trial.mutator?JX_CONTENT.trialMutators.mutators.find(m=>m.id===state.trial.mutator):null;
 const SESSION_SIEGE=Object.freeze({points:Object.freeze(["p1","p2","p3"]),need:12,decay:.25,gateDamage:.2,supplyBoost:1,supplyTicks:8,supplyCost:5,supplyRestore:.1,supplyCooldown:6});
 function sessionRandom(state){state.rng=(Math.imul(state.rng,1664525)+1013904223)>>>0;return state.rng/4294967296;}
 function sessionEvent(state,kind,data){const e=combatEvent(kind,{mode:state.mode,at:state.tick*SESSION_COMBAT.step,...data});state.events.push(e);state.events=state.events.slice(-64);}
@@ -44,7 +48,9 @@ function sessionCombatNew(mode,actors,seed,activity="party",options={}){
   }
   if(activity==="trial"){
     // Trial-only state: the boss chain is absolute (not scaled to the party), so builds are compared on equal terms.
-    state.trial={version:SESSION_TRIAL.version,week:options.week,length:options.length,waves:SESSION_TRIAL.lengths[options.length],rule:sessionTrialRule(options.week).id};
+    const mutator=options.mutator||null;
+    if(mutator&&!JX_CONTENT.trialMutators.mutators.some(m=>m.id===mutator))throw Error("Unknown trial mutator");
+    state.trial={version:SESSION_TRIAL.version,week:options.week,length:options.length,waves:SESSION_TRIAL.lengths[options.length],rule:sessionTrialRule(options.week).id,mutator};
     state.objectives.depth=0;sessionTrialWave(state);
   }
   if(activity==="rescue"){
@@ -54,8 +60,10 @@ function sessionCombatNew(mode,actors,seed,activity="party",options={}){
   return state;
 }
 function sessionTrialWave(state){
-  const w=state.objectives.depth,rule=sessionTrialRule(state.trial.week),hp=Math.round(SESSION_TRIAL.baseHp*Math.pow(SESSION_TRIAL.growth,w)*(rule.hp||1)*(state.trial.scale||1)),b=state.boss;
-  b.hp=b.max=hp;b.series=(state.trial.week+w)%5;b.def=100*(rule.def||1);b.cooldown=rule.interval||1;b.interval=rule.interval||1;b.dmgMul=(1+SESSION_TRIAL.damageGrowth*w)*(rule.taken||1);
+  const w=state.objectives.depth,rule=sessionTrialRule(state.trial.week),mut=trialMutatorOf(state);
+  const mhp=mut?.hp||1,mdef=mut?.def||1,mint=mut?.interval||1,mtaken=mut?.taken||1;
+  const hp=Math.round(SESSION_TRIAL.baseHp*Math.pow(SESSION_TRIAL.growth,w)*(rule.hp||1)*mhp*(state.trial.scale||1)),b=state.boss;
+  b.hp=b.max=hp;b.series=(state.trial.week+w)%5;b.def=100*(rule.def||1)*mdef;b.cooldown=(rule.interval||1)*mint;b.interval=(rule.interval||1)*mint;b.dmgMul=(1+SESSION_TRIAL.damageGrowth*w)*(rule.taken||1)*mtaken;
   b.poison=0;b.poisonDmg=0;b.poisonShares={};b.stun=0;b.stunImm=0;
 }
 function sessionCombatUtility(state,actor,command){
