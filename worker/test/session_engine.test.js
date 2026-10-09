@@ -54,3 +54,20 @@ test('CTC dungeon formation needs two distinct guard actors and records bounded 
     assert.equal(encounter.objectives.breaks,1,faction.key+'/'+count);assert.equal(encounter.boss.ward,0);
   }
 });
+test('CTC siege capture and bounded supply score come only from server actions',()=>{
+  const g=game();g.run("fixture('ctc',60);recalc()");GAME.setS(g.json('S'));
+  const actors=['a','b'].map(id=>GAME.sessionActor(id,id,GAME.calc()));
+  let state=GAME.sessionCombatNew('ctc',actors,88,'siege');assert.deepEqual(state.siege,{point:0,supplies:3,score:{assault:0,control:0,logistics:0}});
+  state.actors[1].hp=state.actors[1].p.life*.5;
+  state=GAME.sessionCombatStep(state,[{actor:'a',seq:1,kind:'resupply',target:'supply'}],['a']);
+  assert.equal(state.siege.supplies,2);assert.ok(state.actors[0].contribution.objective>0);assert.ok(state.actors[1].hp>state.actors[1].p.life*.5);
+  state=GAME.sessionCombatStep(state,[{actor:'a',seq:2,kind:'capture',target:'point'}],['a']);assert.equal(state.siege.point,25);
+  state=GAME.sessionCombatStep(state,[{actor:'a',seq:3,kind:'capture',target:'point'}],['a']);assert.equal(state.siege.point,50);
+  state=GAME.sessionCombatStep(state,[{actor:'b',seq:1,kind:'capture',target:'point'}],['b']);assert.equal(state.siege.point,75);
+  state=GAME.sessionCombatStep(state,[{actor:'b',seq:2,kind:'capture',target:'point'}],['b']);
+  assert.equal(state.siege.point,100);assert.equal(state.status,'completed');assert.equal(state.objectives.capture,100);
+  assert.equal(state.siege.score.control,100);assert.ok(state.siege.score.assault>0);assert.throws(()=>GAME.sessionCombatNew('ctc',actors,1,'unknown'));
+  state=GAME.sessionCombatNew('ctc',actors,99,'siege');for(const actor of state.actors)actor.hp=actor.p.life*.5;
+  for(let n=1;n<=4;n++)state=GAME.sessionCombatStep(state,[{actor:'a',seq:n,kind:'resupply',target:'supply'}],['a']);
+  assert.equal(state.siege.supplies,0);assert.equal(state.siege.score.logistics,3);assert.equal(state.objectives.supplies,0);
+});

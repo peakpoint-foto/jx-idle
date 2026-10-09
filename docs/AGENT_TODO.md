@@ -61,7 +61,7 @@ Tiến độ thực thi: 30/43 task (F01–F07, B01–B05, G01/G02/G03/G05, E01/
 
 - [x] **C05** Server quản lý phiên trận và phần thưởng — P0 gate multiplayer, ctc đầu, phlt/g2 qua capability riêng; phụ thuộc: F04,F05,F06,F07,C04. Evidence: PARTY_SESSIONS.md, SESSION_TRANSPORT_ADR.md; UI thật/hai browser context/API-D1, parity10phái, nonce/CAS/expiry/receipt, migration0007/CI và load2/4người. Không đóng O04 remote bằng kết quả local.
 - [x] **C06** Phụ bản tổ đội đầu tiên — P2, ctc; phụ thuộc: C01,C04,C05. DONE local — [CTC_DUNGEON.md](CTC_DUNGEON.md): arena/boss phá trận server-authoritative, contribution guard/support, loot policy C05, frozen roster, flag rollback và retry; 10 phái × 2/4 người, D1 integration và hai browser context.
-- [ ] **C07** Công thành và Tống Kim theo mục tiêu — P2, ctc; phụ thuộc: C02,C05,C06.
+- [x] **C07** Công thành và Tống Kim theo mục tiêu — P2, ctc; phụ thuộc: C02,C05,C06. DONE local — [SIEGE_OBJECTIVES.md](SIEGE_OBJECTIVES.md): capture/gate/supply server-authoritative encounter, typed score, quota C05, replay/race/rollback and 2-client D1 browser smoke. MVP là đội PvE theo mục tiêu; PvP realtime thuộc phạm vi mùa/transport sau.
 - [ ] **C08** Mùa xếp hạng và hậu cần bất đồng bộ — P2, ctc; phụ thuộc: C03,C05,C07.
 - [ ] **P05** Co-op sinh tồn và cứu viện — P2, phlt; phụ thuộc: C05,P03,F07.
 - [ ] **P06** Thử thách tuần đồng điều kiện — P2, phlt; phụ thuộc: P04,C05.
@@ -109,7 +109,7 @@ O04 local gates đã được chạy trong source archive; task còn remote stag
 
 ## Nhật ký nhận việc
 
-32 task DONE local — Codex / feat/online-multiplayer: F01–F07, B01–B05, G01/G02/G03/G05, E01/E02/E04, R01/O01/O02, C01–C06, P01–P04. O04 requires remote staging/rollback evidence; do not close with local CI alone.
+33 task DONE local — Codex / feat/online-multiplayer: F01–F07, B01–B05, G01/G02/G03/G05, E01/E02/E04, R01/O01/O02, C01–C07, P01–P04. O04 requires remote staging/rollback evidence; do not close with local CI alone.
 
 | Task | Trạng thái | Agent / nhánh | File sở hữu | Evidence / blocker |
 |---|---|---|---|---|

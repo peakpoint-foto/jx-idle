@@ -12,9 +12,9 @@ function sessionActor(id,name,stats,role="damage"){
   return {id,name,role,p,hp:p.life,mp:p.mana,cooldown:0,utilityCooldown:0,guardUntil:0,contribution:{damage:0,control:0,heal:0,prevented:0},lastSeq:0};
 }
 function sessionCombatNew(mode,actors,seed,activity="party"){
-  if(mode!=="ctc"||!Array.isArray(actors)||actors.length<2||actors.length>4||!['party','dungeon'].includes(activity))throw Error("Party snapshot requires2–4CTC actors and a known activity");
+  if(mode!=="ctc"||!Array.isArray(actors)||actors.length<2||actors.length>4||!['party','dungeon','siege'].includes(activity))throw Error("Party snapshot requires2–4CTC actors and a known activity");
   const hp=Math.max(100,actors.reduce((n,a)=>n+Object.values(a.p.main.parts).reduce((x,y)=>x+y,0)*Math.max(.2,a.p.main.rate),0)*18);
-  const state={v:1,model:COMBAT_MODEL_VERSION,rules:SESSION_COMBAT.version,mode,activity,rng:seed>>>0,tick:0,status:"active",actors:JSON.parse(JSON.stringify(actors)),events:[],objectives:{breaks:0,supports:0},
+  const state={v:1,model:COMBAT_MODEL_VERSION,rules:SESSION_COMBAT.version,mode,activity,rng:seed>>>0,tick:0,status:"active",actors:JSON.parse(JSON.stringify(actors)),events:[],objectives:{breaks:0,supports:0,...(activity==='siege'?{capture:0,supplies:3}:{})},siege:activity==='siege'?{point:0,supplies:3,score:{assault:0,control:0,logistics:0}}:null,
     boss:{hp,max:hp,series:(seed>>>0)%5,res:Object.fromEntries(ELEM.map(k=>[k,10])),def:100,ar:1000,cooldown:1,poison:0,poisonDmg:0,stun:0,stunImm:0,ward:0,wardPhase:0,wardUntil:0,breakers:[]}};
   return state;
 }
@@ -28,6 +28,17 @@ function sessionCombatUtility(state,actor,command){
       if(state.boss.breakers.length>=2){state.boss.ward=0;state.objectives.breaks++;for(const participant of state.actors)if(state.boss.breakers.includes(participant.id))participant.contribution.control++;
         sessionEvent(state,"objective",{targetId:"boss",reason:"dungeon_formation_broken",count:state.objectives.breaks});}
     }
+    return;
+  }
+  if(state.activity==='siege'&&command.kind==='capture'&&command.target==='point'&&state.siege.point<100){
+    const amount=Math.min(25,100-state.siege.point);state.siege.point+=amount;state.objectives.capture=state.siege.point;state.siege.score.control+=amount;actor.contribution.objective=(actor.contribution.objective||0)+amount;
+    sessionEvent(state,'objective',{sourceId:actor.id,targetId:'point',reason:'siege_capture',count:state.siege.point});return;
+  }
+  if(state.activity==='siege'&&command.kind==='resupply'&&command.target==='supply'&&state.siege.supplies>0){
+    const available=state.actors.reduce((n,ally)=>n+(ally.hp>0?Math.max(0,ally.p.life-ally.hp):0),0);if(available<=0)return;
+    state.siege.supplies--;state.objectives.supplies=state.siege.supplies;state.siege.score.logistics++;let useful=0;
+    for(const ally of state.actors){if(ally.hp<=0)continue;const amount=Math.min(ally.p.life*.05,ally.p.life-ally.hp);if(amount>0){ally.hp+=amount;ally.contribution.heal+=amount;useful+=amount;sessionEvent(state,'heal',{sourceId:actor.id,targetId:ally.id,raw:ally.p.life*.05,capacity:amount,reason:'siege_supply'});}}
+    if(useful>0){actor.contribution.objective=(actor.contribution.objective||0)+1;sessionEvent(state,'objective',{sourceId:actor.id,targetId:'supply',reason:'siege_resupply',count:state.siege.score.logistics});}
     return;
   }
   if(command.kind==="support"&&actor.utilityCooldown<=0&&actor.mp>=5){
@@ -54,7 +65,7 @@ function sessionCombatHit(state,actor){
     raw+=crit&&el==="phys"?d*CRIT_MULT:d;
   }
   if(counters(a.series,b.series))raw+=p.series5;if(p.bossDmg>1)raw*=p.bossDmg;if(state.activity==="dungeon"&&b.ward>0)raw*=.2;raw=Math.max(1,raw);
-  const useful=Math.min(raw,b.hp);b.hp=Math.max(0,b.hp-raw);actor.contribution.damage+=useful;
+  const useful=Math.min(raw,b.hp);b.hp=Math.max(0,b.hp-raw);actor.contribution.damage+=useful;if(state.activity==='siege')state.siege.score.assault+=useful;
   sessionEvent(state,"damage",{sourceId:actor.id,targetId:"boss",skillId:a.id,raw,capacity:b.hp+useful,reason:"party_attack"});
   if(b.hp>0&&a.stun&&b.stunImm<=0&&sessionRandom(state)*100<a.stun){b.stun=.5;b.stunImm=STUN_IMM_BOSS;actor.contribution.control+=.5;sessionEvent(state,"control",{sourceId:actor.id,targetId:"boss",duration:.5,reason:"party_native_stun"});}
   if(p.leech){const amount=raw*p.leech/100,cap=p.life-actor.hp;actor.hp=Math.min(p.life,actor.hp+amount);actor.contribution.heal+=Math.min(amount,cap);sessionEvent(state,"heal",{sourceId:actor.id,targetId:actor.id,raw:amount,capacity:cap,reason:"party_leech"});}
@@ -89,7 +100,7 @@ function sessionCombatStep(input,commands=[],connectedIds=[]){
     if(b.hp>0&&actor.cooldown<=0)sessionCombatHit(state,actor);
   }
   if(state.activity==="dungeon"&&b.hp>0){const ratio=b.hp/b.max,phase=ratio<=.33?2:ratio<=.66?1:0;if(phase>b.wardPhase){b.wardPhase=phase;b.ward=1;b.wardUntil=state.tick+32;b.breakers=[];sessionEvent(state,"objective",{targetId:"boss",reason:"dungeon_formation_started",phase});}}
-  if(b.hp<=0){state.status="completed";return state;}
+  if(b.hp<=0||state.activity==='siege'&&state.siege.point>=100){state.status="completed";return state;}
   if(b.stun>0)b.stun=Math.max(0,b.stun-dt);
   else{b.cooldown-=dt;if(b.cooldown<=0){b.cooldown=1;const live=state.actors.filter(a=>a.hp>0);if(live.length)sessionCombatBossHit(state,live[Math.max(0,Math.floor(state.tick/4)-1)%live.length]);}}
   if(state.actors.every(a=>a.hp<=0)||state.tick>=480)state.status="aborted";

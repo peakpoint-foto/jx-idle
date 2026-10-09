@@ -121,3 +121,27 @@ test('dungeon is default-off, binds create retry to activity and breaks formatio
   const next=(await q.post({action:'create',id:'dungeon_after_wipe_0123',activity:'dungeon'})).session;
   assert.notEqual(next.id,retry.id);assert.equal(next.status,'active','ready party can retry after wipe');
 });
+test('siege mode is default-off and server capture victory pays the existing merit receipt once',async t=>{
+  const f=await fixture(t),[p,q]=f.players,key='siege_capture_receipt_01';
+  await assert.rejects(()=>p.post({action:'create',id:key,activity:'siege'}),{code:'feature_disabled'});
+  f.env.FEATURE_FLAGS.party_siege=true;
+  const created=await p.post({action:'create',id:key,activity:'siege'}),id=created.session.id;assert.equal(created.session.activity,'siege');
+  const bad={action:'command',id,seq:1,tick:1,kind:'capture',target:'boss'};
+  await assert.rejects(()=>p.post(bad),{code:'bad_session_command'});
+  const firstCapture={action:'command',id,seq:1,tick:1,kind:'capture',target:'point'};
+  await Promise.all([p.post(firstCapture),p.post(firstCapture)]);
+  assert.equal((await f.DB.prepare('SELECT COUNT(*) n FROM session_actions WHERE session_id=?1 AND account_id=?2 AND seq=1').bind(id,p.id).first()).n,1);
+  await q.post({action:'command',id,seq:1,tick:1,kind:'capture',target:'point'});
+  f.tick(250);assert.equal((await p.get(id)).session.siege.point,50);
+  f.tick(500);const ps=await p.get(id),qs=await q.get(id);
+  await p.post({action:'command',id,seq:ps.session.next_seq,tick:ps.session.tick+1,kind:'capture',target:'point'});
+  await q.post({action:'command',id,seq:qs.session.next_seq,tick:qs.session.tick+1,kind:'capture',target:'point'});
+  f.tick(250);const result=await p.get(id);assert.equal(result.session.status,'completed');assert.equal(result.session.siege.point,100);
+  const receipt=await p.post({action:'claim',id});assert.equal(receipt.receipt.amount,1);
+  assert.equal((await p.post({action:'claim',id})).receipt.amount,1);
+  assert.equal((await f.DB.prepare("SELECT SUM(delta) n FROM resource_ledger WHERE source='party_completion'").first()).n,1);
+  const rollback=(await p.post({action:'create',id:'siege_rollback_receipt_01',activity:'siege'})).session;
+  f.env.FEATURE_FLAGS.party_siege=false;
+  assert.equal((await q.get(rollback.id)).session.status,'aborted');
+  await assert.rejects(()=>p.post({action:'claim',id:rollback.id}),{code:'session_reward_unavailable'});
+});

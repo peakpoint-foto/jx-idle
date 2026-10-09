@@ -37,7 +37,7 @@ async function publicView(db,row,account){
   const state=stateOf(row),members=await memberRows(db,row.id),self=members.find(m=>m.account_id===account);
   const reward=await db.prepare('SELECT amount,day FROM session_rewards WHERE session_id=?1 AND account_id=?2').bind(row.id,account).first();
   return {session:{id:row.id,room_id:row.room_id,status:row.status,revision:row.revision,created_at:row.created_at,expires_at:row.expires_at,tick:state.tick,
-    model:state.model,rules:state.rules,mode:state.mode,activity:state.activity||'party',objectives:state.objectives||null,boss:{hp:state.boss.hp,max:state.boss.max,stun:state.boss.stun,ward:state.boss.ward||0,wardPhase:state.boss.wardPhase||0},
+    model:state.model,rules:state.rules,mode:state.mode,activity:state.activity||'party',objectives:state.objectives||null,siege:state.siege||null,boss:{hp:state.boss.hp,max:state.boss.max,stun:state.boss.stun,ward:state.boss.ward||0,wardPhase:state.boss.wardPhase||0},
     actors:state.actors.map(a=>({id:a.id,name:a.name,role:a.role,hp:a.hp,maxHp:a.p.life,mp:a.mp,maxMp:a.p.mana,contribution:a.contribution,withdrawn:!!a.withdrawn,
       connected:members.some(m=>m.account_id===a.id&&m.active&&m.last_seen>Date.now()-IDLE)})),events:state.events.slice(-32),next_seq:(self?.last_seq||0)+1,
     reward,transport:'polling',step_ms:STEP,catchup_max:MAX_CATCHUP,loot_policy:'Server merit only; no offline gold/items. Shared earned cap3/day UTC, wallet30; contribution required, withdrawn ineligible.'}};
@@ -49,8 +49,9 @@ async function create(env,acc,now,requestId,activity='party'){
     const previous=await db.prepare('SELECT * FROM combat_sessions WHERE id=?1').bind(requestId).first();
     if(previous){if(previous.creator_id!==acc.id)throw new HttpError(403,'session_leader_required');const prior=stateOf(previous);if((prior.activity||'party')!==activity)throw new HttpError(409,'session_activity_conflict');return previous;}
   }
-  if(!['party','dungeon'].includes(activity))throw new HttpError(400,'bad_session_activity');
+  if(!['party','dungeon','siege'].includes(activity))throw new HttpError(400,'bad_session_activity');
   if(activity==='dungeon'&&!GAME.featureEnabled('party_dungeon','ctc',env.FEATURE_FLAGS,false))throw new HttpError(403,'feature_disabled');
+  if(activity==='siege'&&!GAME.featureEnabled('party_siege','ctc',env.FEATURE_FLAGS,false))throw new HttpError(403,'feature_disabled');
   if(!GAME.featureEnabled('party_lobby','ctc',env.FEATURE_FLAGS,false))throw new HttpError(403,'lobby_required');
   const room=await db.prepare("SELECT r.* FROM rooms r JOIN room_members m ON m.room_id=r.id WHERE m.account_id=?1 AND r.status='open' AND r.expires_at>?2").bind(acc.id,now).first();
   if(!room||room.owner_id!==acc.id)throw new HttpError(403,'session_leader_required');
@@ -71,7 +72,7 @@ async function create(env,acc,now,requestId,activity='party'){
     ${revisionChecks}`).bind(...values)];
   for(const r of roster)statements.push(db.prepare('INSERT INTO session_members(session_id,account_id,active,last_seen,connected_from) SELECT ?1,?2,1,?3,?3 WHERE EXISTS(SELECT 1 FROM combat_sessions WHERE id=?1)').bind(id,r.id,now));
   try{const result=await db.batch(statements);if(!result[0].meta.changes)throw new HttpError(409,'session_not_ready');}
-  catch(e){if(requestId){const previous=await db.prepare('SELECT * FROM combat_sessions WHERE id=?1 AND creator_id=?2').bind(requestId,acc.id).first();if(previous)return previous;}const current=await db.prepare("SELECT s.* FROM combat_sessions s JOIN session_members m ON m.session_id=s.id WHERE m.account_id=?1 AND m.active=1 AND s.status='active'").bind(acc.id).first();if(current&&current.room_id===room.id)return current;if(e instanceof HttpError)throw e;throw new HttpError(409,'session_member_busy');}
+  catch(e){if(requestId){const previous=await db.prepare('SELECT * FROM combat_sessions WHERE id=?1 AND creator_id=?2').bind(requestId,acc.id).first();if(previous){const prior=stateOf(previous);if((prior.activity||'party')!==activity)throw new HttpError(409,'session_activity_conflict');return previous;}}const current=await db.prepare("SELECT s.* FROM combat_sessions s JOIN session_members m ON m.session_id=s.id WHERE m.account_id=?1 AND m.active=1 AND s.status='active'").bind(acc.id).first();if(current&&current.room_id===room.id)return current;if(e instanceof HttpError)throw e;throw new HttpError(409,'session_member_busy');}
   return await db.prepare('SELECT * FROM combat_sessions WHERE id=?1').bind(id).first();
 }
 async function claim(db,row,account,now){
@@ -99,8 +100,8 @@ export async function sessions(req,env,body,url=new URL(req.url)){
   if(!saved||saved.mode!=='ctc'||saved.sandbox)throw new HttpError(403,'session_mode_denied');
   const enabled=GAME.featureEnabled('party_combat','ctc',env.FEATURE_FLAGS,false);
   // Expiry and flag rollback release active locks, without deleting frozen state/receipts.
-  const dungeonEnabled=GAME.featureEnabled('party_dungeon','ctc',env.FEATURE_FLAGS,false);
-  await db.prepare("UPDATE combat_sessions SET status='aborted',ended_at=?2,revision=revision+1 WHERE status='active' AND (expires_at<=?2 OR ?3=0 OR (json_valid(state) AND json_extract(state,'$.activity')='dungeon' AND ?4=0)) AND EXISTS(SELECT 1 FROM session_members WHERE session_id=combat_sessions.id AND account_id=?1)").bind(acc.id,now,enabled?1:0,dungeonEnabled?1:0).run();
+  const dungeonEnabled=GAME.featureEnabled('party_dungeon','ctc',env.FEATURE_FLAGS,false),siegeEnabled=GAME.featureEnabled('party_siege','ctc',env.FEATURE_FLAGS,false);
+  await db.prepare("UPDATE combat_sessions SET status='aborted',ended_at=?2,revision=revision+1 WHERE status='active' AND (expires_at<=?2 OR ?3=0 OR (json_valid(state) AND json_extract(state,'$.activity')='dungeon' AND ?4=0) OR (json_valid(state) AND json_extract(state,'$.activity')='siege' AND ?5=0)) AND EXISTS(SELECT 1 FROM session_members WHERE session_id=combat_sessions.id AND account_id=?1)").bind(acc.id,now,enabled?1:0,dungeonEnabled?1:0,siegeEnabled?1:0).run();
   await db.prepare("UPDATE session_members SET active=0 WHERE active=1 AND EXISTS(SELECT 1 FROM combat_sessions s JOIN session_members own ON own.session_id=s.id WHERE s.id=session_members.session_id AND s.status<>'active' AND own.account_id=?1)").bind(acc.id).run();
   if(!enabled)throw new HttpError(403,'feature_disabled');
   if(character.flagged||character.validation_status!=='verified'||!character.updated_at||character.updated_at<now-30*864e5)throw new HttpError(403,'session_locked');
@@ -130,7 +131,8 @@ export async function sessions(req,env,body,url=new URL(req.url)){
   const state=stateOf(row),actor=state.actors.find(a=>a.id===acc.id),member=await db.prepare('SELECT * FROM session_members WHERE session_id=?1 AND account_id=?2').bind(row.id,acc.id).first();
   if(Object.keys(body).some(k=>!['action','id','seq','tick','kind','target'].includes(k)))throw new HttpError(400,'forged_session_action');
   const {seq,tick,kind}=body,target=body.target||'boss';
-  if(!Number.isSafeInteger(seq)||seq<1||seq>10000||!Number.isInteger(tick)||!['attack','guard','support'].includes(kind)||typeof target!=='string'||(kind==='support'?!state.actors.some(a=>a.id===target):target!=='boss'))throw new HttpError(400,'bad_session_command');
+  const targets=kind==='support'?state.actors.some(a=>a.id===target):kind==='capture'?state.activity==='siege'&&target==='point':kind==='resupply'?state.activity==='siege'&&target==='supply':['attack','guard'].includes(kind)&&target==='boss';
+  if(!Number.isSafeInteger(seq)||seq<1||seq>10000||!Number.isInteger(tick)||!['attack','guard','support','capture','resupply'].includes(kind)||typeof target!=='string'||!targets)throw new HttpError(400,'bad_session_command');
   const payload=JSON.stringify({tick,kind,target}),prior=await db.prepare('SELECT payload,scheduled_tick FROM session_actions WHERE session_id=?1 AND account_id=?2 AND seq=?3').bind(row.id,acc.id,seq).first();
   if(prior){if(prior.payload!==payload)throw new HttpError(409,'command_seq_reused');return {command:{seq,scheduled_tick:prior.scheduled_tick,replayed:true},...await publicView(db,row,acc.id)};}
   if(row.status!=='active'||!member?.active||member.withdrawn||!actor||actor.hp<=0)throw new HttpError(403,'session_actor_inactive');

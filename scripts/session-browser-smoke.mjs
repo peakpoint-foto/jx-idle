@@ -27,6 +27,7 @@ async function navigate(c,url,game=false){
 try{
   const f=await sessionFixture(DB,2);
   f.env.FEATURE_FLAGS.party_dungeon=true;
+  f.env.FEATURE_FLAGS.party_siege=true;
   server=http.createServer(async(req,res)=>{inFlight++;try{
     const url=new URL(req.url,'http://127.0.0.1');
     if(url.pathname.startsWith('/api/')){const parts=[];for await(const chunk of req)parts.push(chunk);const body=Buffer.concat(parts);
@@ -98,8 +99,20 @@ try{
   clock+=250;for(const c of clients)await evaluate(c,'partyPoll(true)');
   assert.equal(await evaluate(clients[0],'PARTY_CLIENT.session.objectives.breaks'),1);
   assert.equal(await evaluate(clients[1],'PARTY_CLIENT.session.boss.ward'),0);
+  await evaluate(clients[0],"partyWrite('leave')");await evaluate(clients[1],"partyWrite('leave')");
+  await evaluate(clients[0],"partyWrite('siege')");assert.equal(await evaluate(clients[0],'PARTY_CLIENT.session.activity'),'siege');
+  await evaluate(clients[1],'partyPoll(true)');assert.equal(await evaluate(clients[1],'PARTY_CLIENT.session.activity'),'siege');
+  const siegeActions=await evaluate(clients[0],"[...document.querySelectorAll('#onlineSessionPanel [data-party=\"capture\"],#onlineSessionPanel [data-party=\"resupply\"]')].map(b=>({text:b.textContent,height:b.getBoundingClientRect().height}))");
+  assert.equal(siegeActions.length,2);assert.ok(siegeActions.every(b=>b.height>=44),JSON.stringify(siegeActions));
+  await evaluate(clients[0],"partyWrite('capture','point')");await evaluate(clients[1],"partyWrite('capture','point')");
+  clock+=250;for(const c of clients)await evaluate(c,'partyPoll(true)');assert.equal(await evaluate(clients[0],'PARTY_CLIENT.session.siege.point'),50);
+  clock+=500;for(const c of clients)await evaluate(c,'partyPoll(true)');
+  await evaluate(clients[0],"partyWrite('capture','point')");await evaluate(clients[1],"partyWrite('capture','point')");
+  clock+=250;for(const c of clients)await evaluate(c,'partyPoll(true)');
+  assert.equal(await evaluate(clients[0],'PARTY_CLIENT.session.status'),'completed');assert.equal(await evaluate(clients[1],'PARTY_CLIENT.session.siege.point'),100);
+  assert.ok(await evaluate(clients[0],"document.querySelector('#onlineSessionPanel').textContent.includes('Công thành · Mục tiêu')"));
   const touch=await evaluate(clients[0],"[...document.querySelectorAll('#onlineSessionPanel button')].map(b=>({text:b.textContent,height:b.getBoundingClientRect().height}))");assert.ok(touch.every(b=>b.height>=44),JSON.stringify(touch));
-  console.log(JSON.stringify({runtime:process.env.JX_D1_RUNTIME==='1'?'D1 local':'SQLite local',clients:2,isolatedContexts:true,viewports:[360,1280],sharedState:true,ackLossRetry:true,reloadReconnect:true,realBossCompletion:true,receiptsOnce:true,dungeonFormation:true,dungeonFlagOff:true,activityReceiptOfflineRetry:true,moderationUI:true,muteReportServerRoundtrip:true,roomAndGuildChat:true,touch:touch.every(b=>b.height>=44)},null,2));
+  console.log(JSON.stringify({runtime:process.env.JX_D1_RUNTIME==='1'?'D1 local':'SQLite local',clients:2,isolatedContexts:true,viewports:[360,1280],sharedState:true,ackLossRetry:true,reloadReconnect:true,realBossCompletion:true,receiptsOnce:true,dungeonFormation:true,dungeonFlagOff:true,siegeCapture:true,siegeServerCompletion:true,activityReceiptOfflineRetry:true,moderationUI:true,muteReportServerRoundtrip:true,roomAndGuildChat:true,touch:touch.every(b=>b.height>=44)},null,2));
 }finally{
   for(const c of clients)c.close();if(browser){for(const id of contexts)await browser.command('Target.disposeBrowserContext',{browserContextId:id}).catch(()=>{});browser.close();}
   if(server)await new Promise(r=>server.close(r));while(inFlight)await new Promise(r=>setTimeout(r,20));Date.now=realNow;await DB.close();
