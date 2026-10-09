@@ -131,8 +131,17 @@ try{
   for(const c of clients){await evaluate(c,"partyWrite('claim')");await evaluate(c,"partyWrite('claim')");}
   assert.equal((await DB.prepare("SELECT COUNT(*) n FROM resource_ledger WHERE source='siege_completion' AND request_id=?1").bind('party:'+siegeId).first()).n,2);
   for(const c of clients)await evaluate(c,"document.querySelector('[data-party=\"dismiss\"]')?.click();true");
+  // C08: the ranked-season panel reads the real /api/season route in both viewports.
+  f.env.FEATURE_FLAGS.ranked_seasons=true;
+  for(const c of clients){
+    await evaluate(c,`setFeatureFlags(${JSON.stringify(f.env.FEATURE_FLAGS)});renderMore();(async()=>{for(let i=0;i<60&&!document.querySelector('#seasonPanel')?.textContent.includes('Của bạn');i++)await new Promise(r=>setTimeout(r,50))})()`);
+    await evaluate(c,"new Promise(r=>{const t=setInterval(()=>{if(document.querySelector('#seasonPanel')?.textContent.includes('Của bạn')){clearInterval(t);r(true)}},50);setTimeout(()=>{clearInterval(t);r(false)},4000)})");
+  }
+  const seasonPanels=[];
+  for(const c of clients){const panel=await evaluate(c,"({text:document.querySelector('#seasonPanel')?.textContent||'',buttons:[...document.querySelectorAll('#seasonPanel button')].map(b=>b.getBoundingClientRect().height),overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth})");
+    assert.match(panel.text,/Mùa xếp hạng CTC · mùa \d+/,JSON.stringify(panel));assert.match(panel.text,/Của bạn/);assert.match(panel.text,/giờ VN/);assert.ok(panel.buttons.length>0&&panel.buttons.every(h=>h>=44),JSON.stringify(panel));assert.equal(panel.overflow,false,'season panel must not overflow the viewport');seasonPanels.push(panel);}
   const touch=await evaluate(clients[0],"[...document.querySelectorAll('#onlineSessionPanel button')].map(b=>({text:b.textContent,height:b.getBoundingClientRect().height}))");assert.ok(touch.every(b=>b.height>=44),JSON.stringify(touch));
-  console.log(JSON.stringify({runtime:process.env.JX_D1_RUNTIME==='1'?'D1 local':'SQLite local',clients:2,isolatedContexts:true,viewports:[360,1280],sharedState:true,ackLossRetry:true,reloadReconnect:true,realBossCompletion:true,receiptsOnce:true,dungeonFormation:true,dungeonFlagOff:true,siegeCapture:true,siegeGateOpenAfterAllPointsCaptured:true,siegeReceiptsOnce:true,siegeTouch:siegeTouch.every(b=>b.height>=44),activityReceiptOfflineRetry:true,moderationUI:true,muteReportServerRoundtrip:true,roomAndGuildChat:true,touch:touch.every(b=>b.height>=44)},null,2));
+  console.log(JSON.stringify({runtime:process.env.JX_D1_RUNTIME==='1'?'D1 local':'SQLite local',clients:2,isolatedContexts:true,viewports:[360,1280],sharedState:true,ackLossRetry:true,reloadReconnect:true,realBossCompletion:true,receiptsOnce:true,dungeonFormation:true,dungeonFlagOff:true,siegeCapture:true,siegeGateOpenAfterAllPointsCaptured:true,siegeReceiptsOnce:true,siegeTouch:siegeTouch.every(b=>b.height>=44),rankedSeasonPanel:seasonPanels.length===2,activityReceiptOfflineRetry:true,moderationUI:true,muteReportServerRoundtrip:true,roomAndGuildChat:true,touch:touch.every(b=>b.height>=44)},null,2));
 }finally{
   for(const c of clients)c.close();if(browser){for(const id of contexts)await browser.command('Target.disposeBrowserContext',{browserContextId:id}).catch(()=>{});browser.close();}
   if(server)await new Promise(r=>server.close(r));while(inFlight)await new Promise(r=>setTimeout(r,20));Date.now=realNow;await DB.close();

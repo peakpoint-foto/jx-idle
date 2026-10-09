@@ -1,11 +1,11 @@
 # TODO bàn giao agent — Võ Lâm Idle
 
 Nguồn đặc tả: [AGENT_BACKLOG.md](AGENT_BACKLOG.md). Ngày: 08/10/2026 (Asia/Saigon).
-Tiến độ thực thi: 35/43 task (F01–F07, B01–B05, G01/G02/G03/G05, E01/E02/E04, R01, R02, O01, O02, C01–C07, E03, P01/P02/P03/P04) đã nghiệm thu local; 8 task còn lại chưa hoàn thành. F02 dùng nhánh unsupported được backlog cho phép, không tuyên bố khôi phục 15 target thiếu. Không ghi nhận mục tiêu 100% hoặc đủ điều kiện public online. Xem [evidence](EXECUTION_EVIDENCE.md) và [mapping còn thiếu](SKILL_AUDIT.md). Các đợt là nhóm phạm vi, không phải cam kết thời gian; phụ thuộc quyết định thứ tự thực tế.
+Tiến độ thực thi: 36/43 task (F01–F07, B01–B05, G01/G02/G03/G05, E01/E02/E04, R01, R02, O01, O02, C01–C08, E03, P01/P02/P03/P04) đã nghiệm thu local; 7 task còn lại chưa hoàn thành. F02 dùng nhánh unsupported được backlog cho phép, không tuyên bố khôi phục 15 target thiếu. Không ghi nhận mục tiêu 100% hoặc đủ điều kiện public online. Xem [evidence](EXECUTION_EVIDENCE.md) và [mapping còn thiếu](SKILL_AUDIT.md). Các đợt là nhóm phạm vi, không phải cam kết thời gian; phụ thuộc quyết định thứ tự thực tế.
 
 ## Trạng thái và cách nhận
 
-**ACTIVE theo lệnh mới ngày08/10/2026 (Asia/Saigon): tiếp tục từ27task để thực hiện toàn backlog.** C05/G02/G05 DONE local; 35/43 DONE local, 8 task còn mở. Lệnh mới thay trạng thái PAUSED trước đó; rollout production vẫn cần lệnh deploy riêng.
+**ACTIVE theo lệnh mới ngày08/10/2026 (Asia/Saigon): tiếp tục từ27task để thực hiện toàn backlog.** C05/G02/G05 DONE local; 36/43 DONE local, 7 task còn mở. Lệnh mới thay trạng thái PAUSED trước đó; rollout production vẫn cần lệnh deploy riêng.
 
 - `[ ]`: chưa xong. Ghi `IN_PROGRESS` cạnh task khi nhận; vẫn để ô trống.
 - `[x]`: đạt toàn bộ nghiệm thu và đã ghi evidence; không dùng cho task chỉ mới viết code.
@@ -62,7 +62,7 @@ Tiến độ thực thi: 35/43 task (F01–F07, B01–B05, G01/G02/G03/G05, E01/
 - [x] **C05** Server quản lý phiên trận và phần thưởng — P0 gate multiplayer, ctc đầu, phlt/g2 qua capability riêng; phụ thuộc: F04,F05,F06,F07,C04. Evidence: PARTY_SESSIONS.md, SESSION_TRANSPORT_ADR.md; UI thật/hai browser context/API-D1, parity10phái, nonce/CAS/expiry/receipt, migration0007/CI và load2/4người. Không đóng O04 remote bằng kết quả local.
 - [x] **C06** Phụ bản tổ đội đầu tiên — P2, ctc; phụ thuộc: C01,C04,C05. DONE local — [CTC_DUNGEON.md](CTC_DUNGEON.md): arena/boss phá trận server-authoritative, contribution guard/support, loot policy C05, frozen roster, flag rollback và retry; 10 phái × 2/4 người, D1 integration và hai browser context.
 - [x] **C07** Công thành và Tống Kim theo mục tiêu — P2, ctc; phụ thuộc: C02,C05,C06. DONE local — [SIEGE_CTC.md](SIEGE_CTC.md): `party_siege` default-off trên nền C05; 3 điểm chiếm + cổng khóa chủ tướng + tiếp tế, server quyết định score/thưởng, quota 1 phiên/tuần UTC (hủy hoàn lượt), thưởng công trạng cap E04 nguồn `siege_completion`. Kiểm chứng: engine parity 10 phái × 2/4, 3 case D1/SQLite, 2 case client, session smoke hai context 360/1280. Giới hạn: số liệu chưa playtest, chưa đo tải riêng, chưa staging.
-- [ ] **C08** Mùa xếp hạng và hậu cần bất đồng bộ — P2, ctc; phụ thuộc: C03,C05,C07.
+- [x] **C08** Mùa xếp hạng và hậu cần bất đồng bộ — P2, ctc; phụ thuộc: C03,C05,C07. DONE local — [RANKED_SEASONS.md](RANKED_SEASONS.md): flag `ranked_seasons` default-off; mùa 28 ngày (4 tuần C03) ranh giới Thứ Năm 00:00 UTC; bảng phái×bracket có đồng hạng; chốt một lần bất biến; danh hiệu cosmetic nhận idempotent trong 28 ngày; hậu cần bang suy ra có trần 30/người/mùa; migration 0011 chỉ thêm bảng. Kiểm chứng: 6 case D1/SQLite, 6 case client, session smoke 360/1280. Giới hạn: số liệu chưa playtest, bracket theo lúc chốt, chưa staging.
 - [ ] **P05** Co-op sinh tồn và cứu viện — P2, phlt; phụ thuộc: C05,P03,F07.
 - [ ] **P06** Thử thách tuần đồng điều kiện — P2, phlt; phụ thuộc: P04,C05.
 - [ ] **G04** Giao hữu chuẩn hóa và thử thách cộng đồng — P2, g2; phụ thuộc: C05,G02,G03.
@@ -83,8 +83,7 @@ Các hàng dưới là lớp phụ thuộc, không phải yêu cầu chạy nhi�
 | 1 | O03, O04 | Moderation; O04 còn gate remote. Chỉ nhận khi người dùng cho tiếp tục |
 | 2 | P05, P06, G04 | Co-op/thử thách mode riêng sau các phụ thuộc lớp1 và tài khoản đa mode |
 | 3 | E05 | Chiến trường mục tiêu và escrow sau session/ledger/moderation |
-| 4 | C08 | Mùa ranked và hậu cần có server xác thực |
-| 5 | R03 | Thành tựu/ngoại hình/chuyển sinh sau tiến trình của cả ba mode |
+| 4 | R03 | Thành tựu/ngoại hình/chuyển sinh sau tiến trình của cả ba mode |
 
 O04 local gates đã được chạy trong source archive; task còn remote staging/rollback. C05/E05 phải tách spike/ADR, prototype, implementation và kiểm chứng; E05 ADR xong nhưng thiếu server-owned inventory, không đóng task bằng ADR hoặc UI placeholder.
 
