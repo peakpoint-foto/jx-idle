@@ -28,10 +28,11 @@ const trial = load("trial", "data/content/trial.v1.json", ctx.validateTrialRules
 const events = load("events", "data/content/events.v2.json", ctx.validateEventFlags);
 const trialMutators = load("trial-mutators", "data/content/trial_mutators.v1.json", ctx.validateTrialMutators);
 const riftModifiers = load("rift-modifiers", "data/content/rift_modifiers.v1.json", ctx.validateRiftModifiers);
+const seasonThemes = load("season-themes", "data/content/season_themes.v1.json", ctx.validateSeasonThemes);
 
 if (!checkOnly) {
   const out = `// TỰ SINH bởi scripts/build-content.mjs — không sửa tay. Nguồn: data/content/*.v1.json\n` +
-    `window.JX_CONTENT=${JSON.stringify({ trial, events, trialMutators, riftModifiers })};\n` +
+    `window.JX_CONTENT=${JSON.stringify({ trial, events, trialMutators, riftModifiers, seasonThemes })};\n` +
     `(function(){const f=o=>{if(o&&typeof o==="object"){for(const v of Object.values(o))f(v);Object.freeze(o)}};f(window.JX_CONTENT);})();\n`;
   fs.writeFileSync(root + "js/content.gen.js", out);
   console.log(`  -> js/content.gen.js`);

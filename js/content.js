@@ -104,6 +104,32 @@ function validateRiftModifiers(data) {
   });
   return data;
 }
+// Season themes (2.8): chủ đề mùa + modifier toàn cục nhẹ.
+function validateSeasonThemes(data) {
+  const what = "season-themes";
+  if (!isPlainObj(data)) throw contentError(what, "phải là object");
+  checkVersion(data.version, "season-themes", what);
+  if (!Number.isInteger(data.seasonWeeks) || data.seasonWeeks < 4 || data.seasonWeeks > 12)
+    throw contentError(what, "seasonWeeks phải là 4-12");
+  if (!Array.isArray(data.themes) || data.themes.length === 0)
+    throw contentError(what, "themes phải là mảng không rỗng");
+  const ids = new Set();
+  data.themes.forEach((t, i) => {
+    const at = `themes[${i}]`;
+    if (!isPlainObj(t)) throw contentError(what, `${at} phải là object`);
+    if (typeof t.id !== "string" || !/^[a-z0-9_]{1,24}$/.test(t.id)) throw contentError(what, `${at}.id không hợp lệ`);
+    if (ids.has(t.id)) throw contentError(what, `${at}.id trùng: ${t.id}`);
+    ids.add(t.id);
+    if (typeof t.name !== "string" || !t.name.trim() || t.name.length > 40) throw contentError(what, `${at}.name không hợp lệ`);
+    if (typeof t.desc !== "string" || t.desc.length > 140) throw contentError(what, `${at}.desc không hợp lệ`);
+    if (!isPlainObj(t.modifiers)) throw contentError(what, `${at}.modifiers phải là object`);
+    for (const k of ["exp", "gold", "drop"]) {
+      const v = t.modifiers[k];
+      if (typeof v !== "number" || !(v >= 1 && v <= 1.25)) throw contentError(what, `${at}.modifiers.${k} phải là 1-1.25`);
+    }
+  });
+  return data;
+}
 // Event flags: danh mục slot sự kiện định kỳ hiện có.
 const EVENT_KINDS = ["trial", "challenge", "boss", "bonus"];
 const EVENT_CADENCE = ["weekly", "monthly"];

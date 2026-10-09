@@ -1,0 +1,47 @@
+{
+  "epochWeek": 0,
+  "seasonWeeks": 8,
+  "themes": [
+    {
+      "desc": "Mùa của sức sống mới: kinh nghiệm dồi dào.",
+      "id": "xuandung",
+      "modifiers": {
+        "drop": 1.0,
+        "exp": 1.1,
+        "gold": 1.0
+      },
+      "name": "Xuân Dũng"
+    },
+    {
+      "desc": "Mùa gặt hái: ngân lượng rủng rỉnh.",
+      "id": "hathu",
+      "modifiers": {
+        "drop": 1.0,
+        "exp": 1.0,
+        "gold": 1.15
+      },
+      "name": "Hạ Thu"
+    },
+    {
+      "desc": "Mùa săn bảo vật: tỷ lệ rơi đồ tăng.",
+      "id": "thudong",
+      "modifiers": {
+        "drop": 1.1,
+        "exp": 1.05,
+        "gold": 1.05
+      },
+      "name": "Thu Đông"
+    },
+    {
+      "desc": "Mùa tĩnh lặng: không có modifier (chuẩn).",
+      "id": "dongxuan",
+      "modifiers": {
+        "drop": 1.0,
+        "exp": 1.0,
+        "gold": 1.0
+      },
+      "name": "Đông Xuân"
+    }
+  ],
+  "version": "season-themes-v1"
+}

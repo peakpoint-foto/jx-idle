@@ -163,3 +163,13 @@ Chi tiết từng tính năng xem các mục dưới.
 - Mốc thưởng chung 25/50/75/100% HP (`boss_milestones` trong guildView, UI hiện ✔).
   Thưởng hiện vật cho mốc: chưa triển khai — cần quyết định ngân sách.
 - Vận hành: boss xoay tự động theo tuần, không cần can thiệp.
+
+## 2.8 Mùa theo chủ đề 6-8 tuần
+
+- `data/content/season_themes.v1.json` + `validateSeasonThemes` (theo mẫu 2.0):
+  4 chủ đề xoay mỗi 8 tuần, modifier toàn cục nhẹ (exp/gold/drop tối đa +25%).
+- `js/season_themes.js`: `seasonTheme()`, `seasonThemeMul()`, `seasonThemeInfo()`.
+  Áp vào: `gainXp` (idle + offline), vàng `payKill`/offline, bonus roll rơi đồ.
+- UI panel mùa hiện chủ đề + modifier + số tuần còn lại.
+- Danh hiệu mùa vẫn thuần cosmetic có nhãn mode (không đổi).
+- Vận hành: thêm/sửa theme = sửa JSON + build content, không cần deploy code.

@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 const root = fileURLToPath(new URL("../../", import.meta.url));
 const files = [
   "data.js", "world.js", "js/core.js", "js/skill_graph.js", "js/workflow_rules.js", "js/modes.js", "js/capabilities.js", "js/stats.js",
-  "js/combat_contract.js", "js/content.gen.js", "js/content.js", "js/rift_rules.js", "js/session_combat.js", "js/loot.js", "js/weapon_policy.js", "js/gear_policy.js", "rdata.js", "js/sets.js", "ref.js",
+  "js/combat_contract.js", "js/content.gen.js", "js/season_themes.js", "js/content.js", "js/rift_rules.js", "js/session_combat.js", "js/loot.js", "js/weapon_policy.js", "js/gear_policy.js", "rdata.js", "js/sets.js", "ref.js",
   "js/recipes.js", "js/combat.js", "js/stage_policy.js", "js/save.js", "js/save_waves.js", "js/save_schema.js", "js/offline_report.js", "js/ui.js", "js/shop.js",
   "js/rewards.js", "js/siege.js", "js/activities.js", "js/depth.js", "js/potion_policy.js",
   "js/builds.js", "js/build_profiles.js", "js/training.js", "js/rift_tower.js", "js/build_compare.js", "js/build_advice.js", "js/build_advice_ui.js", "js/build_library.js", "js/loot_codex.js", "js/combat_policy.js", "js/journal.js", "js/forge.js", "js/gold_sinks.js", "js/auto.js", "js/survival.js", "js/svfinal.js",

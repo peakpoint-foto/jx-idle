@@ -13,7 +13,10 @@ function seasonPanelHTML(){
   const s=d.season,st=d.standing,g=d.guild;
   const claims=d.claims.map(c=>`<div class="qrow"><span><b>Mùa ${c.season}: ${esc(SEASON_TITLES[c.title]||c.title)}</b><small>Hạng ${c.placement}/${c.group_size} · ${fmt(c.points)} điểm${c.claimed_at?' · đã nhận':c.claim_open?' · hạn nhận '+esc(seasonTime(c.claim_deadline)):' · hết hạn nhận'}</small></span>${!c.claimed_at&&c.claim_open?`<button class="btn" data-season="claim" data-index="${c.season}" ${SEASON_CLIENT.busy?'disabled':''}>Nhận danh hiệu</button>`:''}</div>`).join('');
   const previousBoard=d.claims.find(c=>c.board)?.board;
+  const theme=typeof seasonThemeInfo==="function"?seasonThemeInfo():null;
+  const themeHTML=theme&&theme.theme?`<p><b>Chủ đề mùa:</b> ${esc(theme.theme.name)} — ${esc(theme.theme.desc)} <small class="dim">(còn ${theme.weeksLeft} tuần; +${Math.round((theme.theme.modifiers.exp-1)*100)}% EXP · +${Math.round((theme.theme.modifiers.gold-1)*100)}% vàng · +${Math.round((theme.theme.modifiers.drop-1)*100)}% rơi đồ)</small></p>`:"";
   return `<h4>Mùa xếp hạng CTC · mùa ${s.index}</h4><small>${esc(seasonTime(s.start))} → ${esc(seasonTime(s.end))}. Kết quả chốt sau ${esc(seasonTime(s.final_at))}.</small>
+    ${themeHTML}
     <p>Điểm lấy từ trận ranked đã xác thực của server (tối thiểu ${d.rules.minPoints} điểm). Hạng chỉ tính trong cùng phái và bracket; cần ít nhất ${d.rules.minGroup} người mới có danh hiệu hạng, nếu không nhận danh hiệu tham chiến. Danh hiệu chỉ để trưng bày, không có chỉ số hay tài nguyên.</p>
     <p><b>Của bạn:</b> ${fmt(st.points)} điểm · ${fmt(st.wins)} thắng · ${st.eligible?`hạng ${st.placement}/${st.group_size}`:`chưa đủ điều kiện (cần từ ${st.min_points} điểm, nhân vật đã xác thực và đồng bộ trong mùa)`}</p>
     <details open><summary>Bảng phái/bracket của bạn</summary>${seasonBoardHTML(d.board)}</details>
