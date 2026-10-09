@@ -143,6 +143,11 @@ export const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS guild_logs(account_id TEXT NOT NULL,request_id TEXT NOT NULL,guild_id TEXT NOT NULL,action TEXT NOT NULL,target_id TEXT,created_at INTEGER NOT NULL,PRIMARY KEY(account_id,request_id))`,
   `CREATE INDEX IF NOT EXISTS guild_logs_recent ON guild_logs(guild_id,created_at)`,
   `CREATE TABLE IF NOT EXISTS guild_calendar(id TEXT PRIMARY KEY,guild_id TEXT NOT NULL,actor_id TEXT NOT NULL,title TEXT NOT NULL,activity TEXT NOT NULL,starts_at INTEGER NOT NULL,cancelled INTEGER NOT NULL DEFAULT 0)`,
+  `CREATE TABLE IF NOT EXISTS season_titles(account_id TEXT NOT NULL,season TEXT NOT NULL,title TEXT NOT NULL,rank INTEGER NOT NULL,claimed_at INTEGER NOT NULL,PRIMARY KEY(account_id,season))`,
+  `CREATE INDEX IF NOT EXISTS season_titles_season ON season_titles(season,rank)`,
+  `CREATE TABLE IF NOT EXISTS guild_weekly_tasks(guild_id TEXT NOT NULL,week TEXT NOT NULL,task_id TEXT NOT NULL,target INTEGER NOT NULL,created_at INTEGER NOT NULL,PRIMARY KEY(guild_id,week,task_id))`,
+  `CREATE TABLE IF NOT EXISTS guild_weekly_task_members(guild_id TEXT NOT NULL,week TEXT NOT NULL,task_id TEXT NOT NULL,account_id TEXT NOT NULL,points INTEGER NOT NULL DEFAULT 0,updated_at INTEGER NOT NULL,PRIMARY KEY(guild_id,week,task_id,account_id))`,
+  `CREATE TABLE IF NOT EXISTS guild_weekly_task_receipts(session_id TEXT NOT NULL,account_id TEXT NOT NULL,guild_id TEXT NOT NULL,week TEXT NOT NULL,task_id TEXT NOT NULL,points INTEGER NOT NULL,created_at INTEGER NOT NULL,PRIMARY KEY(session_id,account_id))`,
   `CREATE INDEX IF NOT EXISTS guild_calendar_next ON guild_calendar(guild_id,starts_at)`,
   `CREATE TABLE IF NOT EXISTS rooms(
     id TEXT PRIMARY KEY,

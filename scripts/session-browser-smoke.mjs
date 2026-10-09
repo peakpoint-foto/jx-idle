@@ -28,6 +28,8 @@ try{
   const f=await sessionFixture(DB,2);
   f.env.FEATURE_FLAGS.party_dungeon=true;
   f.env.FEATURE_FLAGS.party_siege=true;
+  f.env.FEATURE_FLAGS.seasonal_challenge=true;
+  await DB.prepare("UPDATE chars SET bracket='so' WHERE account_id IN (?1,?2)").bind(f.players[0].id,f.players[1].id).run();
   server=http.createServer(async(req,res)=>{inFlight++;try{
     const url=new URL(req.url,'http://127.0.0.1');
     if(url.pathname.startsWith('/api/')){const parts=[];for await(const chunk of req)parts.push(chunk);const body=Buffer.concat(parts);
@@ -111,8 +113,12 @@ try{
   clock+=250;for(const c of clients)await evaluate(c,'partyPoll(true)');
   assert.equal(await evaluate(clients[0],'PARTY_CLIENT.session.status'),'completed');assert.equal(await evaluate(clients[1],'PARTY_CLIENT.session.siege.point'),100);
   assert.ok(await evaluate(clients[0],"document.querySelector('#onlineSessionPanel').textContent.includes('Công thành · Mục tiêu')"));
+  for(const c of clients)await evaluate(c,"partyWrite('claim')");
+  await evaluate(clients[0],'onlRenderSeason()');
+  assert.ok(await evaluate(clients[0],"document.querySelector('#onlSeasonPanel').textContent.includes('Nhiệm vụ bang tuần')"));
+  assert.ok(await evaluate(clients[0],"document.querySelector('#onlSeasonPanel').textContent.includes('10/250')"));
   const touch=await evaluate(clients[0],"[...document.querySelectorAll('#onlineSessionPanel button')].map(b=>({text:b.textContent,height:b.getBoundingClientRect().height}))");assert.ok(touch.every(b=>b.height>=44),JSON.stringify(touch));
-  console.log(JSON.stringify({runtime:process.env.JX_D1_RUNTIME==='1'?'D1 local':'SQLite local',clients:2,isolatedContexts:true,viewports:[360,1280],sharedState:true,ackLossRetry:true,reloadReconnect:true,realBossCompletion:true,receiptsOnce:true,dungeonFormation:true,dungeonFlagOff:true,siegeCapture:true,siegeServerCompletion:true,activityReceiptOfflineRetry:true,moderationUI:true,muteReportServerRoundtrip:true,roomAndGuildChat:true,touch:touch.every(b=>b.height>=44)},null,2));
+  console.log(JSON.stringify({runtime:process.env.JX_D1_RUNTIME==='1'?'D1 local':'SQLite local',clients:2,isolatedContexts:true,viewports:[360,1280],sharedState:true,ackLossRetry:true,reloadReconnect:true,realBossCompletion:true,receiptsOnce:true,dungeonFormation:true,dungeonFlagOff:true,siegeCapture:true,siegeServerCompletion:true,seasonUI:true,guildWeeklyTask:true,activityReceiptOfflineRetry:true,moderationUI:true,muteReportServerRoundtrip:true,roomAndGuildChat:true,touch:touch.every(b=>b.height>=44)},null,2));
 }finally{
   for(const c of clients)c.close();if(browser){for(const id of contexts)await browser.command('Target.disposeBrowserContext',{browserContextId:id}).catch(()=>{});browser.close();}
   if(server)await new Promise(r=>server.close(r));while(inFlight)await new Promise(r=>setTimeout(r,20));Date.now=realNow;await DB.close();

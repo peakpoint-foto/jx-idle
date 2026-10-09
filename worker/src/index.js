@@ -14,10 +14,13 @@ import {economy} from './economy.js';
 import {sessions} from './sessions.js';
 import {moderation,adminModeration} from './moderation.js';
 import {chat} from './chat.js';
+import {season} from './season.js';
 
 const ROUTES = {
   "GET /api/sessions": sessions,
   "POST /api/sessions": sessions,
+  "GET /api/season": guardedFeature("seasonal_challenge", season),
+  "POST /api/season": guardedFeature("seasonal_challenge", season),
   "GET /api/economy": economy,
   "POST /api/economy": economy,
   "GET /api/config": featureConfig,

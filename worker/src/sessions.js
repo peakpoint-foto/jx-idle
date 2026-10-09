@@ -3,6 +3,7 @@ import {HttpError,randomToken} from './http.js';
 import {rateLimit} from './db.js';
 import {GAME} from '../gen/game.js';
 import {duelProfile} from './duel_rules.js';
+import {recordGuildSiegeTask} from './season.js';
 const IDLE=10000,TTL=300000,STEP=250,MAX_CATCHUP=8;
 async function memberRows(db,id){return (await db.prepare('SELECT * FROM session_members WHERE session_id=?1 ORDER BY account_id').bind(id).all()).results;}
 function stateOf(row){let state;try{state=JSON.parse(row.state);}catch{}if(!state||state.v!==1||state.model!==GAME.COMBAT_MODEL_VERSION||state.rules!==GAME.SESSION_COMBAT.version)throw new HttpError(409,'session_model_changed');return state;}
@@ -92,6 +93,7 @@ async function claim(db,row,account,now){
       SELECT account_id,'ctc','merit',?3,'party_completion',amount,day,created_at FROM session_rewards WHERE session_id=?1 AND account_id=?2 AND amount>0 AND changes()>0
       ON CONFLICT(account_id,mode,asset,request_id) DO NOTHING`).bind(row.id,account,key),
   ]);
+  await recordGuildSiegeTask(db,row.id,account,state,now);
   const receipt=await db.prepare('SELECT amount,day FROM session_rewards WHERE session_id=?1 AND account_id=?2').bind(row.id,account).first();if(!receipt)throw new HttpError(409,'session_reward_unavailable');return receipt;
 }
 export async function sessions(req,env,body,url=new URL(req.url)){

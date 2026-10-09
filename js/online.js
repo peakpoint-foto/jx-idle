@@ -159,6 +159,23 @@ async function onlRenderRank() {
   } catch (e) { box.innerHTML = `<small class="bad">${esc(e.msg || "Không tải được bảng hạng")}</small>`; box.hidden = false }
 }
 
+async function onlRenderSeason() {
+  const box=document.getElementById('onlSeasonPanel');if(!box||!onlGet())return;
+  box.hidden=false;box.innerHTML='<small class="dim">Đang tải mùa và hậu cần bang…</small>';
+  try{
+    const d=await onlApi('/season'),title=d.previous_title;
+    const claim=d.previous_mine?.rank<=10&&!title?'<button class="btn" id="onlSeasonClaim">Nhận danh hiệu mùa trước</button>':'';
+    box.innerHTML='<div class="onlsub"><b>Mùa CTC UTC '+esc(d.season)+'</b><button class="btn" id="onlSeasonClose">Đóng</button></div>'+
+      '<small>Mùa mở '+esc(new Date(d.start).toLocaleDateString('vi-VN',{timeZone:'UTC'}))+' – '+esc(new Date(d.end).toLocaleDateString('vi-VN',{timeZone:'UTC'}))+' · '+esc(ONL_BRACKET[d.bracket]||d.bracket)+' · '+esc((FAC[S.fac]||{}).n||S.fac)+'</small>'+
+      (d.mine?'<p>Thứ hạng của bạn: #'+d.mine.rank+' · '+d.mine.points+' điểm</p>':'<p>Chưa có điểm ranked trong mùa này.</p>')+
+      '<div class="card">'+(d.rows||[]).map(r=>'<div class="qrow"><span>#'+r.rank+' '+esc(r.name)+'<small>'+r.points+' điểm · '+r.wins+' thắng · '+r.losses+' thua</small></span></div>').join('')+'</div>'+
+      (d.guild_task?'<div class="card"><b>Nhiệm vụ bang tuần</b><p>'+esc(d.guild_task.guild_name)+': '+d.guild_task.progress+'/'+d.guild_task.target+' · cá nhân '+d.guild_task.personal+'/'+d.guild_task.personal_cap+'</p><small>Tiến độ từ receipt phụ bản Công thành đã xác thực; không cấp tiền hoặc lượt ranked.</small></div>':'')+
+      (title?'<p>Đã nhận danh hiệu mùa trước: <b>'+esc(title.title)+'</b></p>':'')+claim;
+    box.querySelector('#onlSeasonClose').onclick=()=>{box.hidden=true};
+    if(box.querySelector('#onlSeasonClaim'))box.querySelector('#onlSeasonClaim').onclick=async()=>{const btn=box.querySelector('#onlSeasonClaim');btn.disabled=true;try{const r=await onlApi('/season',{body:{action:'claim_title',season:d.claimable_season}});toast('Đã nhận danh hiệu '+r.receipt.title);await onlRenderSeason()}catch(e){toast(e.msg||'Chưa thể nhận danh hiệu');btn.disabled=false}};
+  }catch(e){box.innerHTML='<small class="bad">'+esc(e.msg||'Không tải được mùa')+'</small>';box.hidden=false}
+}
+
 async function onlShowProfile(name) {
   const box = document.getElementById("onlRankPanel");
   if (!box) return;
@@ -311,7 +328,8 @@ function onlCardHTML() {
       ${me && me.flags && me.flags.length ? `<div class="onlflag"><b>Đang bị loại khỏi bảng xếp hạng vì nghi gian lận</b>${me.flags.map(f => `<small>${esc(f.detail || f.code)}</small>`).join("")}</div>` : ""}
       ${ONL.conflict ? `<div class="onlflag"><b>Phát hiện bản lưu mới hơn trên máy chủ.</b><small>Chọn nạp bản máy chủ hoặc ghi đè bằng bản đang mở.</small><div class="btnrow"><button class="btn sm" id="onlPullConflict">Nạp bản máy chủ</button><button class="btn sm" id="onlPushConflict">Ghi đè máy chủ</button></div></div>` : ""}
       <div class="btnrow"><button class="btn" id="onlSyncBtn">Đồng bộ ngay</button><button class="btn" id="onlRankBtn">Bảng xếp hạng</button><button class="btn" id="onlCodeBtn">Mã khôi phục</button></div>
-      <small class="dim" id="onlCode" hidden>Giữ kín mã này, nó thay cho mật khẩu: <code>${esc(acc.token)}</code></small><div id="onlRankPanel" class="onlpanel" hidden></div>
+      ${featureEnabled('seasonal_challenge')?'<div class="btnrow"><button class="btn" id="onlSeasonBtn">Mùa ranked & nhiệm vụ bang</button></div>':''}
+      <small class="dim" id="onlCode" hidden>Giữ kín mã này, nó thay cho mật khẩu: <code>${esc(acc.token)}</code></small><div id="onlRankPanel" class="onlpanel" hidden></div><div id="onlSeasonPanel" class="onlpanel" hidden></div>
       <div id="onlDuelPanel" class="onlpanel"><b>PvP bất đồng bộ</b><small class="dim">Phân xử bất đồng bộ bằng ước lượng lực chiến và hệ số cố định theo mã trận. Giao hữu không cộng điểm; ranked cần cùng bậc, lực chiến gần nhau.</small><div class="btnrow">${featureEnabled("duel_modes")?'<select id="onlDuelKind" aria-label="Loại thách đấu"><option value="ranked">Ranked</option><option value="friendly">Giao hữu</option></select>':""}<input id="onlOpponent" maxlength="16" placeholder="Tên đối thủ"><button class="btn sm" id="onlChallengeBtn">Thách đấu</button></div><div id="onlDuelList"></div></div>
       <div id="onlGuildPanel" class="onlpanel"></div><div id="onlRoomPanel" class="onlpanel"></div></div>`;
   }
@@ -324,6 +342,7 @@ function onlCardBind() {
   if (b("onlSyncBtn")) b("onlSyncBtn").onclick = async () => { if (await onlSync(false)) { toast("Đã đồng bộ"); await onlRefreshMe(); renderMore() } };
   if (b("onlCodeBtn")) b("onlCodeBtn").onclick = () => { const c = b("onlCode"); if (c) c.hidden = !c.hidden };
   if (b("onlRankBtn")) b("onlRankBtn").onclick = onlRenderRank;
+  if (b("onlSeasonBtn")) b("onlSeasonBtn").onclick = onlRenderSeason;
   if (b("onlPullConflict")) b("onlPullConflict").onclick = onlApplyServerSnapshot;
   if (b("onlPushConflict")) b("onlPushConflict").onclick = onlForceLocalSnapshot;
   if (b("onlChallengeBtn")) b("onlChallengeBtn").onclick = onlChallenge;

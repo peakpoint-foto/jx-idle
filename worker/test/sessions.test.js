@@ -137,9 +137,14 @@ test('siege mode is default-off and server capture victory pays the existing mer
   await p.post({action:'command',id,seq:ps.session.next_seq,tick:ps.session.tick+1,kind:'capture',target:'point'});
   await q.post({action:'command',id,seq:qs.session.next_seq,tick:qs.session.tick+1,kind:'capture',target:'point'});
   f.tick(250);const result=await p.get(id);assert.equal(result.session.status,'completed');assert.equal(result.session.siege.point,100);
+  await f.DB.batch([
+    f.DB.prepare("INSERT INTO guilds(id,name,owner_id,week,created_at,updated_at) VALUES('siege-guild','Siege guild',?1,'w1',?2,?2)").bind(p.id,f.now()),
+    f.DB.prepare("INSERT INTO guild_members(guild_id,account_id,role,joined_at,last_seen) VALUES('siege-guild',?1,'owner',?2,?2)").bind(p.id,f.now()),
+  ]);
   const receipt=await p.post({action:'claim',id});assert.equal(receipt.receipt.amount,1);
   assert.equal((await p.post({action:'claim',id})).receipt.amount,1);
   assert.equal((await f.DB.prepare("SELECT SUM(delta) n FROM resource_ledger WHERE source='party_completion'").first()).n,1);
+  assert.equal((await f.DB.prepare('SELECT points FROM guild_weekly_task_members WHERE guild_id=?1 AND account_id=?2').bind('siege-guild',p.id).first()).points,5);
   const rollback=(await p.post({action:'create',id:'siege_rollback_receipt_01',activity:'siege'})).session;
   f.env.FEATURE_FLAGS.party_siege=false;
   assert.equal((await q.get(rollback.id)).session.status,'aborted');
