@@ -221,3 +221,40 @@ test('weekly trial engine has browser/Worker parity across all ten factions',()=
     }
   }
 });
+test('challenge engine: solo 2.0 only, validated options, the preset scale multiplies the absolute boss chain',()=>{
+  const mk=(mode,n=['a'],opt)=>GAME.sessionCombatNew(mode,phltActors(n),7,'challenge',opt),ok={week:11,version:'g2-challenge-v1:std40',waves:4,scale:1};
+  assert.throws(()=>mk('g2',['a','b'],ok),'two actors');assert.throws(()=>mk('phlt',['a'],ok),'PHLT does not own challenges');assert.throws(()=>mk('ctc',['a'],ok),'CTC does not own challenges');
+  for(const bad of[{},{...ok,week:undefined},{...ok,week:1.5},{...ok,version:5},{...ok,waves:0},{...ok,waves:9},{...ok,waves:2.5},{...ok,scale:0},{...ok,scale:11},{...ok,scale:NaN},{...ok,scale:'2'}])assert.throws(()=>mk('g2',['a'],bad),JSON.stringify(bad));
+  assert.throws(()=>GAME.sessionCombatNew('g2',phltActors(['a']),7,'trial',{week:11,length:'short'}),'trial stays PHLT');assert.throws(()=>GAME.sessionCombatNew('g2',phltActors(['a','b']),7,'party'),'party stays CTC');
+  const T=GAME.SESSION_TRIAL,base=mk('g2',['a'],ok),scaled=mk('g2',['a'],{...ok,scale:3}),rule=GAME.sessionTrialRule(ok.week);
+  assert.equal(base.boss.max,Math.round(T.baseHp*(rule.hp||1)));assert.equal(scaled.boss.max,Math.round(T.baseHp*(rule.hp||1)*3));assert.equal(base.trial.length,'standard');assert.equal(base.trial.waves,4);assert.equal(base.objectives.depth,0);
+  const weak=phltActors(['a']),strong=phltActors(['a']);strong[0].p.main.rate*=50;strong[0].p.life*=3;strong[0].hp=strong[0].p.life;
+  assert.equal(GAME.sessionCombatNew('g2',weak,7,'challenge',ok).boss.max,GAME.sessionCombatNew('g2',strong,7,'challenge',ok).boss.max,'the boss does not scale to the player');
+  // Waves advance with the preset's count, and scale applies to every wave.
+  let s=mk('g2',['a'],{...ok,waves:3,scale:2});
+  for(let d=0;d<3;d++){
+    assert.equal(s.objectives.depth,d);assert.equal(s.boss.max,Math.round(T.baseHp*Math.pow(T.growth,d)*(rule.hp||1)*2));
+    s.boss.hp=1;s.boss.def=0;s.actors[0].cooldown=0;s.boss.cooldown=1e6;
+    for(let n=0;n<60&&s.objectives.depth===d&&s.status==='active';n++)s=GAME.sessionCombatStep(s,[],['a']);
+    assert.equal(s.objectives.depth,d+1,'wave '+d+' cleared');
+  }
+  assert.equal(s.status,'completed');
+  // Trials are untouched by the new scale: without it the chain is exactly the old one.
+  assert.equal(GAME.sessionCombatNew('phlt',phltActors(['a']),7,'trial',{week:11,length:'short'}).boss.max,base.boss.max);
+});
+test('challenge engine has browser/Worker parity across all ten factions',()=>{
+  const g=game();
+  for(const fac of Object.values(GAME.FAC)){
+    g.run(`fixture('g2',100);S.fac='${fac.key}';S.sk=Object.fromEntries(FAC[S.fac].skills.filter(id=>SK[id]).slice(0,6).map(id=>[id,Math.min(3,SK[id].max)]));recalc()`);
+    GAME.setS(g.json('S'));
+    const actor=GAME.sessionActor('a0','P0',GAME.calc());
+    let state=GAME.sessionCombatNew('g2',[actor],246810,'challenge',{week:33,version:'g2-challenge-v1:std60',waves:6,scale:7});g.run(`var chState=${JSON.stringify(state)}`);
+    for(let n=0;n<160&&state.status==='active';n++){
+      const commands=n%3===0?[{actor:'a0',seq:n+1,kind:n%2?'guard':'support',target:'a0'}]:[],connected=['a0'],before=JSON.stringify(state);
+      const next=GAME.sessionCombatStep(state,commands,connected);assert.equal(JSON.stringify(state),before,'Input mutated');state=next;
+      g.run(`chState=sessionCombatStep(chState,${JSON.stringify(commands)},${JSON.stringify(connected)})`);
+      assert.deepEqual(plain(state),g.json('chState'),fac.key+'/'+n);
+      assert.ok(state.objectives.depth>=0&&state.objectives.depth<=state.trial.waves);
+    }
+  }
+});

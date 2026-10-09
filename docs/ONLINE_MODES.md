@@ -19,7 +19,7 @@
 ## Phạm vi tách biệt
 
 - `GET /api/ladder` chỉ liệt kê `mode='ctc'`. Gợi ý đối thủ ranked cũng lọc `mode='ctc'`.
-- Kiểm thử xác nhận tài khoản PHLT/2.0 bị từ chối ở mùa (`feature_disabled`), kinh tế (`feature_disabled`) và phiên (`session_mode_denied`) dù các flag CTC đó đang bật.
+- Kiểm thử xác nhận tài khoản PHLT/2.0 bị từ chối ở mùa (`feature_disabled`), kinh tế (`feature_disabled`) và phiên (2.0: `feature_disabled` vì phiên 2.0 chỉ tồn tại dưới `community_challenge`; PHLT: cần `coop_rescue`) dù các flag CTC đó đang bật.
 - Không có đường chuyển tài nguyên hay điểm giữa mode: sổ cái, mùa và phiên đều ghi/đọc `mode='ctc'`.
 
 ## Xác thực nhân vật theo mode (`worker/src/validate.js`)
@@ -49,7 +49,7 @@ Trước khi sửa, fuzz cho thấy PHLT/2.0 bị gắn cờ oan hàng nghìn l�
 
 ## Giới hạn
 
-- Chỉ là nền: lobby và phiên cho PHLT do P05 thêm ([COOP_RESCUE.md](COOP_RESCUE.md)); 2.0 chưa có lobby, phiên, sổ cái hay bảng. P06/G04 phải thêm từng phần và flag riêng.
+- Chỉ là nền: lobby và phiên cho PHLT do P05 thêm ([COOP_RESCUE.md](COOP_RESCUE.md)); 2.0 không có lobby và sổ cái; phiên và bảng của 2.0 chỉ có ở thử thách cộng đồng G04 ([COMMUNITY_CHALLENGE.md](COMMUNITY_CHALLENGE.md)), flag riêng.
 - Ngưỡng giờ chơi cho PHLT/2.0 rộng; cấp độ có thể bị thổi phồng đến hệ số trên. Cấp thăng hạng Bạch Kim (`plv`) và thông số `lab` chưa được xác thực riêng.
 - Chưa deploy, chưa staging, chưa đo tải.
 

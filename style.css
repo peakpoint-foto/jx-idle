@@ -361,3 +361,5 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 #moderationAdminPanel input,#moderationAdminPanel .btn{box-sizing:border-box;min-height:44px!important;max-width:100%}.moderation-report{overflow-wrap:anywhere}
 .room-chat textarea,.room-chat .btn{box-sizing:border-box;min-height:44px!important;max-width:100%}.room-chat textarea{flex:1;resize:vertical}.room-chat-message{overflow-wrap:anywhere;padding:4px;border-bottom:1px solid var(--line2)}
 .weekly-task-card button.btn{box-sizing:border-box;min-height:44px!important;max-width:100%}.weekly-task-card .qrow{gap:8px;flex-wrap:wrap}
+
+.challenge-panel button,.challenge-panel input,#challengePanel .btn{min-width:44px;min-height:44px!important}.challenge-panel .qrow{flex-wrap:wrap;gap:8px}.challenge-panel small{display:block;overflow-wrap:anywhere}.challenge-panel details summary{min-height:44px;display:flex;align-items:center}.challenge-panel p{overflow-wrap:anywhere}.challenge-panel input{flex:1 1 140px;box-sizing:border-box}

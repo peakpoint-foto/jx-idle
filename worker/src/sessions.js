@@ -4,11 +4,14 @@ import {rateLimit} from './db.js';
 import {GAME} from '../gen/game.js';
 import {duelProfile} from './duel_rules.js';
 import {recordTrialResult,trialAttemptsToday,trialScore,trialSeed,trialWeekId,TRIAL_RULES} from './trial.js';
+import {recordChallengeResult,challengeOf} from './challenge.js';
 const IDLE=10000,TTL=300000,STEP=250,MAX_CATCHUP=8;
 // Each mode owns its activities, ledger asset and reward source. PHLT co-op pays rescue marks in its own ledger, never CTC merit.
 const SESSION_MODES=Object.freeze({
   ctc:{asset:'merit',activities:['party','dungeon','siege'],defaultActivity:'party',source:{party:'party_completion',dungeon:'party_completion',siege:'siege_completion'}},
   phlt:{asset:'rescue_mark',activities:['rescue','trial'],defaultActivity:'rescue',source:{rescue:'rescue_completion'}},
+  // 2.0 sessions are community challenges only: they are started from /api/challenge (never through a room), pay nothing and have no ledger asset.
+  g2:{asset:null,activities:[],defaultActivity:'challenge',source:{}},
 });
 const ACTIVITY_FLAG={dungeon:'party_dungeon',siege:'party_siege',rescue:'coop_rescue',trial:'weekly_trial'};
 const ACTIVITY_KINDS={siege:['attack','guard','support','capture','supply'],rescue:['attack','guard','support','rescue']};
@@ -30,9 +33,9 @@ async function rowFor(db,id,account){
 }
 async function release(db,id){await db.prepare("UPDATE session_members SET active=0 WHERE session_id=?1 AND EXISTS(SELECT 1 FROM combat_sessions WHERE id=?1 AND status<>'active')").bind(id).run();}
 async function recordIfTrial(db,row){
-  if(typeof row.state!=='string'||!row.state.includes('"activity":"trial"'))return;
+  if(typeof row.state!=='string'||!(row.state.includes('"activity":"trial"')||row.state.includes('"activity":"challenge"')))return;
   let state;try{state=JSON.parse(row.state);}catch{return;}
-  await recordTrialResult(db,row.id,state);
+  if(state.activity==='challenge')await recordChallengeResult(db,row.id,state);else await recordTrialResult(db,row.id,state);
 }
 async function advance(db,row,now){
   if(row.status!=='active'){await release(db,row.id);await recordIfTrial(db,row);return row;}
@@ -53,7 +56,7 @@ async function advance(db,row,now){
     .bind(row.id,row.revision,JSON.stringify(state),state.status,done?now:null)];
   if(ids.length)statements.push(db.prepare(`UPDATE session_actions SET applied=1 WHERE id IN (${ids.map((_,i)=>'?'+(i+1)).join(',')}) AND changes()>0`).bind(...ids));
   const result=await db.batch(statements);
-  if(result[0].meta.changes&&done){await release(db,row.id);if(state.activity==='trial')await recordTrialResult(db,row.id,state,now);}
+  if(result[0].meta.changes&&done){await release(db,row.id);if(state.activity==='trial')await recordTrialResult(db,row.id,state,now);if(state.activity==='challenge')await recordChallengeResult(db,row.id,state,now);}
   return await db.prepare('SELECT * FROM combat_sessions WHERE id=?1').bind(row.id).first();
 }
 async function publicView(db,row,account){
@@ -63,8 +66,8 @@ async function publicView(db,row,account){
     model:state.model,rules:state.rules,mode:state.mode,activity:state.activity||'party',objectives:state.objectives||null,boss:{hp:state.boss.hp,max:state.boss.max,stun:state.boss.stun,ward:state.boss.ward||0,wardPhase:state.boss.wardPhase||0,gate:state.boss.gate||0},
     actors:state.actors.map(a=>({id:a.id,name:a.name,role:a.role,hp:a.hp,maxHp:a.p.life,mp:a.mp,maxMp:a.p.mana,contribution:a.contribution,withdrawn:!!a.withdrawn,down:a.hp<=0&&a.downedUntil>0&&!a.withdrawn?a.downedUntil:0,rescued:a.rescued||0,
       connected:members.some(m=>m.account_id===a.id&&m.active&&m.last_seen>Date.now()-IDLE)})),events:state.events.slice(-32),next_seq:(self?.last_seq||0)+1,
-    trial:state.trial?{...state.trial,score:trialScore(state)}:null,
-    reward,transport:'polling',step_ms:STEP,catchup_max:MAX_CATCHUP,loot_policy:state.activity==='trial'?'Weekly trial: no reward. The server simulates the run and records your best score for the week on the PHLT board.':state.mode==='phlt'?'Rescue marks only (PHLT ledger, never CTC merit): 1 per completed run, +1 if you rescued an ally. Cap 3/day UTC, wallet 30; contribution required, withdrawn ineligible. No loot and no supplies: PHLT has no server-owned inventory.':'Server merit only; no offline gold/items. Shared earned cap3/day UTC, wallet30; contribution required, withdrawn ineligible.'}};
+    trial:state.trial?{...state.trial,score:trialScore(state)}:null,challenge:state.activity==='challenge'?{code:await challengeOf(db,row.id)}:null,
+    reward,transport:'polling',step_ms:STEP,catchup_max:MAX_CATCHUP,loot_policy:state.activity==='challenge'?'Community challenge: no reward. The server simulates the run from the published build and records your best score for this challenge.':state.activity==='trial'?'Weekly trial: no reward. The server simulates the run and records your best score for the week on the PHLT board.':state.mode==='phlt'?'Rescue marks only (PHLT ledger, never CTC merit): 1 per completed run, +1 if you rescued an ally. Cap 3/day UTC, wallet 30; contribution required, withdrawn ineligible. No loot and no supplies: PHLT has no server-owned inventory.':'Server merit only; no offline gold/items. Shared earned cap3/day UTC, wallet30; contribution required, withdrawn ineligible.'}};
 }
 async function create(env,acc,now,requestId,activity,mode,length){
   const db=env.DB;
@@ -142,7 +145,7 @@ export async function sessions(req,env,body,url=new URL(req.url)){
   const character=await db.prepare('SELECT snapshot,flagged,validation_status,updated_at FROM chars WHERE account_id=?1').bind(acc.id).first();let saved;try{saved=JSON.parse(character?.snapshot);}catch{}
   if(!saved||!SESSION_MODES[saved.mode]||saved.sandbox)throw new HttpError(403,'session_mode_denied');
   const mode=saved.mode;
-  const enabled=GAME.featureEnabled('party_combat',mode,env.FEATURE_FLAGS,false);
+  const enabled=GAME.featureEnabled(mode==='g2'?'community_challenge':'party_combat',mode,env.FEATURE_FLAGS,false);
   // Expiry and flag rollback release active locks, without deleting frozen state/receipts.
   const dungeonEnabled=GAME.featureEnabled('party_dungeon','ctc',env.FEATURE_FLAGS,false),siegeEnabled=GAME.featureEnabled('party_siege','ctc',env.FEATURE_FLAGS,false),rescueEnabled=GAME.featureEnabled('coop_rescue','phlt',env.FEATURE_FLAGS,false);
   await db.prepare("UPDATE combat_sessions SET status='aborted',ended_at=?2,revision=revision+1 WHERE status='active' AND (expires_at<=?2 OR ?3=0 OR (json_valid(state) AND json_extract(state,'$.activity')='dungeon' AND ?4=0) OR (json_valid(state) AND json_extract(state,'$.activity')='siege' AND ?5=0) OR (json_valid(state) AND json_extract(state,'$.activity')='rescue' AND ?6=0)) AND EXISTS(SELECT 1 FROM session_members WHERE session_id=combat_sessions.id AND account_id=?1)").bind(acc.id,now,enabled?1:0,dungeonEnabled?1:0,siegeEnabled?1:0,rescueEnabled?1:0).run();

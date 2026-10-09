@@ -209,8 +209,53 @@ try{
   assert.ok(trialTouch.length>=3&&trialTouch.every(b=>b.height>=44),JSON.stringify(trialTouch));
   assert.equal(await evaluate(clients[0],"document.documentElement.scrollWidth<=document.documentElement.clientWidth"),true,'the trial panel must not overflow the viewport');
   assert.equal((await DB.prepare("SELECT COUNT(*) n FROM resource_ledger WHERE request_id=?1").bind('party:'+trialId).first()).n,0,'the trial pays nothing');
+  // G04: 2.0 community challenge. One player publishes a build; both browsers run the identical server-simulated fight and read one board.
+  f.env.FEATURE_FLAGS.community_challenge=true;f.env.FEATURE_FLAGS.online_account_g2=true;
+  const chal=[];
+  for(let i=0;i<2;i++){
+    const id='gtwo'+i,token='local-gtwo-smoke-token-'+i,fac=['shaolin','emei'][i];
+    const main=GAME.FAC[fac].skills.find(k=>GAME.SK[k]?.req<=40&&GAME.SK[k]?.kind!=='passive')||GAME.FAC[fac].skills[0];
+    const state={...GAME.newSave(),cid:'c_local_gtwo_smoke_'+i,mode:'g2',fac,lvl:60,attrPts:295,skPts:58,main,sk:{[main]:1}};
+    await DB.batch([DB.prepare('INSERT INTO accounts(id,token_hash,name,created_at,play_sec) VALUES(?1,?2,?3,?4,10000000)').bind(id,await sha256Hex(token),'Gtwo'+i,Date.now()),
+      DB.prepare("INSERT INTO chars(account_id,character_id,snapshot,fac,lvl,power,updated_at,validation_status,mode) VALUES(?1,?2,?3,?4,60,100,?5,'verified','g2')").bind(id,state.cid,JSON.stringify(state),fac,Date.now())]);
+    chal.push({id,token,state});
+  }
+  for(const [i,c] of clients.entries()){
+    const p=chal[i];
+    await evaluate(c,`S=${JSON.stringify(p.state)};onlSet(${JSON.stringify({id:p.id,token:p.token,name:'Gtwo'+i})});ONL.lastSync=Date.now();setFeatureFlags(${JSON.stringify(f.env.FEATURE_FLAGS)});recalc();partyReset();PARTY_CLIENT.identity=null;CHALLENGE_CLIENT.identity=null;CHALLENGE_CLIENT.data=null;document.querySelector('#tabs [data-t="more"]').click();renderMore();challengeLoad(true).then(()=>true)`);
+    await evaluate(c,"new Promise(r=>{const t=setInterval(()=>{if(CHALLENGE_CLIENT.data){clearInterval(t);r(true)}},50);setTimeout(()=>{clearInterval(t);r(false)},4000)})");
+  }
+  assert.match(await evaluate(clients[0],"document.querySelector('#challengePanel')?.textContent||''"),/Thử thách cộng đồng 2\.0/);
+  assert.equal(await evaluate(clients[0],"!!document.querySelector('#onlineSessionPanel')"),false,'2.0 has no room/party panel before a session exists');
+  await evaluate(clients[0],"challengePublish('std40').then(()=>true)");
+  const code=await evaluate(clients[0],'CHALLENGE_CLIENT.data?.mine[0]?.code');assert.match(code,/^CH-[A-HJ-NP-Z2-9]{8}$/,String(await evaluate(clients[0],'CHALLENGE_CLIENT.error')));
+  await evaluate(clients[1],'challengeLoad(true).then(()=>true)');
+  assert.equal(await evaluate(clients[1],'CHALLENGE_CLIENT.data.recent[0].code'),code,'the other player sees the published challenge');
+  const challengeIds=[];
+  for(const [i,c] of clients.entries()){
+    await evaluate(c,`challengeStart(${JSON.stringify(code)}).then(()=>true)`);
+    const run=await evaluate(c,'({session:PARTY_CLIENT.session,error:PARTY_CLIENT.error,challengeError:CHALLENGE_CLIENT.error})');
+    assert.equal(run.session?.activity,'challenge',JSON.stringify(run));assert.equal(run.session.challenge.code,code);challengeIds.push(run.session.id);
+    const row=await DB.prepare('SELECT state FROM combat_sessions WHERE id=?1').bind(run.session.id).first(),st=JSON.parse(row.state);
+    st.actors[0].cooldown=1e6;st.actors[0].hp=0.001;st.objectives.depth=2+i;
+    await DB.prepare('UPDATE combat_sessions SET state=?2,revision=revision+1 WHERE id=?1').bind(run.session.id,JSON.stringify(st)).run();
+    for(let n=0;n<120;n++){const v=await evaluate(c,'PARTY_CLIENT.session');if(v.status!=='active')break;clock+=1000;await evaluate(c,'partyPoll(true)');}
+    assert.equal(await evaluate(c,'PARTY_CLIENT.session.status'),'aborted');
+  }
+  assert.equal(challengeIds[0]===challengeIds[1],false);
+  assert.equal((await DB.prepare("SELECT COUNT(*) n FROM challenge_results WHERE challenge_id=?1").bind(code).first()).n,2,'the server recorded both finished runs once');
+  assert.equal((await DB.prepare("SELECT COUNT(*) n FROM resource_ledger WHERE request_id IN (?1,?2)").bind('party:'+challengeIds[0],'party:'+challengeIds[1]).first()).n,0,'challenges pay nothing');
+  for(const c of clients){await evaluate(c,"document.querySelector('[data-party=\"dismiss\"]')?.click();true");await evaluate(c,`challengeBoard(${JSON.stringify(code)}).then(()=>true)`);
+    await evaluate(c,"document.querySelector('#tabs [data-t=more]').click();true");
+    const text=await evaluate(c,"document.querySelector('#challengePanel')?.textContent||''");
+    assert.match(text,/#1 Gtwo1/);assert.match(text,/#2 Gtwo0/);assert.match(text,/chặng 3/);assert.match(text,/chặng 2/);assert.match(text,/Không có thưởng/);}
+  const challengeTouch=await evaluate(clients[0],"[...document.querySelectorAll('#challengePanel button,#challengePanel input')].map(b=>({text:b.textContent||b.placeholder,height:b.getBoundingClientRect().height}))");
+  assert.ok(challengeTouch.length>=8&&challengeTouch.every(b=>b.height>=44),JSON.stringify(challengeTouch));
+  assert.equal(await evaluate(clients[0],"document.documentElement.scrollWidth<=document.documentElement.clientWidth"),true,'the challenge panel must not overflow the viewport');
+  f.env.FEATURE_FLAGS.community_challenge=false;for(const c of clients)await evaluate(c,`setFeatureFlags(${JSON.stringify(f.env.FEATURE_FLAGS)});renderMore();true`);
+  assert.equal(await evaluate(clients[0],"!!document.querySelector('#challengePanel')"),false,'flag off removes the challenge panel');
   const touch=await evaluate(clients[0],"[...document.querySelectorAll('#onlineSessionPanel button')].map(b=>({text:b.textContent,height:b.getBoundingClientRect().height}))");assert.ok(touch.every(b=>b.height>=44),JSON.stringify(touch));
-  console.log(JSON.stringify({runtime:process.env.JX_D1_RUNTIME==='1'?'D1 local':'SQLite local',clients:2,isolatedContexts:true,viewports:[360,1280],sharedState:true,ackLossRetry:true,reloadReconnect:true,realBossCompletion:true,receiptsOnce:true,dungeonFormation:true,dungeonFlagOff:true,siegeCapture:true,siegeGateOpenAfterAllPointsCaptured:true,siegeReceiptsOnce:true,siegeTouch:siegeTouch.every(b=>b.height>=44),rankedSeasonPanel:seasonPanels.length===2,phltCoopLobby:true,phltCoopRescue:true,phltRescueMarksOnce:true,phltTouch:coopTouch.every(b=>b.height>=44),phltWeeklyTrial:true,trialBoardShared:true,trialTouch:trialTouch.every(b=>b.height>=44),activityReceiptOfflineRetry:true,moderationUI:true,muteReportServerRoundtrip:true,roomAndGuildChat:true,touch:touch.every(b=>b.height>=44)},null,2));
+  console.log(JSON.stringify({runtime:process.env.JX_D1_RUNTIME==='1'?'D1 local':'SQLite local',clients:2,isolatedContexts:true,viewports:[360,1280],sharedState:true,ackLossRetry:true,reloadReconnect:true,realBossCompletion:true,receiptsOnce:true,dungeonFormation:true,dungeonFlagOff:true,siegeCapture:true,siegeGateOpenAfterAllPointsCaptured:true,siegeReceiptsOnce:true,siegeTouch:siegeTouch.every(b=>b.height>=44),rankedSeasonPanel:seasonPanels.length===2,phltCoopLobby:true,phltCoopRescue:true,phltRescueMarksOnce:true,phltTouch:coopTouch.every(b=>b.height>=44),phltWeeklyTrial:true,g2CommunityChallenge:true,challengeBoardShared:true,challengeTouch:challengeTouch.every(b=>b.height>=44),trialBoardShared:true,trialTouch:trialTouch.every(b=>b.height>=44),activityReceiptOfflineRetry:true,moderationUI:true,muteReportServerRoundtrip:true,roomAndGuildChat:true,touch:touch.every(b=>b.height>=44)},null,2));
 }finally{
   for(const c of clients)c.close();if(browser){for(const id of contexts)await browser.command('Target.disposeBrowserContext',{browserContextId:id}).catch(()=>{});browser.close();}
   if(server)await new Promise(r=>server.close(r));while(inFlight)await new Promise(r=>setTimeout(r,20));Date.now=realNow;await DB.close();

@@ -1,7 +1,10 @@
 "use strict";
 const SESSION_COMBAT=Object.freeze({version:"party-combat-v1",step:.25,maxTicks:480,idleMs:10000,logMax:64});
 const SESSION_RESCUE=Object.freeze({window:24,hpCost:.2,mpCost:8,reviveHp:.35,perActor:1,bossHp:1.5,bossDamage:1.8});
-const SESSION_ACTIVITY_MODE=Object.freeze({party:"ctc",dungeon:"ctc",siege:"ctc",rescue:"phlt",trial:"phlt"});
+const SESSION_ACTIVITY_MODE=Object.freeze({party:"ctc",dungeon:"ctc",siege:"ctc",rescue:"phlt",trial:"phlt",challenge:"g2"});
+// Both weekly trials (PHLT) and community challenges (2.0) fight one absolute boss chain; only trials and challenges are solo.
+const sessionWaves=state=>state.activity==="trial"||state.activity==="challenge";
+const sessionSolo=activity=>activity==="trial"||activity==="challenge";
 // Weekly trial (P06): one actor faces the same absolute boss chain as everyone else that week. The rule list is a fixed allowlist indexed by the UTC week.
 const SESSION_TRIAL=Object.freeze({version:"trial-v1",baseHp:1200,growth:1.35,damageGrowth:.3,lengths:Object.freeze({short:3,long:6}),
   rules:Object.freeze([Object.freeze({id:"iron",def:2}),Object.freeze({id:"swift",interval:.75}),Object.freeze({id:"tough",hp:1.25}),Object.freeze({id:"ward",taken:.9})])});
@@ -19,9 +22,10 @@ function sessionActor(id,name,stats,role="damage"){
   return {id,name,role,p,hp:p.life,mp:p.mana,cooldown:0,utilityCooldown:0,guardUntil:0,contribution:{damage:0,control:0,heal:0,prevented:0},lastSeq:0};
 }
 function sessionCombatNew(mode,actors,seed,activity="party",options={}){
-  const min=activity==="trial"?1:2,max=activity==="trial"?1:4;
+  const min=sessionSolo(activity)?1:2,max=sessionSolo(activity)?1:4;
   if(!Array.isArray(actors)||actors.length<min||actors.length>max||SESSION_ACTIVITY_MODE[activity]!==mode)throw Error("Session snapshot requires a known activity, the mode that owns it and the right number of actors");
   if(activity==="trial"&&(!Number.isSafeInteger(options.week)||!Object.prototype.hasOwnProperty.call(SESSION_TRIAL.lengths,options.length)))throw Error("Trial needs a week and a known length");
+  if(activity==="challenge"&&(!Number.isSafeInteger(options.week)||typeof options.version!=="string"||!Number.isInteger(options.waves)||options.waves<1||options.waves>8||!(typeof options.scale==="number"&&options.scale>=.1&&options.scale<=10)))throw Error("Challenge needs a seed, a version, 1-8 waves and a bounded scale");
   const baseHp=Math.max(100,actors.reduce((n,a)=>n+Object.values(a.p.main.parts).reduce((x,y)=>x+y,0)*Math.max(.2,a.p.main.rate),0)*18);
   const hp=activity==="rescue"?baseHp*SESSION_RESCUE.bossHp:baseHp;
   const state={v:1,model:COMBAT_MODEL_VERSION,rules:SESSION_COMBAT.version,mode,activity,rng:seed>>>0,tick:0,status:"active",actors:JSON.parse(JSON.stringify(actors)),events:[],objectives:{breaks:0,supports:0},
@@ -30,6 +34,11 @@ function sessionCombatNew(mode,actors,seed,activity="party",options={}){
     // Siege-only state: party/dungeon states keep their exact historical shape.
     state.objectives.captured=0;state.objectives.points=SESSION_SIEGE.points.map(id=>({id,need:SESSION_SIEGE.need,progress:0,owned:false,touched:0}));
     state.boss.gate=1;for(const a of state.actors){a.contribution.capture=0;a.contribution.logistics=0;a.supplyUntil=0;}
+  }
+  if(activity==="challenge"){
+    // Challenge-only state: same wave chain as the weekly trial, with the preset's HP scale; the rule comes from the challenge seed.
+    state.trial={version:options.version,week:options.week,length:"standard",waves:options.waves,rule:sessionTrialRule(options.week).id,scale:options.scale};
+    state.objectives.depth=0;sessionTrialWave(state);
   }
   if(activity==="trial"){
     // Trial-only state: the boss chain is absolute (not scaled to the party), so builds are compared on equal terms.
@@ -43,7 +52,7 @@ function sessionCombatNew(mode,actors,seed,activity="party",options={}){
   return state;
 }
 function sessionTrialWave(state){
-  const w=state.objectives.depth,rule=sessionTrialRule(state.trial.week),hp=Math.round(SESSION_TRIAL.baseHp*Math.pow(SESSION_TRIAL.growth,w)*(rule.hp||1)),b=state.boss;
+  const w=state.objectives.depth,rule=sessionTrialRule(state.trial.week),hp=Math.round(SESSION_TRIAL.baseHp*Math.pow(SESSION_TRIAL.growth,w)*(rule.hp||1)*(state.trial.scale||1)),b=state.boss;
   b.hp=b.max=hp;b.series=(state.trial.week+w)%5;b.def=100*(rule.def||1);b.cooldown=rule.interval||1;b.interval=rule.interval||1;b.dmgMul=(1+SESSION_TRIAL.damageGrowth*w)*(rule.taken||1);
   b.poison=0;b.poisonDmg=0;b.poisonShares={};b.stun=0;b.stunImm=0;
 }
@@ -122,7 +131,7 @@ function sessionCombatBossHit(state,target){
   const el=ELEM[b.series]||"phys",before=target.hp;
   let raw=applyPart(p.life*.045*(.8+sessionRandom(state)*.4),el,b.series,p.series,p.res,PLAYER_RES_MAX,10);
   if(state.activity==="rescue")raw*=SESSION_RESCUE.bossDamage;
-  if(state.activity==="trial")raw*=b.dmgMul;
+  if(sessionWaves(state))raw*=b.dmgMul;
   if(p.res5&&!counters(b.series,p.series))raw=Math.max(1,raw-p.res5);
   if(p.statusRes[el])raw=Math.max(1,raw*(1-p.statusRes[el]/100));if(p.absorb)raw=Math.max(1,raw*(1-p.absorb));
   if(p.curseDR)raw*=1-p.curseDR;if(p.flatDR)raw=Math.max(1,raw-p.flatDR);
@@ -151,7 +160,7 @@ function sessionCombatStep(input,commands=[],connectedIds=[]){
   if(state.activity==="siege")for(const point of state.objectives.points)if(!point.owned&&point.touched!==state.tick)point.progress=Math.max(0,point.progress-SESSION_SIEGE.decay);
   if(state.activity==="dungeon"&&b.hp>0){const ratio=b.hp/b.max,phase=ratio<=.33?2:ratio<=.66?1:0;if(phase>b.wardPhase){b.wardPhase=phase;b.ward=1;b.wardUntil=state.tick+32;b.breakers=[];sessionEvent(state,"objective",{targetId:"boss",reason:"dungeon_formation_started",phase});}}
   if(b.hp<=0){
-    if(state.activity==="trial"){
+    if(sessionWaves(state)){
       state.objectives.depth++;sessionEvent(state,"objective",{targetId:"boss",reason:"trial_wave_cleared",count:state.objectives.depth});
       if(state.objectives.depth>=state.trial.waves){state.status="completed";return state;}
       sessionTrialWave(state);

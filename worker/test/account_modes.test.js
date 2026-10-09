@@ -71,7 +71,7 @@ test('PHLT and 2.0 accounts are denied every CTC-only feature, even with those f
     await assert.rejects(() => economy(req('GET', who.token), f.env), {code: 'feature_disabled'});
   }
   const sessionsFor = who => sessions(req('GET', who.token), f.env, undefined, new URL('https://game.test/api/sessions'));
-  await assert.rejects(() => sessionsFor(g2), {code: 'session_mode_denied'}, '2.0 has no sessions at all');
+  await assert.rejects(() => sessionsFor(g2), {code: 'feature_disabled'}, '2.0 sessions exist only as community challenges and need that flag');
   await assert.rejects(() => sessionsFor(phlt), {code: 'feature_disabled'}, 'PHLT sessions need coop_rescue as well');
 });
 test('time-based level check scales with the mode without loosening CTC', () => {

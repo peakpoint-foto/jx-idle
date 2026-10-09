@@ -1,7 +1,9 @@
 "use strict";
 // UI observes server snapshots only: no client simulation, victory or inventory reward.
 const PARTY_CLIENT={session:null,pending:null,busy:false,reading:false,readPromise:null,generation:0,error:"",retryAt:0,identity:null};
-function partyIdentity(){const a=onlGet();return a?.token&&(S?.mode==='ctc'||S?.mode==='phlt')?[a.token,S.cid||'',S.mode].join(':'):null;}
+// 2.0 sessions are community challenges: they are gated by their own flag and started from the challenge panel, never from a room.
+const partyFlag=()=>S?.mode==='g2'?'community_challenge':'party_combat';
+function partyIdentity(){const a=onlGet();return a?.token&&(S?.mode==='ctc'||S?.mode==='phlt'||S?.mode==='g2')?[a.token,S.cid||'',S.mode].join(':'):null;}
 function partyPointer(value){
   const key=onlKey()+'_session';
   try{if(arguments.length){if(value)localStorage.setItem(key,JSON.stringify({v:1,cid:S.cid,id:value}));else localStorage.removeItem(key);return value;}
@@ -10,7 +12,7 @@ function partyPointer(value){
 }
 function partyReset(){PARTY_CLIENT.generation++;PARTY_CLIENT.session=null;PARTY_CLIENT.pending=null;PARTY_CLIENT.error='';PARTY_CLIENT.errorCode='';PARTY_CLIENT.retryAt=0;R.onlineSession=null;}
 function partyAccept(data,identity){
-  if(identity!==partyIdentity()||!featureEnabled('party_combat'))return false;
+  if(identity!==partyIdentity()||!featureEnabled(partyFlag()))return false;
   const next=data?.session,current=PARTY_CLIENT.session;
   if(next&&(!next.id||next.mode!==S.mode||next.model!==COMBAT_MODEL_VERSION||next.rules!==SESSION_COMBAT.version||!Array.isArray(next.actors)||next.actors.length>4))throw Error('Phiên trận không tương thích');
   if(next&&current?.id===next.id&&next.revision<current.revision)return false;
@@ -23,16 +25,17 @@ function partyPanelHTML(){
   if(!s&&S.mode==='phlt')return `<h4>Giải cứu PHLT</h4><p>2–4 người đã sẵn sàng trong sảnh, chỉ chủ phòng bắt đầu. Bị hạ gục sẽ ngã 6 giây; đồng đội còn sống bấm Cứu — tốn 20% HP tối đa và 8 MP, mỗi người chỉ được cứu một lần.</p><p>Thưởng điểm cứu viện server: 1 mỗi phiên hoàn thành (+1 nếu bạn đã cứu), cap 3/ngày UTC, ví 30; không có đồ hay vật tư, tách hẳn công trạng CTC.</p><button class="btn" data-party="rescueStart" ${PARTY_CLIENT.busy?'disabled':''}>Bắt đầu giải cứu</button><button class="btn" data-party="refresh">Tìm phiên / kết nối lại</button>${error}`;
   if(!s)return `<h4>Trận tổ đội CTC</h4><p>2–4 người đã sẵn sàng, chỉ chủ phòng bắt đầu. Trạng thái server cập nhật mỗi giây; có thể trễ khi mất mạng.</p><p>Thưởng công trạng server tối đa 1/phiên, chung cap 3/ngày UTC, ví30; cần đóng góp thực, người rời không nhận. Không cấp đồ hoặc lượng offline.</p><button class="btn" data-party="create" ${PARTY_CLIENT.busy?'disabled':''}>Bắt đầu trận tổ đội</button>${featureEnabled('party_dungeon')?`<button class="btn" data-party="dungeon" ${PARTY_CLIENT.busy?'disabled':''}>Vào phụ bản phá trận</button>`:''}${featureEnabled('party_siege')?`<button class="btn" data-party="siege" ${PARTY_CLIENT.busy?'disabled':''}>Công thành tổ đội</button>`:''}<button class="btn" data-party="refresh">Tìm phiên / kết nối lại</button>${error}`;
   const status={active:'Đang chiến đấu',completed:'Hoàn thành',aborted:'Kết thúc không thắng'};
-  const dungeon=s.activity==='dungeon',siege=s.activity==='siege',rescue=s.activity==='rescue',trial=s.activity==='trial',unit=s.mode==='phlt'?'điểm cứu viện':'công trạng';
-  return `<h4>${dungeon?'Phụ bản CTC · Phá trận':siege?'Công thành CTC · Chiếm điểm':rescue?'Giải cứu PHLT':trial?'Thử thách tuần PHLT':'Trận tổ đội CTC'} · ${esc(status[s.status]||s.status)}</h4><small>Mã ${esc(s.id)} · nhịp ${s.tick} · bản ${s.revision} · tự đánh theo build đã chốt</small><p>Boss: ${Math.ceil(s.boss.hp)}/${Math.ceil(s.boss.max)}${dungeon&&s.boss.ward?' · kết trận đang dựng, cần 2 người phòng thủ':''}${siege?(s.boss.gate?' · cổng đóng, chủ tướng chỉ chịu 20% sát thương':' · cổng đã mở'):''}</p>${dungeon?`<p>Mục tiêu: phối hợp Phòng thủ để phá kết trận; hỗ trợ đồng đội tạo đóng góp hữu ích. Đã phá ${s.objectives?.breaks||0} kết trận.</p>`:''}${trial?`<p>Chặng ${Math.min(s.trial.waves,(s.objectives?.depth||0)+(s.status==='active'?1:0))}/${s.trial.waves} · chuyến ${s.trial.length==='long'?'dài':'ngắn'} · điểm ${s.trial.score.toFixed(2)}. Máy chủ chạy thật; bạn dùng Phòng thủ và Hồi phục. Không có thưởng; kết quả tốt nhất được ghi vào bảng tuần.</p>`:''}${rescue?`<p>Mục tiêu: hạ chủ tướng. Ai bị hạ gục sẽ ngã 6 giây; đồng đội còn sống bấm Cứu (tốn 20% HP tối đa và 8 MP, mỗi người chỉ được cứu một lần). Không cứu kịp là mất người đó trong phiên này.</p>`:''}${siege?`<p>Mục tiêu: chiếm đủ 3 điểm để mở cổng rồi hạ chủ tướng. Chiếm điểm và tiếp tế đều tính đóng góp; điểm chiếm dở tụt dần nếu không ai giữ.</p>${(s.objectives?.points||[]).map(p=>`<div class="qrow"><span><b>Điểm ${esc(String(p.id).toUpperCase())}</b> · ${p.owned?'Đã chiếm':Math.floor(p.progress)+'/'+p.need}</span>${s.status==='active'&&!p.owned?`<button class="btn" data-party="capture" data-target="${esc(p.id)}">Chiếm</button>`:''}</div>`).join('')}`:''}
+  const challenge=s.activity==='challenge',dungeon=s.activity==='dungeon',siege=s.activity==='siege',rescue=s.activity==='rescue',trial=s.activity==='trial',unit=s.mode==='phlt'?'điểm cứu viện':'công trạng';
+  return `<h4>${dungeon?'Phụ bản CTC · Phá trận':siege?'Công thành CTC · Chiếm điểm':rescue?'Giải cứu PHLT':trial?'Thử thách tuần PHLT':challenge?'Thử thách cộng đồng 2.0':'Trận tổ đội CTC'} · ${esc(status[s.status]||s.status)}</h4><small>Mã ${esc(s.id)} · nhịp ${s.tick} · bản ${s.revision} · tự đánh theo build đã chốt</small><p>Boss: ${Math.ceil(s.boss.hp)}/${Math.ceil(s.boss.max)}${dungeon&&s.boss.ward?' · kết trận đang dựng, cần 2 người phòng thủ':''}${siege?(s.boss.gate?' · cổng đóng, chủ tướng chỉ chịu 20% sát thương':' · cổng đã mở'):''}</p>${dungeon?`<p>Mục tiêu: phối hợp Phòng thủ để phá kết trận; hỗ trợ đồng đội tạo đóng góp hữu ích. Đã phá ${s.objectives?.breaks||0} kết trận.</p>`:''}${challenge?`<p>Mã ${esc(s.challenge?.code||'')} · chặng ${Math.min(s.trial.waves,(s.objectives?.depth||0)+(s.status==='active'?1:0))}/${s.trial.waves} · điểm ${s.trial.score.toFixed(2)}. Build chuẩn hóa do máy chủ dựng và chạy thật; bạn dùng Phòng thủ và Hồi phục. Không có thưởng; kết quả tốt nhất được ghi vào bảng của thử thách.</p>`:''}${trial?`<p>Chặng ${Math.min(s.trial.waves,(s.objectives?.depth||0)+(s.status==='active'?1:0))}/${s.trial.waves} · chuyến ${s.trial.length==='long'?'dài':'ngắn'} · điểm ${s.trial.score.toFixed(2)}. Máy chủ chạy thật; bạn dùng Phòng thủ và Hồi phục. Không có thưởng; kết quả tốt nhất được ghi vào bảng tuần.</p>`:''}${rescue?`<p>Mục tiêu: hạ chủ tướng. Ai bị hạ gục sẽ ngã 6 giây; đồng đội còn sống bấm Cứu (tốn 20% HP tối đa và 8 MP, mỗi người chỉ được cứu một lần). Không cứu kịp là mất người đó trong phiên này.</p>`:''}${siege?`<p>Mục tiêu: chiếm đủ 3 điểm để mở cổng rồi hạ chủ tướng. Chiếm điểm và tiếp tế đều tính đóng góp; điểm chiếm dở tụt dần nếu không ai giữ.</p>${(s.objectives?.points||[]).map(p=>`<div class="qrow"><span><b>Điểm ${esc(String(p.id).toUpperCase())}</b> · ${p.owned?'Đã chiếm':Math.floor(p.progress)+'/'+p.need}</span>${s.status==='active'&&!p.owned?`<button class="btn" data-party="capture" data-target="${esc(p.id)}">Chiếm</button>`:''}</div>`).join('')}`:''}
     ${s.actors.map(a=>`<div class="qrow"><span><b>${esc(a.name)}</b> · ${rescue&&a.down>0?'Đang ngã · ':''}${a.withdrawn?'Đã rời':a.connected?'Kết nối':'Mất kết nối'}<small>HP ${Math.ceil(a.hp)}/${Math.ceil(a.maxHp)} · MP ${Math.ceil(a.mp)} · sát thương ${Math.floor(a.contribution.damage)}, hồi ${Math.floor(a.contribution.heal)}, chặn ${Math.floor(a.contribution.prevented)}${siege?`, chiếm ${Math.floor(a.contribution.capture||0)}, tiếp tế ${Math.floor(a.contribution.logistics||0)}`:''}${rescue?`, cứu ${Math.floor(a.contribution.rescue||0)}`:''}</small></span>${s.status==='active'&&a.hp>0?`<button class="btn" data-party="support" data-target="${esc(a.id)}">Hỗ trợ</button>`:''}${siege&&s.status==='active'&&a.hp>0&&a.id!==me?`<button class="btn" data-party="supply" data-target="${esc(a.id)}">Tiếp tế</button>`:''}${rescue&&s.status==='active'&&a.down>0&&a.id!==me?`<button class="btn" data-party="rescue" data-target="${esc(a.id)}">Cứu</button>`:''}</div>`).join('')}
-    ${s.status==='active'?'<p>Phòng thủ giảm sát thương 1 giây. Hỗ trợ hồi10% HP với5MP, hồi chiêu6 giây; chỉ tốn khi hồi hữu ích.</p><button class="btn" data-party="guard">Phòng thủ</button><button class="btn" data-party="leave">Rời phiên</button>':`<p>${trial?`Kết thúc: ${s.status==='completed'?'hoàn thành '+s.trial.waves+' chặng':'đạt chặng '+(s.objectives?.depth||0)}. Kết quả tốt nhất của bạn đã ghi vào bảng tuần.`:s.reward?`Đã chốt thưởng: ${s.reward.amount} ${unit} (${esc(s.reward.day)})`:'Chưa chốt thưởng'}</p>${s.status==='completed'&&!s.reward&&!trial?`<button class="btn" data-party="claim">Nhận ${unit}</button>`:''}<button class="btn" data-party="dismiss">Đóng kết quả</button>`}
+    ${s.status==='active'?'<p>Phòng thủ giảm sát thương 1 giây. Hỗ trợ hồi10% HP với5MP, hồi chiêu6 giây; chỉ tốn khi hồi hữu ích.</p><button class="btn" data-party="guard">Phòng thủ</button><button class="btn" data-party="leave">Rời phiên</button>':`<p>${challenge?`Kết thúc: ${s.status==='completed'?'hoàn thành '+s.trial.waves+' chặng':'đạt chặng '+(s.objectives?.depth||0)}. Kết quả tốt nhất của bạn đã ghi vào bảng của thử thách.`:trial?`Kết thúc: ${s.status==='completed'?'hoàn thành '+s.trial.waves+' chặng':'đạt chặng '+(s.objectives?.depth||0)}. Kết quả tốt nhất của bạn đã ghi vào bảng tuần.`:s.reward?`Đã chốt thưởng: ${s.reward.amount} ${unit} (${esc(s.reward.day)})`:'Chưa chốt thưởng'}</p>${s.status==='completed'&&!s.reward&&!trial&&!challenge?`<button class="btn" data-party="claim">Nhận ${unit}</button>`:''}<button class="btn" data-party="dismiss">Đóng kết quả</button>`}
     <button class="btn" data-party="refresh">Cập nhật</button>${error}<details><summary>Diễn biến gần đây</summary>${(s.events||[]).slice(-8).map(e=>`<p>${esc(e.kind)} · ${esc(e.sourceId||'')} → ${esc(e.targetId||'')} · ${Math.round(e.useful||0)}</p>`).join('')}</details>`;
 }
 function partyRender(){
   let box=document.getElementById('onlineSessionPanel');
-  if(!featureEnabled('party_combat')||!partyIdentity()){if(box)box.remove();return;}
+  if(!featureEnabled(partyFlag())||!partyIdentity()){if(box)box.remove();return;}
   if(PARTY_CLIENT.identity!==partyIdentity()){partyReset();PARTY_CLIENT.identity=partyIdentity();}
+  if(S.mode==='g2'&&!PARTY_CLIENT.session){if(box)box.remove();return;}
   const host=document.getElementById('t-more');if(!host)return;
   if(!box){box=document.createElement('section');box.id='onlineSessionPanel';box.className='card party-session';host.prepend(box);}
   const target=box.querySelector('details')?.open;box.innerHTML=partyPanelHTML();const details=box.querySelector('details');if(details)details.open=!!target;
@@ -47,7 +50,7 @@ function partyRender(){
 }
 async function partyPoll(force=false){
   const identity=partyIdentity();
-  if(!identity||!featureEnabled('party_combat')){partyReset();partyRender();return;}
+  if(!identity||!featureEnabled(partyFlag())){partyReset();partyRender();return;}
   if(PARTY_CLIENT.identity!==identity){partyReset();PARTY_CLIENT.identity=identity;}
   if(PARTY_CLIENT.reading){if(force){await PARTY_CLIENT.readPromise?.catch(()=>{});return partyPoll(true);}return;}
   if(!force&&(document.visibilityState==='hidden'||Date.now()<PARTY_CLIENT.retryAt))return;
@@ -60,7 +63,7 @@ async function partyPoll(force=false){
   }}finally{PARTY_CLIENT.reading=false;PARTY_CLIENT.readPromise=null;}
 }
 async function partyWrite(action,target){
-  const identity=partyIdentity();if(!identity||!featureEnabled('party_combat')||PARTY_CLIENT.busy)return;
+  const identity=partyIdentity();if(!identity||!featureEnabled(partyFlag())||PARTY_CLIENT.busy)return;
   if(PARTY_CLIENT.identity!==identity){partyReset();PARTY_CLIENT.identity=identity;}
   const s=PARTY_CLIENT.session;
   if(action){
@@ -76,7 +79,7 @@ async function partyWrite(action,target){
   }catch(e){if(identity===partyIdentity()){
     const code=e.error||e.code;
     // Definite server rejection can be refreshed; a lost acknowledgement retains the exact command.
-    if(['command_window','command_conflict','session_locked','session_actor_inactive','session_reward_unavailable','session_not_ready','feature_disabled','bad_session_command','siege_quota_used','trial_attempts_used','trial_solo_only','bad_trial_length'].includes(code))PARTY_CLIENT.pending=null;
+    if(['command_window','command_conflict','session_locked','session_actor_inactive','session_reward_unavailable','session_not_ready','feature_disabled','bad_session_command','siege_quota_used','trial_attempts_used','trial_solo_only','bad_trial_length','challenge_attempts_used'].includes(code))PARTY_CLIENT.pending=null;
     PARTY_CLIENT.errorCode=code;
     PARTY_CLIENT.error=code==='siege_quota_used'?'Tuần UTC này đội đã công thành (mỗi người 1 lần mỗi tuần). Phiên bị hủy sẽ được hoàn lượt.':e.msg||e.message||'Chưa xác nhận lệnh; thử lại cùng mã để tránh gửi trùng';
   }}finally{PARTY_CLIENT.generation++;PARTY_CLIENT.busy=false;partyRender();}
@@ -85,4 +88,4 @@ async function partyWrite(action,target){
   const original=renderMore;renderMore=function(){const r=original.apply(this,arguments);partyRender();return r;};
   const originalTick=tick;tick=function(dt){if(PARTY_CLIENT.session?.status==='active'||PARTY_CLIENT.pending?.body.action==='create')return;return originalTick(dt);};
 }
-setInterval(()=>{if(partyIdentity()&&featureEnabled('party_combat'))partyPoll();else if(PARTY_CLIENT.session){partyReset();partyRender();}},1000);
+setInterval(()=>{if(partyIdentity()&&featureEnabled(partyFlag()))partyPoll();else if(PARTY_CLIENT.session){partyReset();partyRender();}},1000);
