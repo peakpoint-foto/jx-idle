@@ -12,6 +12,7 @@ const FEATURE_REGISTRY = Object.freeze({
   phased_boss: { modes: ["ctc"], enabled: false, online: false },
   combat_reports: { modes: ["ctc","phlt","g2"], enabled: false, online: false },
   training_lab: { modes: ["g2"], enabled: false, online: false },
+  rift_tower: { modes: ["g2"], enabled: false, online: false },
   build_library: { modes: ["g2"], enabled: false, online: false },
   build_progression: { modes: ["g2"], enabled: false, online: false },
   expedition: { modes: ["phlt"], enabled: false, online: false },

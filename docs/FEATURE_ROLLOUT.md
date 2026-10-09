@@ -86,3 +86,27 @@ Chi tiết từng tính năng xem các mục dưới.
   hiện nút "Bật gợi ý" để mở lại. Áp dụng gợi ý không bao giờ tự động — luôn có
   nút "Áp dụng" và preview trước/sau.
 - Test: `test/build_advice.test.mjs` — đa phái (5 phái), reason, mode, dismiss.
+
+## 2.0 Schema data-driven đầy đủ — rift modifiers từ JSON (`rift_modifiers.v1.json`)
+
+- `RIFT_MODIFIERS` suy từ JSON (metadata hiển thị); behavior giữ trong code key
+  theo id. `rift_rules.js` chuyển xuống sau `content.js`.
+- Modifier mùa (2b) sẽ theo cùng pattern.
+
+## 2.1 Phòng lab build mở rộng (`training_lab`)
+
+- Đã có: phòng luyện tham số hóa, so sánh A/B, mã share build.
+- Mới: `trainingBreakdownHTML` — breakdown theo nguồn damage (từng chiêu + DOT,
+  kèm %) trong kết quả đơn và so sánh A/B.
+- Kill-switch: flag `training_lab`. Chi phí gỡ: thấp (client-only).
+
+## 2.2 Rift procedural — tháp vô hạn (`rift_tower`)
+
+- `js/rift_tower.js`: tầng vô hạn, modifier mỗi tầng seed theo ngày (từ JSON
+  2.0), checkpoint mỗi 10 tầng, bảng độ sâu local (best + lịch sử 7 lần).
+  Leo = training session deterministic — cùng seed cho cùng kết quả nên không
+  save-scum được; không ảnh hưởng build thật, không thưởng.
+- HP tầng 1 = 60k, tăng 1.16^x (neo theo sim: mid cấp 60 ~9k DPS qua tầng 1
+  trong ~7s, tường dần ở tầng 15+).
+- Bảng worker (rank) chưa cần — quyết định ở đợt rollout khi có dữ liệu.
+- Kill-switch: flag `rift_tower` (kèm `training_lab`). Gỡ: xóa file + hook panel.
