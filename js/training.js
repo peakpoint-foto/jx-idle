@@ -124,3 +124,18 @@ function trainingReport(session) {
 }
 
 function trainingRun(input={},state=S) { const session=trainingCreate(input,state);return trainingAdvance(session,session.parameters.duration); }
+
+// Breakdown theo nguồn damage (2.1): mỗi chiêu + DOT, kèm % trên damage hữu ích.
+function trainingBreakdownHTML(report) {
+  const rows = Object.entries(report.bySkill || {}).map(([id, dmg]) => ({
+    name: +id === 0 ? "Đòn thường" : ((typeof SK !== "undefined" && SK[id] && SK[id].n) || ("Chiêu " + id)),
+    dmg: +dmg || 0,
+  }));
+  if (report.dotDamage > 0) rows.push({name: "Độc (DOT)", dmg: report.dotDamage});
+  const total = report.usefulDamage || rows.reduce((x, r) => x + r.dmg, 0) || 1;
+  const shown = rows.filter(r => r.dmg > 0).sort((a, b) => b.dmg - a.dmg);
+  if (!shown.length) return "";
+  return `<div class="card"><b>Breakdown theo nguồn damage</b><div style="overflow-x:auto"><table><thead><tr><th>Nguồn</th><th>Damage</th><th>%</th></tr></thead><tbody>` +
+    shown.map(r => `<tr><td>${esc(r.name)}</td><td>${fmt(r.dmg)}</td><td>${(r.dmg / total * 100).toFixed(1)}%</td></tr>`).join("") +
+    `</tbody></table></div></div>`;
+}
