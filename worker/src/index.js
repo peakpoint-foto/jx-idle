@@ -10,6 +10,7 @@ import { profile } from "./ladder.js";
 import { duels, guild, room } from "./social.js";
 import { mentor } from "./mentor.js";
 import { guildTech } from "./guild_tech_api.js";
+import { league } from "./league_api.js";
 import { featureConfig, guardedFeature } from "./capabilities.js";
 import {friends} from './lobby.js';
 import {economy} from './economy.js';
@@ -49,6 +50,8 @@ const ROUTES = {
   "POST /api/mentor": guardedFeature("mentor", mentor),
   "GET /api/guild-tech": guardedFeature("guild_tech", guildTech),
   "POST /api/guild-tech": guardedFeature("guild_tech", guildTech),
+  "GET /api/league": guardedFeature("duel_league", league),
+  "POST /api/league": guardedFeature("duel_league", league),
   "POST /api/guild": guardedFeature("guild_online", guild),
   "GET /api/room": guardedFeature("room_presence", room),
   "POST /api/room": guardedFeature("room_presence", room),

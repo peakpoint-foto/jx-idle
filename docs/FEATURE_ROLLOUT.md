@@ -248,3 +248,12 @@ Chi tiết từng tính năng xem các mục dưới.
   damage (+10% sát thương).
 - Boss ưu tiên aggro cao nhất thay vì xoay vòng; aggro giảm 2%/tick.
 - Session model lên v3 (thêm aggro); sửa bug enrage multiplier (precedence).
+
+## 3.2 Duel league async
+
+- 5 bậc (Đồng→Kim Cương) theo điểm; mùa 2 tuần.
+- `worker/src/league.js`: `simulateDuel` deterministic theo seed (power + random),
+  `leagueMatchmake` ghép cặp cùng tier.
+- API `/api/league` (join/fight); thắng +25 điểm, thua +5; lên bậc tự động.
+- Replay ngắn hạn: lưu seed + rules_version (`power-v1`) trong `league_matches`.
+- Flag `duel_league` tắt mặc định.

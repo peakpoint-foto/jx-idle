@@ -7,6 +7,7 @@ const FEATURE_REGISTRY = Object.freeze({
   legendary_affix: { modes: ["ctc","phlt","g2"], enabled: false, online: false },
   element_reactions: { modes: ["ctc","phlt","g2"], enabled: false, online: false },
   guild_tech: { modes: ["ctc","phlt","g2"], enabled: false, online: true },
+  duel_league: { modes: ["ctc","phlt","g2"], enabled: false, online: true },
   build_advice: { modes: ["ctc","phlt","g2"], enabled: false, online: false },
   combat_policy: { modes: ["ctc","phlt","g2"], enabled: false, online: false },
   loot_codex: { modes: ["ctc","phlt","g2"], enabled: false, online: false },
