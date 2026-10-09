@@ -157,6 +157,27 @@ function validateLegendaryAffixes(data) {
   });
   return data;
 }
+// Faction stories (2.16): truyện ngắn theo phái, mở theo cấp.
+function validateFactionStories(data) {
+  const what = "faction-stories";
+  if (!isPlainObj(data)) throw contentError(what, "phải là object");
+  checkVersion(data.version, "faction-stories", what);
+  if (!Array.isArray(data.levels) || !data.levels.length) throw contentError(what, "levels phải là mảng");
+  if (!isPlainObj(data.stories)) throw contentError(what, "stories phải là object");
+  for (const [fac, arr] of Object.entries(data.stories)) {
+    if (!Array.isArray(arr) || arr.length < 5 || arr.length > 7)
+      throw contentError(what, `${fac}: 5-7 mẩu`);
+    arr.forEach((s, i) => {
+      if (!isPlainObj(s) || typeof s.title !== "string" || !s.title.trim() || s.title.length > 30)
+        throw contentError(what, `${fac}[${i}].title không hợp lệ`);
+      if (!Number.isInteger(s.level) || s.level < 1 || s.level > 180)
+        throw contentError(what, `${fac}[${i}].level không hợp lệ`);
+      if (typeof s.text !== "string" || s.text.length < 10 || s.text.length > 500)
+        throw contentError(what, `${fac}[${i}].text 10-500 ký tự`);
+    });
+  }
+  return data;
+}
 // Event flags: danh mục slot sự kiện định kỳ hiện có.
 const EVENT_KINDS = ["trial", "challenge", "boss", "bonus"];
 const EVENT_CADENCE = ["weekly", "monthly"];

@@ -30,10 +30,11 @@ const trialMutators = load("trial-mutators", "data/content/trial_mutators.v1.jso
 const riftModifiers = load("rift-modifiers", "data/content/rift_modifiers.v1.json", ctx.validateRiftModifiers);
 const seasonThemes = load("season-themes", "data/content/season_themes.v1.json", ctx.validateSeasonThemes);
 const legendaryAffixes = load("legendary-affixes", "data/content/legendary_affixes.v1.json", ctx.validateLegendaryAffixes);
+const factionStories = load("faction-stories", "data/content/faction_stories.v1.json", ctx.validateFactionStories);
 
 if (!checkOnly) {
   const out = `// TỰ SINH bởi scripts/build-content.mjs — không sửa tay. Nguồn: data/content/*.v1.json\n` +
-    `window.JX_CONTENT=${JSON.stringify({ trial, events, trialMutators, riftModifiers, seasonThemes, legendaryAffixes })};\n` +
+    `window.JX_CONTENT=${JSON.stringify({ trial, events, trialMutators, riftModifiers, seasonThemes, legendaryAffixes, factionStories })};\n` +
     `(function(){const f=o=>{if(o&&typeof o==="object"){for(const v of Object.values(o))f(v);Object.freeze(o)}};f(window.JX_CONTENT);})();\n`;
   fs.writeFileSync(root + "js/content.gen.js", out);
   console.log(`  -> js/content.gen.js`);

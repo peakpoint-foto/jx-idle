@@ -229,3 +229,9 @@ Chi tiết từng tính năng xem các mục dưới.
 - Worker: `guild_tech.js` (đóng góp tích lũy qua quota 0.3, idempotent theo nonce),
   API `/api/guild-tech` (GET/POST), flag `guild_tech` tắt mặc định.
 - Client: `js/guild_tech_ui.js` hiển thị cây và nút đóng góp.
+
+## 2.16 Truyện ngắn theo phái
+
+- `data/content/faction_stories.v1.json`: 11 phái × 6 mẩu (cấp 30/60/90/120/150/180);
+  thuần text, không thưởng sức mạnh.
+- `js/faction_stories_ui.js`: đọc trong codex, mở dần theo cấp; telemetry `story_read`.
