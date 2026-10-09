@@ -28,7 +28,7 @@ const EXPORTS = [
   "COMBAT_MODEL_VERSION", "combatModelDescriptor", "combatEvent",
   "applyPart", "hitPercent", "heroGuard",
   "tickEnemyStatuses",
-  "SESSION_COMBAT", "sessionActor", "sessionCombatNew", "sessionCombatStep",
+  "SESSION_COMBAT", "SESSION_SIEGE", "sessionActor", "sessionCombatNew", "sessionCombatStep",
   "RIFT_RULES", "RIFT_MODIFIERS", "riftModifiersValid", "riftStats", "riftChoices",
   "featureEnabled", "featureConfigSnapshot", "parseFeatureFlags",
   "redactFeedbackText", "cleanFeedbackDiagnostics", "cleanFeedbackContext",
