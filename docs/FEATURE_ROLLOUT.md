@@ -193,3 +193,11 @@ Chi tiết từng tính năng xem các mục dưới.
   flag `legendary_affix` mặc định tắt; tooltip render riêng màu cam.
 - Worker validator cho phép id trong JSON, gắn cờ id lạ.
 - Sim Balance CI vẫn xanh; legendary hiếm nên không ảnh hưởng baseline.
+
+## 2.11 Nhiều đường chuyển sinh
+
+- Mỗi lần chuyển sinh chọn 1 trong 3 đường (cộng dồn, tối đa 5 lần):
+  Võ Đạo (+5 điểm kỹ năng), Thần Binh (đồ mặc +1 cường hóa), Phong Hành (+15% EXP).
+- `rebornBonus()` tính XP theo đường; validator hiện có đã cover (giới hạn 5 lần,
+  enh ≤ ENH_MAX, skill pending).
+- UI tab Chuyển sinh: radio chọn đường trước khi xác nhận.
