@@ -4,4 +4,4 @@
 
 UTC week index chỉ tiến về trước trong save; clock rollback giữ tuần/claim đã ghi, không tạo tuần mới. Namespace malformed/future bị giữ nguyên. Kiểm thử cover mode lock, quest completion, weekly rollover, rollback clock, return receipt one-shot, storage failure, legacy save, PHLT expedition và G2 rift completion. Browser smoke sáu tổ hợp mode/viewport xác nhận card, claim UI và target chạm 44px.
 
-Giới hạn nghiệm thu: progression và đồng hồ offline là client-side, save có thể sửa được; không dùng cho xếp hạng/server reward. Nếu cần chống clock forward/tamper cho reward cạnh tranh, cần timestamp/server authority riêng cho từng mode. UI chưa có bản tóm tắt hoạt động khi quay lại. Vì vậy R02 chưa đóng.
+Giới hạn nghiệm thu: progression và đồng hồ offline là client-side, save có thể sửa được; không dùng cho xếp hạng/server reward. Nếu cần chống clock forward/tamper cho reward cạnh tranh, cần timestamp/server authority riêng cho từng mode. UI chưa có bản tóm tắt hoạt động khi quay lại: cần bộ đếm hoạt động theo mode kể từ `lastSeen` (ghi trong save, có cap) và một thẻ tóm tắt, chưa làm. Vì vậy R02 chưa đóng.
