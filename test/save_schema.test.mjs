@@ -8,7 +8,9 @@ for (const mode of ["ctc", "phlt", "g2"]) {
     g.run(`fixture('${mode}');S.v=1;S.extensions=undefined;S.gold=12345;S.attrPts=7;S.skPts=9;S.eq={weapon:{r:2,mo:'${mode}',uid:99,base:[],mag:[]}};var oldCid=S.cid;var oldRaw=pack(S);localStorage.setItem(saveKey(),oldRaw);localStorage.setItem(onlKey(),JSON.stringify({token:'do-not-copy'}));load()`);
     assert.equal(g.run("S.v"),2);
     assert.equal(g.run("S.cid===oldCid"),true);
-    assert.deepEqual(g.json("[S.mode,S.gold,S.attrPts,S.skPts,S.eq.weapon.uid,S.extensions]"),[mode,12345,7,9,99,{v:1}]);
+    const ext=g.json("S.extensions");
+    assert.deepEqual([g.json("S.mode"),g.json("S.gold"),g.json("S.attrPts"),g.json("S.skPts"),g.json("S.eq.weapon.uid")],[mode,12345,7,9,99]);
+    assert.equal(ext.v,1);assert.equal(ext.wv,3);assert.deepEqual(ext.codex.unlocked,[1]);assert.ok(ext.goals7&&typeof ext.goals7.start==="number");
     assert.equal(g.run("localStorage.getItem(saveKey()+'_pre_v2')===oldRaw"),true);
     assert.equal(g.run("onlGet().token"),"do-not-copy");
     g.run("var migrated=migrate(S);var twice=migrate(migrated)");
@@ -53,7 +55,8 @@ test("extension migrations are nonmutating and reject unknown schema", () => {
   g.run("var legacy={v:1,fac:'shaolin',mode:'ctc',lvl:1};var migrated=migrateSaveSchema(legacy)");
   assert.equal(g.run("legacy.v"),1);
   assert.equal(g.run("legacy.extensions===undefined"),true);
-  assert.deepEqual(g.json("migrated.extensions"),{v:1});
+  const mext=g.json("migrated.extensions");
+  assert.equal(mext.v,1);assert.equal(mext.wv,3,"migration waves chạy trong migrateSaveSchema");
   assert.throws(()=>g.run("migrateSaveSchema({v:2,extensions:{v:99}})"),/chưa được hỗ trợ/);
 });
 

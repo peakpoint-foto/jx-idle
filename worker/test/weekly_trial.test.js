@@ -139,3 +139,33 @@ test('only verified PHLT characters appear; flagged players vanish from the boar
   assert.equal(await recordTrialResult(f.DB, rb.session.id, stateCopy), false, 'recording the same session again is a no-op');
   assert.ok(trialScore({...stateCopy, status: 'active'}) >= 0);
 });
+test('mutator gating: flag tắt thì không có mutator; flag bật thì tag kèm mutator và boss chịu mutator', async t => {
+  const f = await fixture(t), p = await f.solo('p'), week = trialWeekId(f.now());
+  const off = await p.board();
+  assert.equal(off.week.mutator, null);
+  assert.equal(off.week.tag, trialTag(week));
+  f.env.FEATURE_FLAGS = {...f.env.FEATURE_FLAGS, trial_mutators: true};
+  const on = await p.board();
+  assert.ok(on.week.mutator && on.week.mutator.id, 'endpoint trả mutator khi flag bật');
+  assert.equal(on.week.tag, trialTag(week, on.week.mutator.id));
+  const run = await p.post({action: 'create', activity: 'trial', length: 'short'});
+  assert.equal(run.session.trial.mutator, on.week.mutator.id);
+  const s = JSON.parse((await f.DB.prepare('SELECT state FROM combat_sessions WHERE id=?1').bind(run.session.id).first()).state);
+  const mut = GAME.sessionTrialMutator(week), rule = GAME.sessionTrialRule(week);
+  assert.equal(s.boss.max, Math.round(1200 * Math.pow(1.35, 0) * (rule.hp || 1) * (mut.hp || 1)));
+  assert.equal(s.boss.def, 100 * (rule.def || 1) * (mut.def || 1));
+});
+test('sự kiện ngoài lịch tuần không chạy (event_not_scheduled), trong lịch thì chạy', async t => {
+  const f = await fixture(t), p = await f.solo('p'), week = trialWeekId(f.now());
+  const orig = GAME.JX_CONTENT;
+  const mk = weeks => ({...orig, events: {version: 'events-v2', slots: [{id: 'weekly_trial', kind: 'trial', mode: 'phlt', name: 'T', enabled: true, schedule: {weeks}, limits: {perDay: 5}}]}});
+  try {
+    GAME.JX_CONTENT = mk(week % 2 === 0 ? 'odd' : 'even'); // tuần này KHÔNG có lịch
+    assert.equal(GAME.eventScheduled(GAME.JX_CONTENT.events, 'weekly_trial', week), false);
+    await assert.rejects(() => p.post({action: 'create', activity: 'trial', length: 'short'}), {code: 'event_not_scheduled'});
+    assert.equal((await p.board()).attempts.used, 0, 'lịch chặn thì không trừ quota');
+    GAME.JX_CONTENT = mk(week % 2 === 0 ? 'even' : 'odd'); // tuần này CÓ lịch
+    const run = await p.post({action: 'create', activity: 'trial', length: 'short'});
+    assert.equal(run.session.status, 'active');
+  } finally { GAME.JX_CONTENT = orig; }
+});

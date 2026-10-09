@@ -13,12 +13,27 @@ function adviceScore(p,goal) {
   if(goal==="mana")return p.mana+30*p.manaRegen-30*p.main.cost*p.main.rate;
   return p.main.dps*(goal==="farm"?Math.min(8,p.main.targets):p.bossDmg);
 }
+// Lý do ngắn gọn cho mỗi gợi ý: chỉ số cải thiện nhiều nhất (tiêu chí 1.1).
+function adviceReason(before, after) {
+  let best = null;
+  const consider = (label, b, a) => {
+    const gain = b > 0 ? (a - b) / b : 0;
+    if (gain > 1e-9 && (!best || gain > best[1])) best = [label, gain];
+  };
+  consider("DPS", before.dps, after.dps);
+  consider("HP", before.life, after.life);
+  consider("mana", before.mana, after.mana);
+  const resGain = (after.minResistance - before.minResistance) / 100;
+  if (resGain > 1e-9 && (!best || resGain > best[1])) best = ["kháng", resGain];
+  return best ? `${best[0]} +${Math.round(best[1] * 100)}%` : "cải thiện nhẹ";
+}
 function buildAdvice(goal) {
   if(!featureEnabled("build_advice")||!BUILD_GOALS[modeId()]?.[goal])throw new Error("Mục tiêu hoặc tính năng gợi ý chưa mở");
   const baseline=adviceStats(S),score=adviceScore(baseline,goal),results=[],rejected=[];
   const add=(label,state,source)=>{
     const stats=adviceStats(state),value=adviceScore(stats,goal);
-    if(value>score+1e-8)results.push({label,source,score:value,gain:value-score,before:adviceSummary(baseline),after:adviceSummary(stats)});
+    if(value>score+1e-8){const before=adviceSummary(baseline),after=adviceSummary(stats);
+      results.push({label,source,score:value,gain:value-score,reason:adviceReason(before,after),before,after});}
   };
   for(let i=0;i<buildN();i++)if(S.builds?.[i]){
     const p=buildPreview(i);if(p.ok)add("Bộ "+(i+1),p.candidate,{kind:"profile",index:i});

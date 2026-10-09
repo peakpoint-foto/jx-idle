@@ -8,6 +8,10 @@ import { feedback, adminFeedback, adminFeedbackSet, adminFeedbackMetrics } from 
 import { activityClaim } from "./activity.js";
 import { profile } from "./ladder.js";
 import { duels, guild, room } from "./social.js";
+import { mentor } from "./mentor.js";
+import { guildTech } from "./guild_tech_api.js";
+import { league } from "./league_api.js";
+import { worldBoss } from "./world_boss_api.js";
 import { featureConfig, guardedFeature } from "./capabilities.js";
 import {friends} from './lobby.js';
 import {economy} from './economy.js';
@@ -17,6 +21,7 @@ import {challenge} from './challenge.js';
 import {sessions} from './sessions.js';
 import {moderation,adminModeration} from './moderation.js';
 import {chat} from './chat.js';
+import {telemetry, adminTelemetry} from './telemetry.js';
 
 const ROUTES = {
   "GET /api/sessions": sessions,
@@ -42,6 +47,14 @@ const ROUTES = {
   "GET /api/duels": guardedFeature("async_duels", duels),
   "POST /api/duel": guardedFeature("async_duels", duels),
   "GET /api/guild": guardedFeature("guild_online", guild),
+  "GET /api/mentor": guardedFeature("mentor", mentor),
+  "POST /api/mentor": guardedFeature("mentor", mentor),
+  "GET /api/guild-tech": guardedFeature("guild_tech", guildTech),
+  "POST /api/guild-tech": guardedFeature("guild_tech", guildTech),
+  "GET /api/league": guardedFeature("duel_league", league),
+  "POST /api/league": guardedFeature("duel_league", league),
+  "GET /api/world-boss": guardedFeature("world_boss", worldBoss),
+  "POST /api/world-boss": guardedFeature("world_boss", worldBoss),
   "POST /api/guild": guardedFeature("guild_online", guild),
   "GET /api/room": guardedFeature("room_presence", room),
   "POST /api/room": guardedFeature("room_presence", room),
@@ -51,6 +64,8 @@ const ROUTES = {
   "POST /api/admin/unflag": adminUnflag,
   "POST /api/feedback": feedback,
   "GET /api/admin/feedback": adminFeedback,
+  "POST /api/telemetry": telemetry,
+  "GET /api/admin/telemetry": adminTelemetry,
   "GET /api/admin/feedback/metrics": adminFeedbackMetrics,
   "POST /api/admin/feedback": adminFeedbackSet,
   "GET /api/moderation": moderation,

@@ -1,0 +1,1 @@
+{"mutators":[{"desc":"HP chủ tướng ×1,5","hp":1.5,"id":"giant","name":"Khổng lồ"},{"desc":"sát thương chủ tướng ×1,3, HP ×0,85","hp":0.85,"id":"frenzy","name":"Cuồng nộ","taken":1.3},{"def":1.5,"desc":"phòng thủ chủ tướng ×1,5, ra đòn chậm hơn","id":"bulwark","interval":1.25,"name":"Thiết bích"}],"version":"trial-mutators-v1"}

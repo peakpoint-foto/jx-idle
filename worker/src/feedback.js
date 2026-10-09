@@ -8,6 +8,7 @@ import { GAME } from "../gen/game.js";
 export const FB_CATS = { bug: "Lỗi", ui: "Giao diện", balance: "Cân bằng", idea: "Ý tưởng", other: "Khác" };
 export const FB_MAX = 2000;
 export const FB_RETENTION_MS = 90 * 864e5;
+export const FB_FEATURES = ["build_advice","trial","event_calendar","codex","goals_7d","gold_sink","story","rift","lab","boss","season","other"];
 
 // Chuẩn hoá nội dung gửi lên; ném HttpError nếu không hợp lệ.
 export function cleanFeedback(body) {
@@ -19,6 +20,8 @@ export function cleanFeedback(body) {
   const cat = Object.prototype.hasOwnProperty.call(FB_CATS, body.cat) ? body.cat : "other";
   const contact = String(body.contact || "").replace(/[\u0000-\u001f\u007f]/g, "").trim().slice(0, 100);
   const ctx = GAME.cleanFeedbackContext(body.ctx);
+  const feature = FB_FEATURES.includes(body.feature) ? body.feature : "other";
+  ctx.feature = feature;
   if(body.diagnosticConsent===true&&body.diagnostics){
     try{ctx.diagnostics=GAME.cleanFeedbackDiagnostics(body.diagnostics);}catch(e){throw new HttpError(400,"bad_diagnostics",e.message);}
   }

@@ -14,6 +14,18 @@ test("A/B uses identical conditions and repeats without applying builds or rewar
   assert.equal(g.requests.length,0);assert.deepEqual(result.reward,{xp:0,gold:0,items:0});
 });
 
+test("breakdown theo nguồn damage có trong kết quả A/B",()=>{
+  const g=ready();
+  const result=g.json("buildCompare(0,1,{duration:3,seed:87})");
+  assert.equal(result.breakdowns.length,2);
+  for(const html of result.breakdowns){
+    assert.ok(html.includes("Breakdown theo nguồn damage"),"có tiêu đề breakdown");
+    assert.ok(html.includes("%"),"có tỉ lệ %");
+  }
+  const single=g.run("trainingBreakdownHTML(trainingRun({duration:3,seed:87}))");
+  assert.ok(single.includes("Breakdown theo nguồn damage"));
+});
+
 test("sandbox comparison performs no storage/network writes and preserves live save on exit",()=>{
   const g=ready(),before=g.json("S");g.run("ADMV.sandbox=true;ADMV.god=1;ADMV.heroDmg=1000;var writes=0;localStorage.setItem=()=>{writes++;throw Error('write forbidden')};localStorage.removeItem=()=>{writes++;throw Error('write forbidden')}");
   const result=g.json("buildCompare(-1,-1,{duration:2})");

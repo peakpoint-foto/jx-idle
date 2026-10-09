@@ -14,6 +14,11 @@ function buildChangeProblem() {
 
 function buildInteger(value) { return Number.isSafeInteger(value) && value>=0; }
 function buildIndexValid(i) { return Number.isInteger(i) && i>=0 && i<buildN(); }
+// 2.3: slot mở dần theo tiến trình — bộ 1 luôn mở, bộ 2 ở cấp 30, bộ 3 ở cấp 60.
+function buildSlotsUnlocked() { const lvl=(typeof S!=="undefined"&&S&&S.lvl)||1; return lvl>=60?3:lvl>=30?2:1; }
+function buildSlotLocked(i) { return i>=buildSlotsUnlocked(); }
+function buildSlotNeed(i) { return i===2?60:30; }
+function buildSlotProblem(i) { return buildSlotLocked(i)?`Bộ ${i+1} mở ở cấp ${buildSlotNeed(i)}`:""; }
 function buildResult(errors, extra={}) { return {ok:!errors.length,msg:errors[0]||"Build hợp lệ",errors,...extra}; }
 
 function buildCandidate(profile) {
@@ -80,6 +85,7 @@ function buildCandidate(profile) {
 
 function buildPreview(i) {
   if(!buildIndexValid(i))return buildResult(["Số bộ không hợp lệ"]);
+  const locked=buildSlotProblem(i);if(locked)return buildResult([locked]);
   const result=buildCandidate(S.builds?.[i]);
   if(result.ok) result.summary={life:result.stats.life,mana:result.stats.mana,dps:result.stats.main.dps,
     power:power(result.stats),attributePoints:sumObj(result.candidate.attr),skillPoints:sumObj(result.candidate.sk),
@@ -98,6 +104,7 @@ function buildPersist(candidate) {
 
 buildSave=function(i) {
   if(!buildIndexValid(i)) return buildResult(["Số bộ không hợp lệ"]);
+  const locked=buildSlotProblem(i);if(locked) return buildResult([locked]);
   if(SAVE_LOCK||ADMV.sandbox) return buildResult(["Không lưu build trong phiên bị khóa hoặc thử nghiệm"]);
   const candidate=JSON.parse(JSON.stringify(S)),advanced=featureEnabled("build_profiles");
   if(!Array.isArray(candidate.builds))candidate.builds=[];
@@ -109,8 +116,15 @@ buildSave=function(i) {
 
 buildLoad=function(i) {
   const problem=buildChangeProblem();if(problem)return buildResult([problem]);
+  const locked=buildSlotProblem(i);if(locked) return buildResult([locked]);
   const preview=buildPreview(i);if(!preview.ok)return preview;
-  const result=buildPersist(preview.candidate);if(result.ok)result.msg=`Đã dùng bộ ${i+1}`;return result;
+  // 2.4 (c): phí đổi loadout/build khi flag gold_sinks bật.
+  // Kiểm tra trước, thu sau persist (candidate là snapshot chụp trước khi trừ).
+  const fee=typeof loadoutSwitchFee==="function"?loadoutSwitchFee():0;
+  if(fee>0&&S.gold<fee)return buildResult(["Không đủ ngân lượng trả phí đổi bộ"]);
+  const result=buildPersist(preview.candidate);
+  if(result.ok&&fee>0)goldSinkSpend("loadout_fee",fee,`đổi sang bộ ${i+1}`);
+  if(result.ok)result.msg=`Đã dùng bộ ${i+1}`;return result;
 };
 
 {
@@ -121,7 +135,9 @@ buildLoad=function(i) {
 
 buildsHTML=function() {
   const advanced=featureEnabled("build_profiles");
-  const rows=builds().map((b,i)=>`<div class="qrow build-profile-row"><span><b>Bộ ${i+1}</b><small>${b?`${sumObj(b.sk)} kỹ năng · ${sumObj(b.attr)} tiềm năng${b.equipment?" · "+Object.keys(b.equipment).length+" trang bị":" · chỉ võ học"}`:"Trống"}</small></span><span class="build-profile-actions"><button class="btn sm" data-bsave="${i}">Lưu</button><button class="btn sm" data-bpreview="${i}" ${b?"":"disabled"}>Xem</button><button class="btn sm" data-bload="${i}" ${b?"":"disabled"}>Dùng</button></span></div>`).join("");
+  const rows=builds().map((b,i)=>{const locked=buildSlotLocked(i);
+    const info=locked?`Mở ở cấp ${buildSlotNeed(i)}`:(b?`${sumObj(b.sk)} kỹ năng · ${sumObj(b.attr)} tiềm năng${b.equipment?" · "+Object.keys(b.equipment).length+" trang bị":" · chỉ võ học"}`:"Trống");
+    return `<div class="qrow build-profile-row${locked?" lock":""}"><span><b>Bộ ${i+1}</b><small>${info}</small></span><span class="build-profile-actions"><button class="btn sm" data-bsave="${i}" ${locked?"disabled":""}>Lưu</button><button class="btn sm" data-bpreview="${i}" ${b&&!locked?"":"disabled"}>Xem</button><button class="btn sm" data-bload="${i}" ${b&&!locked?"":"disabled"}>Dùng</button></span></div>`;}).join("");
   return `<h3>Bộ võ học${advanced?" và trang bị":""}</h3><div class="card">${rows}<small class="dim">${advanced?"Lưu trang bị đang sở hữu; đồ thiếu hoặc khóa được báo trước khi đổi.":"Lưu điểm, chiêu và rotation. Build kèm trang bị đang tắt."} Không đổi trong hoạt động.</small><div class="btnrow"><button class="btn red" id="bRespecAll">Tẩy toàn bộ điểm</button></div></div>`;
 };
 

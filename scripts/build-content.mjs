@@ -1,0 +1,42 @@
+// Sinh js/content.gen.js từ data/content/*.v1.json (có validate schema).
+// Dùng: node scripts/build-content.mjs [--check]
+// --check: chỉ validate, không ghi file (cho CI).
+// Quy ước: version mới = file JSON mới, không sửa file đã phát hành.
+import fs from "node:fs";
+import vm from "node:vm";
+import { fileURLToPath } from "node:url";
+
+const root = fileURLToPath(new URL("../", import.meta.url));
+const checkOnly = process.argv.includes("--check");
+
+// Nạp validator từ js/content.js (không cần DOM).
+const src = fs.readFileSync(root + "js/content.js", "utf8");
+const ctx = {};
+vm.runInNewContext(src, ctx, { filename: "js/content.js" });
+
+function load(kind, file, validate) {
+  const raw = fs.readFileSync(root + file, "utf8");
+  let data;
+  try { data = JSON.parse(raw); }
+  catch (e) { throw new Error(`${file}: JSON không hợp lệ: ${e.message}`); }
+  validate(data); // ném Error với thông điệp rõ nếu sai schema
+  console.log(`  ✓ ${file} (${data.version})`);
+  return data;
+}
+
+const trial = load("trial", "data/content/trial.v1.json", ctx.validateTrialRules);
+const events = load("events", "data/content/events.v2.json", ctx.validateEventFlags);
+const trialMutators = load("trial-mutators", "data/content/trial_mutators.v1.json", ctx.validateTrialMutators);
+const riftModifiers = load("rift-modifiers", "data/content/rift_modifiers.v1.json", ctx.validateRiftModifiers);
+const seasonThemes = load("season-themes", "data/content/season_themes.v1.json", ctx.validateSeasonThemes);
+const legendaryAffixes = load("legendary-affixes", "data/content/legendary_affixes.v1.json", ctx.validateLegendaryAffixes);
+const factionStories = load("faction-stories", "data/content/faction_stories.v1.json", ctx.validateFactionStories);
+
+if (!checkOnly) {
+  const out = `// TỰ SINH bởi scripts/build-content.mjs — không sửa tay. Nguồn: data/content/*.v1.json\n` +
+    `window.JX_CONTENT=${JSON.stringify({ trial, events, trialMutators, riftModifiers, seasonThemes, legendaryAffixes, factionStories })};\n` +
+    `(function(){const f=o=>{if(o&&typeof o==="object"){for(const v of Object.values(o))f(v);Object.freeze(o)}};f(window.JX_CONTENT);})();\n`;
+  fs.writeFileSync(root + "js/content.gen.js", out);
+  console.log(`  -> js/content.gen.js`);
+}
+console.log("content: OK");

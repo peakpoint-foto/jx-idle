@@ -210,6 +210,50 @@ async function onlChallenge() {
   finally{ONL.duelBusy=false;}
 }
 
+// 2.9: UI sư phụ / đồ đệ.
+async function onlRenderMentor() {
+  const box = document.getElementById("onlMentorPanel");
+  if (!box || !onlGet()) return;
+  if (!featureEnabled("mentor")) { box.hidden = true; return; }
+  box.hidden = false;
+  try {
+    const d = await onlApi("/mentor");
+    const rules = d.rules;
+    const mentorHTML = d.mentor
+      ? `<div class="card"><b>Sư phụ</b><br><small class="dim">Đang bái sư — rời: <button class="btn sm" data-mentor="leave">Rời sư phụ</button></small></div>`
+      : `<div class="card"><b>Bái sư</b><br><div class="btnrow"><input id="onlMentorCode" maxlength="8" placeholder="Mã mời sư phụ" style="text-transform:uppercase"><button class="btn sm" data-mentor="bind">Bái sư</button></div><small class="dim">Cần dưới cấp ${rules.maxDiscipleLvl}. Mỗi người chỉ một sư phụ.</small></div>`;
+    const disciplesHTML = d.disciples.length
+      ? `<div class="card"><b>Đồ đệ (${d.disciples.length})</b><br>${d.disciples.map(x => `<small>${esc(x.name)} · cấp ${x.lvl}</small>`).join("<br>")}</div>`
+      : "";
+    const codeHTML = !d.inviteCode && S.lvl >= rules.minMentorLvl
+      ? `<button class="btn sm" data-mentor="invite_code">Lấy mã mời</button>`
+      : d.inviteCode ? `<small class="dim">Mã mời của bạn: <b>${esc(d.inviteCode)}</b></small>` : "";
+    const rewardsHTML = d.rewards.filter(r => !r.claimed_at).length
+      ? `<div class="card"><b>Thưởng mốc chờ nhận</b><br>${d.rewards.filter(r => !r.claimed_at).map(r => `<div class="qrow"><span>Mốc cấp ${r.milestone} · ${fmt(r.gold)} lượng</span><button class="btn sm" data-mentor="claim" data-m="${r.milestone}" data-d="${esc(r.disciple_id)}">Nhận</button></div>`).join("")}</div>`
+      : "";
+    const doneHTML = d.rewards.filter(r => r.claimed_at).length
+      ? `<small class="dim">Đã nhận: ${d.rewards.filter(r => r.claimed_at).map(r => `cấp ${r.milestone}`).join(", ")}</small>` : "";
+    box.innerHTML = `<b>Sư phụ / Đồ đệ</b><small class="dim">Đồ đệ lên ${rules.milestones.join("/")} thưởng cả hai ${rules.milestones.map(m => fmt(rules.rewards[m])).join("/")} lượng.</small>${mentorHTML}${disciplesHTML}<div class="btnrow">${codeHTML}</div>${rewardsHTML}${doneHTML}`;
+  } catch (e) { box.innerHTML = `<b>Sư phụ / Đồ đệ</b><p class="bad">Không tải được.</p>`; }
+}
+async function onlMentorAct(action, el) {
+  const body = {action};
+  if (action === "bind") body.code = document.getElementById("onlMentorCode")?.value || "";
+  if (action === "claim") {
+    body.milestone = Number(el.dataset.m); body.disciple_id = el.dataset.d;
+    body.request_id = "m" + Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36);
+  }
+  try {
+    const r = await onlApi("/mentor", body);
+    if (action === "claim" && r.gold) { S.gold += r.gold; R.dirty = true; toast(`Nhận ${fmt(r.gold)} lượng thưởng sư đồ`); }
+    else toast("Đã cập nhật sư đồ");
+    onlRenderMentor();
+  } catch (e) { toast("Lỗi: " + (e.message || e)); }
+}
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-mentor]");
+  if (b) onlMentorAct(b.dataset.mentor, b);
+});
 async function onlRenderGuild() {
   const box = document.getElementById("onlGuildPanel");
   if (!box || !onlGet()) return;
@@ -221,7 +265,7 @@ async function onlRenderGuild() {
       box.innerHTML = `<b>Bang hội online</b><small class="dim">Tạo bang hoặc tham gia bang đang có.</small><div class="btnrow"><input id="onlGuildName" maxlength="24" placeholder="Tên bang"><button class="btn sm" data-guild="create">Tạo bang</button><button class="btn sm" data-guild="join">Tham gia</button></div><small class="dim">${d.suggestions.length ? "Gợi ý: " + d.suggestions.map(x => esc(x.name)).join(" · ") : "Chưa có bang nào"}</small>`;
     } else {
       const g = d.guild, pct = g.boss_max_hp ? Math.round((1 - g.boss_hp / g.boss_max_hp) * 100) : 100;
-      box.innerHTML = `<div class="onlsub"><b>${esc(g.name)}</b><small>Cấp ${g.level} · ${g.xp} XP · ${g.role}</small></div><div class="card stats"><span>Boss tuần</span><span>${fmt(g.boss_hp)} / ${fmt(g.boss_max_hp)}</span><span>Tiến độ</span><span>${pct}%</span><span>Đóng góp</span><span>${g.contrib}</span><span>Lượt đánh hôm nay</span><span>${g.attack_count}/3</span></div><div class="btnrow"><button class="btn sm" disabled title="Chờ ledger tài nguyên xác thực">Đóng góp tạm khóa</button><button class="btn sm" data-guild="boss_attack">Đánh boss</button>${g.role === "owner" ? "" : '<button class="btn sm" data-guild="leave">Rời bang</button>'}</div><small class="dim">${d.members.map(x => `${esc(x.name)} · ${fmt(x.power)} · ${x.weekly_damage} sát thương`).join("<br>")}</small>`;
+      box.innerHTML = `<div class="onlsub"><b>${esc(g.name)}</b><small>Cấp ${g.level} · ${g.xp} XP · ${g.role}</small></div><div class="card stats"><span>Boss tuần</span><span>${fmt(g.boss_hp)} / ${fmt(g.boss_max_hp)}</span><span>Tiến độ</span><span>${pct}%</span><span>Mốc thưởng</span><span>${(g.boss_rules?.milestones||[]).map(m=>`${Math.round(m*100)}%${(g.boss_milestones||[]).includes(m)?" ✔":""}`).join(" · ")}</span><span>Đóng góp</span><span>${g.contrib}</span><span>Lượt đánh hôm nay</span><span>${g.attack_count}/3</span></div><div class="btnrow"><button class="btn sm" disabled title="Chờ ledger tài nguyên xác thực">Đóng góp tạm khóa</button><button class="btn sm" data-guild="boss_attack">Đánh boss</button>${g.role === "owner" ? "" : '<button class="btn sm" data-guild="leave">Rời bang</button>'}</div><small class="dim">${d.members.map(x => `${esc(x.name)} · ${fmt(x.power)} · ${x.weekly_damage} sát thương`).join("<br>")}</small>`;
     }
     box.hidden = false;
     if(d.guild&&featureEnabled("guild_management")&&typeof onlGuildManagementHTML==="function"){
@@ -351,7 +395,7 @@ function onlCardHTML() {
       <div class="btnrow"><button class="btn" id="onlSyncBtn">Đồng bộ ngay</button><button class="btn" id="onlRankBtn">Bảng xếp hạng</button><button class="btn" id="onlCodeBtn">Mã khôi phục</button></div>
       <small class="dim" id="onlCode" hidden>Giữ kín mã này, nó thay cho mật khẩu: <code>${esc(acc.token)}</code></small><div id="onlRankPanel" class="onlpanel" hidden></div>
       <div id="onlDuelPanel" class="onlpanel"><b>PvP bất đồng bộ</b><small class="dim">Phân xử bất đồng bộ bằng ước lượng lực chiến và hệ số cố định theo mã trận. Giao hữu không cộng điểm; ranked cần cùng bậc, lực chiến gần nhau.</small><div class="btnrow">${featureEnabled("duel_modes")?'<select id="onlDuelKind" aria-label="Loại thách đấu"><option value="ranked">Ranked</option><option value="friendly">Giao hữu</option></select>':""}<input id="onlOpponent" maxlength="16" placeholder="Tên đối thủ"><button class="btn sm" id="onlChallengeBtn">Thách đấu</button></div><div id="onlDuelList"></div></div>
-      <div id="onlGuildPanel" class="onlpanel"></div><div id="onlRoomPanel" class="onlpanel"></div></div>`;
+      <div id="onlGuildPanel" class="onlpanel"></div><div id="onlMentorPanel" class="onlpanel"></div><div id="onlRoomPanel" class="onlpanel"></div></div>`;
   }
   if (S.lvl > ONL_REG_MAX_LVL) return `<h3>Chơi Online</h3><div class="card"><small class="dim">Nhân vật đã quá cấp ${ONL_REG_MAX_LVL}, không đăng ký bảng xếp hạng được. Vẫn chơi CTC cục bộ được (không xếp hạng).</small></div>${recoverBox}`;
   return `<h3>Chơi Online</h3><div class="card lootf onlcard"><div class="row">Tên online <input id="onlName" maxlength="16" value="${esc(S.name || "")}" style="flex:1"></div>
@@ -378,7 +422,7 @@ function onlCardBind() {
   };
   if (S.mode !== "ctc") { onlRenderRoom(); return; }
   onlRenderDuels();
-  onlRenderGuild();
+  onlRenderGuild(); onlRenderMentor();
   onlRenderRoom();
 }
 if (typeof renderMore === "function") {

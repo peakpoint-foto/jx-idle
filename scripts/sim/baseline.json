@@ -1,0 +1,456 @@
+{
+ "version": 1,
+ "generated_at": "2026-10-09T05:04:15.783Z",
+ "cells": {
+  "shaolin/60/weak": {
+   "dps": 18,
+   "ticks": 190,
+   "status": "completed"
+  },
+  "shaolin/60/mid": {
+   "dps": 9244,
+   "ticks": 126,
+   "status": "completed"
+  },
+  "shaolin/60/strong": {
+   "dps": 26507,
+   "ticks": 49,
+   "status": "completed"
+  },
+  "shaolin/100/weak": {
+   "dps": 18,
+   "ticks": 192,
+   "status": "completed"
+  },
+  "shaolin/100/mid": {
+   "dps": 19263,
+   "ticks": 263,
+   "status": "completed"
+  },
+  "shaolin/100/strong": {
+   "dps": 18383,
+   "ticks": 305,
+   "status": "completed"
+  },
+  "shaolin/180/weak": {
+   "dps": 14,
+   "ticks": 182,
+   "status": "aborted"
+  },
+  "shaolin/180/mid": {
+   "dps": 52787,
+   "ticks": 321,
+   "status": "completed"
+  },
+  "shaolin/180/strong": {
+   "dps": 74025,
+   "ticks": 308,
+   "status": "aborted"
+  },
+  "tianwang/60/weak": {
+   "dps": 14,
+   "ticks": 189,
+   "status": "completed"
+  },
+  "tianwang/60/mid": {
+   "dps": 1929,
+   "ticks": 81,
+   "status": "completed"
+  },
+  "tianwang/60/strong": {
+   "dps": 10050,
+   "ticks": 37,
+   "status": "completed"
+  },
+  "tianwang/100/weak": {
+   "dps": 85,
+   "ticks": 186,
+   "status": "completed"
+  },
+  "tianwang/100/mid": {
+   "dps": 36472,
+   "ticks": 104,
+   "status": "completed"
+  },
+  "tianwang/100/strong": {
+   "dps": 179842,
+   "ticks": 86,
+   "status": "completed"
+  },
+  "tianwang/180/weak": {
+   "dps": 61,
+   "ticks": 167,
+   "status": "aborted"
+  },
+  "tianwang/180/mid": {
+   "dps": 108646,
+   "ticks": 83,
+   "status": "completed"
+  },
+  "tianwang/180/strong": {
+   "dps": 884512,
+   "ticks": 107,
+   "status": "aborted"
+  },
+  "tangmen/60/weak": {
+   "dps": 54,
+   "ticks": 84,
+   "status": "completed"
+  },
+  "tangmen/60/mid": {
+   "dps": 1312,
+   "ticks": 271,
+   "status": "aborted"
+  },
+  "tangmen/60/strong": {
+   "dps": 2302,
+   "ticks": 322,
+   "status": "completed"
+  },
+  "tangmen/100/weak": {
+   "dps": 77,
+   "ticks": 84,
+   "status": "completed"
+  },
+  "tangmen/100/mid": {
+   "dps": 6511,
+   "ticks": 239,
+   "status": "completed"
+  },
+  "tangmen/100/strong": {
+   "dps": 38550,
+   "ticks": 96,
+   "status": "completed"
+  },
+  "tangmen/180/weak": {
+   "dps": 79,
+   "ticks": 84,
+   "status": "completed"
+  },
+  "tangmen/180/mid": {
+   "dps": 27912,
+   "ticks": 191,
+   "status": "aborted"
+  },
+  "tangmen/180/strong": {
+   "dps": 56923,
+   "ticks": 147,
+   "status": "completed"
+  },
+  "wudu/60/weak": {
+   "dps": 25,
+   "ticks": 93,
+   "status": "completed"
+  },
+  "wudu/60/mid": {
+   "dps": 3334,
+   "ticks": 99,
+   "status": "completed"
+  },
+  "wudu/60/strong": {
+   "dps": 10984,
+   "ticks": 99,
+   "status": "completed"
+  },
+  "wudu/100/weak": {
+   "dps": 30,
+   "ticks": 92,
+   "status": "completed"
+  },
+  "wudu/100/mid": {
+   "dps": 3689,
+   "ticks": 219,
+   "status": "completed"
+  },
+  "wudu/100/strong": {
+   "dps": 20583,
+   "ticks": 127,
+   "status": "completed"
+  },
+  "wudu/180/weak": {
+   "dps": 45,
+   "ticks": 95,
+   "status": "completed"
+  },
+  "wudu/180/mid": {
+   "dps": 19431,
+   "ticks": 177,
+   "status": "aborted"
+  },
+  "wudu/180/strong": {
+   "dps": 304643,
+   "ticks": 80,
+   "status": "completed"
+  },
+  "emei/60/weak": {
+   "dps": 16,
+   "ticks": 88,
+   "status": "completed"
+  },
+  "emei/60/mid": {
+   "dps": 984,
+   "ticks": 195,
+   "status": "completed"
+  },
+  "emei/60/strong": {
+   "dps": 2320,
+   "ticks": 124,
+   "status": "completed"
+  },
+  "emei/100/weak": {
+   "dps": 26,
+   "ticks": 89,
+   "status": "completed"
+  },
+  "emei/100/mid": {
+   "dps": 2820,
+   "ticks": 219,
+   "status": "aborted"
+  },
+  "emei/100/strong": {
+   "dps": 25078,
+   "ticks": 238,
+   "status": "aborted"
+  },
+  "emei/180/weak": {
+   "dps": 15,
+   "ticks": 89,
+   "status": "completed"
+  },
+  "emei/180/mid": {
+   "dps": 10465,
+   "ticks": 304,
+   "status": "completed"
+  },
+  "emei/180/strong": {
+   "dps": 32492,
+   "ticks": 209,
+   "status": "completed"
+  },
+  "cuiyan/60/weak": {
+   "dps": 31,
+   "ticks": 80,
+   "status": "completed"
+  },
+  "cuiyan/60/mid": {
+   "dps": 1591,
+   "ticks": 201,
+   "status": "completed"
+  },
+  "cuiyan/60/strong": {
+   "dps": 4924,
+   "ticks": 110,
+   "status": "completed"
+  },
+  "cuiyan/100/weak": {
+   "dps": 18,
+   "ticks": 80,
+   "status": "completed"
+  },
+  "cuiyan/100/mid": {
+   "dps": 2364,
+   "ticks": 169,
+   "status": "aborted"
+  },
+  "cuiyan/100/strong": {
+   "dps": 14388,
+   "ticks": 232,
+   "status": "aborted"
+  },
+  "cuiyan/180/weak": {
+   "dps": 12,
+   "ticks": 80,
+   "status": "completed"
+  },
+  "cuiyan/180/mid": {
+   "dps": 6004,
+   "ticks": 116,
+   "status": "completed"
+  },
+  "cuiyan/180/strong": {
+   "dps": 38413,
+   "ticks": 62,
+   "status": "completed"
+  },
+  "gaibang/60/weak": {
+   "dps": 14,
+   "ticks": 214,
+   "status": "completed"
+  },
+  "gaibang/60/mid": {
+   "dps": 615,
+   "ticks": 218,
+   "status": "completed"
+  },
+  "gaibang/60/strong": {
+   "dps": 1570,
+   "ticks": 142,
+   "status": "completed"
+  },
+  "gaibang/100/weak": {
+   "dps": 12,
+   "ticks": 241,
+   "status": "completed"
+  },
+  "gaibang/100/mid": {
+   "dps": 2269,
+   "ticks": 468,
+   "status": "aborted"
+  },
+  "gaibang/100/strong": {
+   "dps": 6530,
+   "ticks": 404,
+   "status": "aborted"
+  },
+  "gaibang/180/weak": {
+   "dps": 22,
+   "ticks": 166,
+   "status": "completed"
+  },
+  "gaibang/180/mid": {
+   "dps": 8404,
+   "ticks": 480,
+   "status": "aborted"
+  },
+  "gaibang/180/strong": {
+   "dps": 46073,
+   "ticks": 258,
+   "status": "completed"
+  },
+  "tianren/60/weak": {
+   "dps": 45,
+   "ticks": 78,
+   "status": "completed"
+  },
+  "tianren/60/mid": {
+   "dps": 4461,
+   "ticks": 377,
+   "status": "completed"
+  },
+  "tianren/60/strong": {
+   "dps": 15929,
+   "ticks": 212,
+   "status": "completed"
+  },
+  "tianren/100/weak": {
+   "dps": 68,
+   "ticks": 80,
+   "status": "completed"
+  },
+  "tianren/100/mid": {
+   "dps": 14437,
+   "ticks": 372,
+   "status": "completed"
+  },
+  "tianren/100/strong": {
+   "dps": 25381,
+   "ticks": 355,
+   "status": "aborted"
+  },
+  "tianren/180/weak": {
+   "dps": 43,
+   "ticks": 80,
+   "status": "completed"
+  },
+  "tianren/180/mid": {
+   "dps": 27858,
+   "ticks": 315,
+   "status": "completed"
+  },
+  "tianren/180/strong": {
+   "dps": 322946,
+   "ticks": 116,
+   "status": "completed"
+  },
+  "wudang/60/weak": {
+   "dps": 23,
+   "ticks": 89,
+   "status": "completed"
+  },
+  "wudang/60/mid": {
+   "dps": 19344,
+   "ticks": 83,
+   "status": "completed"
+  },
+  "wudang/60/strong": {
+   "dps": 123073,
+   "ticks": 84,
+   "status": "completed"
+  },
+  "wudang/100/weak": {
+   "dps": 7,
+   "ticks": 91,
+   "status": "completed"
+  },
+  "wudang/100/mid": {
+   "dps": 10915,
+   "ticks": 200,
+   "status": "completed"
+  },
+  "wudang/100/strong": {
+   "dps": 164220,
+   "ticks": 82,
+   "status": "completed"
+  },
+  "wudang/180/weak": {
+   "dps": 5,
+   "ticks": 88,
+   "status": "completed"
+  },
+  "wudang/180/mid": {
+   "dps": 7926,
+   "ticks": 333,
+   "status": "aborted"
+  },
+  "wudang/180/strong": {
+   "dps": 68555,
+   "ticks": 394,
+   "status": "completed"
+  },
+  "kunlun/60/weak": {
+   "dps": 26,
+   "ticks": 78,
+   "status": "completed"
+  },
+  "kunlun/60/mid": {
+   "dps": 1538,
+   "ticks": 149,
+   "status": "completed"
+  },
+  "kunlun/60/strong": {
+   "dps": 2468,
+   "ticks": 127,
+   "status": "completed"
+  },
+  "kunlun/100/weak": {
+   "dps": 21,
+   "ticks": 78,
+   "status": "completed"
+  },
+  "kunlun/100/mid": {
+   "dps": 2341,
+   "ticks": 397,
+   "status": "aborted"
+  },
+  "kunlun/100/strong": {
+   "dps": 4896,
+   "ticks": 417,
+   "status": "completed"
+  },
+  "kunlun/180/weak": {
+   "dps": 25,
+   "ticks": 78,
+   "status": "completed"
+  },
+  "kunlun/180/mid": {
+   "dps": 13311,
+   "ticks": 329,
+   "status": "aborted"
+  },
+  "kunlun/180/strong": {
+   "dps": 215369,
+   "ticks": 216,
+   "status": "completed"
+  }
+ }
+}

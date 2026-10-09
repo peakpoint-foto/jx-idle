@@ -1,0 +1,1 @@
+{"slots":[{"id":"weekly_trial","kind":"trial","limits":{"perDay":5},"mode":"phlt","name":"Thử thách tuần","schedule":{"weeks":"all"},"enabled":true},{"id":"community_challenge","kind":"challenge","limits":{"perDay":10},"mode":"g2","name":"Thử thách cộng đồng","schedule":{"weeks":"all"},"enabled":true}],"version":"events-v2"}

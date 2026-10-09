@@ -1,7 +1,8 @@
 "use strict";
 // P06 client: the server simulates every run and owns the board. This panel only starts a run and shows what the server recorded.
-const TRIAL_RULE_TEXT={iron:"Giáp sắt: phòng thủ chủ tướng ×2",swift:"Ra đòn nhanh: chủ tướng đánh mỗi 0,75 giây",tough:"Trâu bò: HP chủ tướng ×1,25",ward:"Hộ thể: sát thương chủ tướng ×0,9"};
-const TRIAL_ERRORS={trial_attempts_used:"Hết lượt thử hôm nay.",trial_solo_only:"Rời phòng nhóm trước: thử thách chỉ chạy một mình.",trial_locked:"Cần đồng bộ nhân vật hợp lệ gần đây.",feature_disabled:"Thử thách tuần chưa mở.",session_not_ready:"Phòng chưa sẵn sàng, thử lại."};
+// Mô tả luật đọc từ content JSON (data-driven); text khớp bản hardcode cũ từng chữ.
+const TRIAL_RULE_TEXT=Object.fromEntries(SESSION_TRIAL.rules.map(r=>[r.id,`${r.name}: ${r.desc}`]));
+const TRIAL_ERRORS={trial_attempts_used:"Hết lượt thử hôm nay.",trial_solo_only:"Rời phòng nhóm trước: thử thách chỉ chạy một mình.",trial_locked:"Cần đồng bộ nhân vật hợp lệ gần đây.",event_not_scheduled:"Thử thách tuần chưa có trong lịch tuần này.",feature_disabled:"Thử thách tuần chưa mở.",session_not_ready:"Phòng chưa sẵn sàng, thử lại."};
 const TRIAL_CLIENT={data:null,busy:false,error:"",loadedAt:0,identity:null,generation:0};
 function trialIdentity(){const a=onlGet();return a?.token&&S?.mode==="phlt"&&!ADMV.sandbox&&featureEnabled("weekly_trial")?[a.token,S.cid||"",S.mode].join(":"):null;}
 // The server publishes UTC milliseconds; players read Vietnam time (UTC+7).
@@ -13,7 +14,8 @@ function trialPanelHTML(){
   if(!d)return `<h4>Thử thách tuần PHLT</h4><p>${TRIAL_CLIENT.busy?"Đang tải…":"Chưa tải được thử thách."}</p>${error}<button class="btn" data-trial="refresh" ${TRIAL_CLIENT.busy?"disabled":""}>Tải lại</button>`;
   const L=d.rules.lengths,live=PARTY_CLIENT?.session?.status==="active",off=TRIAL_CLIENT.busy||live||d.attempts.left<=0?"disabled":"";
   const mine=len=>{const m=d.boards[len].mine;return m?`Tốt nhất của bạn: ${esc(trialScoreText(m.score,L[len]))}, hạng ${m.placement}`:"Bạn chưa có kết quả.";};
-  return `<h4>Thử thách tuần PHLT</h4><small>Tuần ${d.week.id}: ${esc(trialTime(d.week.start))} → ${esc(trialTime(d.week.end))}. Luật tuần: ${esc(TRIAL_RULE_TEXT[d.week.rule]||d.week.rule)}.</small>
+  const mut=d.week.mutator?` Biến thể tuần: <b>${esc(d.week.mutator.name)}</b> — ${esc(d.week.mutator.desc)}.`:"";
+  return `<h4>Thử thách tuần PHLT</h4><small>Tuần ${d.week.id}: ${esc(trialTime(d.week.start))} → ${esc(trialTime(d.week.end))}. Luật tuần: ${esc(TRIAL_RULE_TEXT[d.week.rule]||d.week.rule)}.${mut}</small>
     <p>Mọi người đối đầu cùng chuỗi chủ tướng (HP cố định, không co theo sức bạn). Máy chủ chạy thật tối đa 120 giây, bạn chỉ điều khiển Phòng thủ và Hồi phục; kết quả tốt nhất mỗi chuyến được ghi vào bảng tuần. Không có thưởng. Còn ${d.attempts.left}/${d.rules.attempts_per_day} lượt hôm nay (ngày UTC).</p>
     <div class="btnrow"><button class="btn" data-trial="short" ${off}>Chạy ngắn (${L.short} chặng)</button><button class="btn" data-trial="long" ${off}>Chạy dài (${L.long} chặng)</button></div>
     <details open><summary>Bảng chuyến ngắn · ${esc(mine("short"))}</summary>${trialBoardHTML(d.boards.short.rows,L.short)}</details>
@@ -34,7 +36,7 @@ async function trialLoad(force=false){
   if(TRIAL_CLIENT.identity!==identity){TRIAL_CLIENT.identity=identity;TRIAL_CLIENT.data=null;TRIAL_CLIENT.error="";TRIAL_CLIENT.generation++;}
   if(TRIAL_CLIENT.busy||(!force&&TRIAL_CLIENT.data&&Date.now()-TRIAL_CLIENT.loadedAt<30000))return;
   const generation=++TRIAL_CLIENT.generation;TRIAL_CLIENT.busy=true;trialRender();
-  try{const d=await onlApi("/trial");if(identity===trialIdentity()&&generation===TRIAL_CLIENT.generation){TRIAL_CLIENT.data=d;TRIAL_CLIENT.loadedAt=Date.now();TRIAL_CLIENT.error="";}}
+  try{const d=await onlApi("/trial");if(identity===trialIdentity()&&generation===TRIAL_CLIENT.generation){TRIAL_CLIENT.data=d;TRIAL_CLIENT.loadedAt=Date.now();TRIAL_CLIENT.error="";if(d&&d.rules&&contentVersionMismatch(SESSION_TRIAL.version,d.rules.version))contentReloadBanner("Thử thách tuần");}}
   catch(e){if(identity===trialIdentity()&&generation===TRIAL_CLIENT.generation)TRIAL_CLIENT.error=TRIAL_ERRORS[e.error||e.code]||e.msg||e.message||"Mất kết nối; thử lại sau";}
   finally{if(generation===TRIAL_CLIENT.generation){TRIAL_CLIENT.busy=false;trialRender();}}
 }

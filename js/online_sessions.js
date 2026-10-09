@@ -79,7 +79,7 @@ async function partyWrite(action,target){
   }catch(e){if(identity===partyIdentity()){
     const code=e.error||e.code;
     // Definite server rejection can be refreshed; a lost acknowledgement retains the exact command.
-    if(['command_window','command_conflict','session_locked','session_actor_inactive','session_reward_unavailable','session_not_ready','feature_disabled','bad_session_command','siege_quota_used','trial_attempts_used','trial_solo_only','bad_trial_length','challenge_attempts_used'].includes(code))PARTY_CLIENT.pending=null;
+    if(['command_window','command_conflict','session_locked','session_actor_inactive','session_reward_unavailable','session_not_ready','feature_disabled','bad_session_command','siege_quota_used','trial_attempts_used','trial_solo_only','event_not_scheduled','bad_trial_length','challenge_attempts_used'].includes(code))PARTY_CLIENT.pending=null;
     PARTY_CLIENT.errorCode=code;
     PARTY_CLIENT.error=code==='siege_quota_used'?'Tuần UTC này đội đã công thành (mỗi người 1 lần mỗi tuần). Phiên bị hủy sẽ được hoàn lượt.':e.msg||e.message||'Chưa xác nhận lệnh; thử lại cùng mã để tránh gửi trùng';
   }}finally{PARTY_CLIENT.generation++;PARTY_CLIENT.busy=false;partyRender();}

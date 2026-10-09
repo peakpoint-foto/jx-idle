@@ -2,6 +2,8 @@
 // nên deploy không cần bước "d1 migrations apply" riêng. Bản SQL tham chiếu: migrations/0001_init.sql.
 
 export const SCHEMA = [
+  `CREATE TABLE IF NOT EXISTS telemetry_events(id INTEGER PRIMARY KEY AUTOINCREMENT,at INTEGER NOT NULL,event TEXT NOT NULL,install_week TEXT NOT NULL,active_days TEXT NOT NULL,mode TEXT NOT NULL DEFAULT '',value TEXT)`,
+  `CREATE INDEX IF NOT EXISTS telemetry_event_at ON telemetry_events(event,at)`,
   `CREATE TABLE IF NOT EXISTS player_blocks(blocker_id TEXT NOT NULL,target_id TEXT NOT NULL,created_at INTEGER NOT NULL,PRIMARY KEY(blocker_id,target_id),CHECK(blocker_id<>target_id))`,
   `CREATE TABLE IF NOT EXISTS player_mutes(muter_id TEXT NOT NULL,target_id TEXT NOT NULL,created_at INTEGER NOT NULL,expires_at INTEGER NOT NULL,PRIMARY KEY(muter_id,target_id),CHECK(muter_id<>target_id))`,
   `CREATE INDEX IF NOT EXISTS player_mutes_expiry ON player_mutes(expires_at)`,
@@ -13,6 +15,8 @@ export const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS trial_results(week INTEGER NOT NULL,length TEXT NOT NULL,account_id TEXT NOT NULL,rules TEXT NOT NULL,session_id TEXT NOT NULL,depth INTEGER NOT NULL,score REAL NOT NULL,ticks INTEGER NOT NULL,created_at INTEGER NOT NULL,PRIMARY KEY(week,length,account_id,rules))`,
   `CREATE INDEX IF NOT EXISTS trial_results_board ON trial_results(week,length,rules,score DESC,created_at)`,
   `CREATE TABLE IF NOT EXISTS trial_recorded(session_id TEXT PRIMARY KEY,recorded_at INTEGER NOT NULL)`,
+  `CREATE TABLE IF NOT EXISTS quota_claims(account_id TEXT NOT NULL,scope TEXT NOT NULL,period TEXT NOT NULL,idem_key TEXT NOT NULL,created_at INTEGER NOT NULL,PRIMARY KEY(account_id,scope,period,idem_key))`,
+  `CREATE INDEX IF NOT EXISTS quota_claims_lookup ON quota_claims(account_id,scope,period)`,
   `CREATE TABLE IF NOT EXISTS challenges(id TEXT PRIMARY KEY,author_id TEXT NOT NULL,preset TEXT NOT NULL,version TEXT NOT NULL,spec TEXT NOT NULL,spec_hash TEXT NOT NULL,status TEXT NOT NULL DEFAULT 'open',created_at INTEGER NOT NULL,UNIQUE(author_id,preset,version,spec_hash))`,
   `CREATE INDEX IF NOT EXISTS challenges_recent ON challenges(status,created_at DESC)`,
   `CREATE INDEX IF NOT EXISTS challenges_author ON challenges(author_id,created_at)`,
@@ -155,6 +159,42 @@ export const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS guild_receipts(account_id TEXT NOT NULL,request_id TEXT NOT NULL,guild_id TEXT NOT NULL,action TEXT NOT NULL,payload TEXT NOT NULL,created_at INTEGER NOT NULL,PRIMARY KEY(account_id,request_id))`,
   `CREATE TABLE IF NOT EXISTS guild_logs(account_id TEXT NOT NULL,request_id TEXT NOT NULL,guild_id TEXT NOT NULL,action TEXT NOT NULL,target_id TEXT,created_at INTEGER NOT NULL,PRIMARY KEY(account_id,request_id))`,
   `CREATE INDEX IF NOT EXISTS guild_logs_recent ON guild_logs(guild_id,created_at)`,
+  `CREATE TABLE IF NOT EXISTS guild_tech_nodes(guild_id TEXT NOT NULL,node_id TEXT NOT NULL,season_idx INTEGER NOT NULL,level INTEGER NOT NULL DEFAULT 0,contributed INTEGER NOT NULL DEFAULT 0,PRIMARY KEY(guild_id,node_id,season_idx))`,
+  `CREATE TABLE IF NOT EXISTS league_seasons(idx INTEGER PRIMARY KEY,start_at INTEGER NOT NULL,end_at INTEGER NOT NULL,status TEXT NOT NULL DEFAULT 'active')`,
+  `CREATE TABLE IF NOT EXISTS league_standings(season_idx INTEGER NOT NULL,account_id TEXT NOT NULL,tier TEXT NOT NULL,points INTEGER NOT NULL DEFAULT 0,wins INTEGER NOT NULL DEFAULT 0,losses INTEGER NOT NULL DEFAULT 0,PRIMARY KEY(season_idx,account_id))`,
+  `CREATE TABLE IF NOT EXISTS league_matches(id TEXT PRIMARY KEY,season_idx INTEGER NOT NULL,tier TEXT NOT NULL,p1 TEXT NOT NULL,p2 TEXT NOT NULL,winner TEXT,seed INTEGER NOT NULL,rules_version TEXT NOT NULL,created_at INTEGER NOT NULL,resolved_at INTEGER)`,
+  `CREATE TABLE IF NOT EXISTS world_boss(id TEXT PRIMARY KEY,starts_at INTEGER NOT NULL,ends_at INTEGER NOT NULL,hp INTEGER NOT NULL,max_hp INTEGER NOT NULL,status TEXT NOT NULL DEFAULT 'active')`,
+  `CREATE TABLE IF NOT EXISTS world_boss_hits(id TEXT PRIMARY KEY,boss_id TEXT NOT NULL,account_id TEXT NOT NULL,damage INTEGER NOT NULL,created_at INTEGER NOT NULL)`,
+  `CREATE INDEX IF NOT EXISTS wb_hits_boss ON world_boss_hits(boss_id,account_id)`,
+  `CREATE TABLE IF NOT EXISTS mentorships(
+    mentor_id TEXT NOT NULL,
+    disciple_id TEXT NOT NULL,
+    created_at INTEGER NOT NULL,
+    PRIMARY KEY(mentor_id, disciple_id)
+  )`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS mentorship_disciple ON mentorships(disciple_id)`,
+  `CREATE TABLE IF NOT EXISTS mentor_codes(
+    account_id TEXT PRIMARY KEY,
+    code TEXT NOT NULL UNIQUE,
+    created_at INTEGER NOT NULL
+  )`,
+  `CREATE TABLE IF NOT EXISTS mentor_milestones(
+    mentor_id TEXT NOT NULL,
+    disciple_id TEXT NOT NULL,
+    milestone INTEGER NOT NULL,
+    created_at INTEGER NOT NULL,
+    PRIMARY KEY(mentor_id, disciple_id, milestone)
+  )`,
+  `CREATE TABLE IF NOT EXISTS mentor_rewards(
+    account_id TEXT NOT NULL,
+    milestone INTEGER NOT NULL,
+    disciple_id TEXT NOT NULL,
+    gold INTEGER NOT NULL,
+    claimed_at INTEGER,
+    request_id TEXT,
+    created_at INTEGER NOT NULL,
+    PRIMARY KEY(account_id, milestone, disciple_id)
+  )`,
   `CREATE TABLE IF NOT EXISTS guild_calendar(id TEXT PRIMARY KEY,guild_id TEXT NOT NULL,actor_id TEXT NOT NULL,title TEXT NOT NULL,activity TEXT NOT NULL,starts_at INTEGER NOT NULL,cancelled INTEGER NOT NULL DEFAULT 0)`,
   `CREATE INDEX IF NOT EXISTS guild_calendar_next ON guild_calendar(guild_id,starts_at)`,
   `CREATE TABLE IF NOT EXISTS rooms(

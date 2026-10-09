@@ -7,7 +7,11 @@ function expeditionRouteRules(e=expeditionState()){
   const r=e?.travel?.route;if(!r)return null;
   if(r.v!==1||!Object.hasOwn(EXPEDITION_ROUTES,r.id)||typeof r.contract!=="boolean"||r.contract&&r.id!=="salvage")throw Error("Lựa chọn đường chưa hợp lệ");
   const base=EXPEDITION_ROUTES[r.id];
-  return {...base,hp:base.hp*(r.contract?1.25:1),damage:base.damage*(r.contract?1.2:1),gold:r.contract?.5:base.gold};
+  // 2.12: cộng modifier từ ngã rẽ đã chọn.
+  const forks=e?.travel?.forks?Object.values(e.travel.forks):[];
+  const fm=typeof expeditionForkMods==="function"?expeditionForkMods(forks):{hp:1,damage:1,gold:1,loot:0};
+  return {...base,hp:base.hp*(r.contract?1.25:1)*fm.hp,damage:base.damage*(r.contract?1.2:1)*fm.damage,
+    gold:(r.contract?.5:base.gold)*fm.gold,loot:base.loot+fm.loot};
 }
 function expeditionRoutePreview(id="shelter",contract=false){
   if(!featureEnabled("expedition_routes")||!expeditionTravelEnabled())throw Error("Chọn đường chưa mở trong PHLT");

@@ -94,9 +94,15 @@ function rowIssues(it, row, where) {
   if (setLimits && (mag.length > (row.mag || []).length || ext.length > (row.ext || []).length))
     flags.push(["item_affix", `${where} có nhiều dòng hơn mẫu bộ`]);
   const seen = new Set();
+  const legIds = new Set((G.JX_CONTENT && G.JX_CONTENT.legendaryAffixes && G.JX_CONTENT.legendaryAffixes.affixes || []).map(a => a.id));
   for (const m of mag.concat(ext)) {
     if (!m || typeof m !== "object" || !Array.isArray(m.p) || !m.p.every(v => v === -1 || Number.isFinite(+v))) {
       flags.push(["item_affix", `${where} có dòng thuộc tính không phải số hữu hạn`]);
+      continue;
+    }
+    // 2.10: dòng legendary — chỉ kiểm tra id hợp lệ trong JSON, bỏ qua bảng affix thường.
+    if (m.leg) {
+      if (!legIds.has(m.leg)) flags.push(["item_affix", `${where} có legendary affix lạ (${m.leg})`]);
       continue;
     }
     // Mẫu bộ và đồ Tím khảm (tiền tố/hậu tố) có thể lặp cùng thuộc tính; chỉ đồ thường mới cấm lặp.

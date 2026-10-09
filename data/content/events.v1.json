@@ -1,0 +1,1 @@
+{"slots":[{"cadence":"weekly","enabled":true,"id":"weekly_trial","kind":"trial","mode":"phlt","name":"Thử thách tuần"},{"cadence":"weekly","enabled":true,"id":"community_challenge","kind":"challenge","mode":"g2","name":"Thử thách cộng đồng"}],"version":"events-v1"}

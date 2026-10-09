@@ -1,5 +1,8 @@
 "use strict";
 
+const FB_FEATURES=["build_advice","trial","event_calendar","codex","goals_7d","gold_sink","story","rift","lab","boss","season","other"];
+const FB_FEATURE_NAMES={build_advice:"Cố vấn build",trial:"Thử thách tuần",event_calendar:"Lịch sự kiện",codex:"Codex sưu tầm",goals_7d:"Mục tiêu 7 ngày",gold_sink:"Gold sink",story:"Truyện ngắn",rift:"Rift",lab:"Phòng lab build",boss:"Boss",season:"Mùa",other:"Khác / chung"};
+
 function redactFeedbackText(value) {
   return String(value).replace(/\b(?:Bearer|token|recovery[_ ]?code|ADMIN_KEY)\s*[:= ]\s*[^\s,;]+/gi,"[đã ẩn mã]")
     .replace(/mã khôi phục\s*[:= ]\s*[^\s,;]+/gi,"[đã ẩn mã]")
@@ -34,6 +37,7 @@ function cleanFeedbackContext(input) {
 function feedbackPayload(input,context,diagnostics) {
   const text=String(input.text||"").trim();if(text.length<5||text.length>2000)throw new Error("Nội dung cần 5–2000 ký tự");
   const output={text:redactFeedbackText(text),cat:String(input.cat||"other"),contact:String(input.contact||"").trim().slice(0,100)};
+  if(FB_FEATURES.includes(input.feature))output.feature=input.feature;
   if(input.includeContext===true)output.ctx=cleanFeedbackContext(context);
   if(input.includeDiagnostics===true){output.diagnosticConsent=true;output.diagnostics=cleanFeedbackDiagnostics(diagnostics);}
   if(new TextEncoder().encode(JSON.stringify(output)).length>16384)throw new Error("Góp ý quá lớn");return output;

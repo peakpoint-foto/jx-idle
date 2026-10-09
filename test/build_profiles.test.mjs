@@ -84,3 +84,24 @@ test("full inventory refuses equipment removal; respec/repeated swaps preserve q
   const before=g.json("S");assert.ok(g.run("buildPreview(0).errors.some(x=>x.includes('chỗ trong hành trang'))"));
   assert.equal(g.run("buildLoad(0).ok"),false);assert.deepEqual(g.json("S"),before);
 });
+
+test("2.3 slot mở dần theo cấp; wave 3 chuẩn hóa save cũ", () => {
+  const g = game();
+  g.run("fixture('ctc',20);setFeatureFlags({build_profiles:true})");
+  assert.equal(g.run("buildSlotsUnlocked()"), 1);
+  assert.equal(g.run("buildSave(1).ok"), false, "cấp 20 chưa lưu được bộ 2");
+  assert.ok(g.run("buildSave(1).msg").includes("cấp 30"));
+  g.run("S.lvl=35;recalc()");
+  assert.equal(g.run("buildSlotsUnlocked()"), 2);
+  assert.equal(g.run("buildSave(1).ok"), true, "cấp 35 lưu được bộ 2");
+  assert.equal(g.run("buildSave(2).ok"), false, "cấp 35 chưa lưu được bộ 3");
+  g.run("S.lvl=60;recalc()");
+  assert.equal(g.run("buildSlotsUnlocked()"), 3);
+  assert.equal(g.run("buildSave(2).ok"), true, "cấp 60 lưu được bộ 3");
+  // dùng bộ ở slot khóa bị chặn
+  g.run("S.lvl=20");
+  assert.equal(g.run("buildLoad(1).ok"), false);
+  // wave 3: save cũ không có builds -> chuẩn hóa
+  const r = g.json("(()=>{const o=Object.assign(newSave(),{v:1});delete o.extensions;delete o.builds;const m=migrate(o);return {wv:m.extensions.wv,builds:Array.isArray(m.builds)?m.builds.length:-1,loadout:!!m.extensions.loadout};})()");
+  assert.deepEqual(r, {wv: 3, builds: 3, loadout: true});
+});
