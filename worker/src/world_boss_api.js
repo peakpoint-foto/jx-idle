@@ -1,4 +1,5 @@
 import {worldBossCurrent, worldBossHit, worldBossRewards} from './world_boss.js';
+import {auth} from './account.js';
 
 // 3.3: API world boss.
 export async function worldBoss(req, env) {
@@ -12,7 +13,8 @@ export async function worldBoss(req, env) {
   if (req.method === 'POST') {
     const body = await req.json().catch(() => ({}));
     const {boss_id, snapshot, nonce} = body;
-    const accountId = req.headers.get('x-account-id') || 'anon';
+    const acc = await auth(req, env);
+    const accountId = acc.id;
     if (!boss_id || !nonce) return Response.json({ok: false, msg: 'Thiếu tham số'}, {status: 400});
     const r = await worldBossHit(env.DB, boss_id, accountId, snapshot || {}, nonce);
     return Response.json(r, {status: r.ok ? 200 : 400});
