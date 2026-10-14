@@ -76,13 +76,14 @@ test("client-style guild tech GET/POST with Bearer records donate on token accou
   const DB = await localD1();
   t.after(() => DB.close());
   const env = { DB };
-  const donor = await register(req(), env, { name: "TechDonor", save: baseSave() });
+  const donor = await register(req(), env, regBody("TechDonor", baseSave()));
   const bystanderSave = baseSave();
   bystanderSave.cid = "c_bearer_bystander012345678";
-  const bystander = await register(req("POST", null, "198.51.100.11"), env, {
-    name: "TechBystander",
-    save: bystanderSave,
-  });
+  const bystander = await register(
+    req("POST", null, "198.51.100.11"),
+    env,
+    regBody("TechBystander", bystanderSave)
+  );
   const guildId = "g_client_e2e";
   const nodeId = "exp_boost";
   const gold = 2500;
