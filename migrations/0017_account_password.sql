@@ -1,4 +1,4 @@
--- Password credentials on existing token accounts (applied at runtime via worker/src/db.js COLUMNS).
+-- 0017: Password credentials on existing token accounts (runtime also via worker/src/db.js COLUMNS).
 ALTER TABLE accounts ADD COLUMN password_hash TEXT;
 ALTER TABLE accounts ADD COLUMN password_salt TEXT;
 ALTER TABLE accounts ADD COLUMN recovery_hash TEXT;

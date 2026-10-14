@@ -240,6 +240,8 @@ export async function login(req, env, body) {
 
 export async function setPassword(req, env, body) {
   if (!body || typeof body !== "object" || Array.isArray(body)) throw new HttpError(400, "bad_request");
+  const measure = req.headers.get("x-measure-auth-cpu") === "1";
+  const handlerT0 = measure ? performance.now() : 0;
   const acc = await auth(req, env);
   if (accountHasPassword(acc)) throw new HttpError(409, "password_set", "Tài khoản đã có mật khẩu");
   const ih = await ipHash(req, env);
@@ -255,7 +257,9 @@ export async function setPassword(req, env, body) {
   }
   const email = body.email != null && body.email !== "" ? optionalEmail(body.email) : acc.email || null;
   const salt = randomSalt();
+  const hashT0 = measure ? performance.now() : 0;
   const pwdHash = await hashPassword(password, salt, PBKDF2_ITERATIONS_DEFAULT);
+  const hashMs = measure ? performance.now() - hashT0 : 0;
   const rc = recoveryCode();
   const rcHash = await sha256Hex(rc.replace(/-/g, "").toLowerCase());
   await env.DB.prepare(
@@ -263,7 +267,20 @@ export async function setPassword(req, env, body) {
   )
     .bind(acc.id, pwdHash, salt, rcHash, email, PBKDF2_ITERATIONS_DEFAULT)
     .run();
-  return { ok: true, recovery_code: rc, has_password: true };
+  const handlerMs = measure ? performance.now() - handlerT0 : 0;
+  return {
+    ok: true,
+    recovery_code: rc,
+    has_password: true,
+    ...(measure
+      ? {
+          _benchmark: {
+            pbkdf2_ms: Math.round(hashMs * 100) / 100,
+            handler_ms: Math.round(handlerMs * 100) / 100,
+          },
+        }
+      : {}),
+  };
 }
 
 export async function loginRecover(req, env, body) {
