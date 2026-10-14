@@ -1,7 +1,8 @@
 // PBKDF2 password hashing via Web Crypto (Workers + Node test runtime).
 
 const enc = new TextEncoder();
-export const PBKDF2_ITERATIONS = 310_000;
+/** Default for new credentials; stored per row in accounts.password_iter for future increases. */
+export const PBKDF2_ITERATIONS_DEFAULT = 100_000;
 
 export function randomSalt(bytes = 16) {
   const a = crypto.getRandomValues(new Uint8Array(bytes));
@@ -17,20 +18,21 @@ function b64ToBytes(s) {
   return out;
 }
 
-export async function hashPassword(password, saltB64) {
+export async function hashPassword(password, saltB64, iterations = PBKDF2_ITERATIONS_DEFAULT) {
+  const iters = Math.max(1, Math.floor(+iterations || PBKDF2_ITERATIONS_DEFAULT));
   const salt = b64ToBytes(saltB64);
   const key = await crypto.subtle.importKey("raw", enc.encode(String(password)), "PBKDF2", false, ["deriveBits"]);
   const bits = await crypto.subtle.deriveBits(
-    { name: "PBKDF2", salt, iterations: PBKDF2_ITERATIONS, hash: "SHA-256" },
+    { name: "PBKDF2", salt, iterations: iters, hash: "SHA-256" },
     key,
     256
   );
   return [...new Uint8Array(bits)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-export async function verifyPassword(password, saltB64, expectedHex) {
+export async function verifyPassword(password, saltB64, expectedHex, iterations = PBKDF2_ITERATIONS_DEFAULT) {
   if (!password || !saltB64 || !expectedHex) return false;
-  const got = await hashPassword(password, saltB64);
+  const got = await hashPassword(password, saltB64, iterations);
   if (got.length !== expectedHex.length) return false;
   let diff = 0;
   for (let i = 0; i < got.length; i++) diff |= got.charCodeAt(i) ^ expectedHex.charCodeAt(i);

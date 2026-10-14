@@ -7,6 +7,7 @@ import {
   verifyPassword,
   recoveryCode,
   validatePassword,
+  PBKDF2_ITERATIONS_DEFAULT,
 } from "./auth_crypto.js";
 import { applyValidation } from "./ladder.js";
 import { GAME } from "../gen/game.js";
@@ -70,11 +71,27 @@ export function parseSave(save, env = null) {
 export async function auth(req, env) {
   const tok = bearer(req);
   if (!tok) throw new HttpError(401, "no_token");
-  const acc = await env.DB.prepare("SELECT * FROM accounts WHERE token_hash=?1")
-    .bind(await sha256Hex(tok))
-    .first();
-  if (!acc) throw new HttpError(401, "bad_token");
-  return acc;
+  const hash = await sha256Hex(tok);
+  const acc = await env.DB.prepare("SELECT * FROM accounts WHERE token_hash=?1").bind(hash).first();
+  if (acc) return acc;
+  const revoked = await env.DB.prepare("SELECT id FROM accounts WHERE revoked_token_hash=?1").bind(hash).first();
+  if (revoked)
+    throw new HttpError(401, "session_replaced", "Tài khoản đã đăng nhập ở thiết bị khác");
+  throw new HttpError(401, "bad_token");
+}
+
+/** One active session: rotating the token invalidates the previous bearer everywhere. */
+async function issueSessionToken(db, accountId, now = Date.now()) {
+  const row = await db.prepare("SELECT token_hash FROM accounts WHERE id=?1").bind(accountId).first();
+  if (!row) throw new HttpError(404, "not_found");
+  const token = randomToken(24);
+  await db
+    .prepare(
+      `UPDATE accounts SET token_hash=?2,revoked_token_hash=?3,login_fails=0,login_lock_until=NULL,last_hb=?4 WHERE id=?1`
+    )
+    .bind(accountId, await sha256Hex(token), row.token_hash, now)
+    .run();
+  return token;
 }
 
 async function verifyTurnstile(env, token, ip) {
@@ -124,16 +141,19 @@ export async function register(req, env, body) {
   const characterId = String(state.cid || "c_" + randomToken(12));
   state.cid = characterId;
   const now = Date.now();
+  const measure = req.headers.get("x-measure-auth-cpu") === "1";
   const salt = randomSalt();
-  const pwdHash = await hashPassword(password, salt);
+  const hashT0 = measure ? performance.now() : 0;
+  const pwdHash = await hashPassword(password, salt, PBKDF2_ITERATIONS_DEFAULT);
+  const hashMs = measure ? performance.now() - hashT0 : 0;
   const rc = recoveryCode();
   const rcHash = await sha256Hex(rc.replace(/-/g, "").toLowerCase());
   try {
     await env.DB.batch([
       env.DB.prepare(
-        `INSERT INTO accounts(id,token_hash,name,created_at,ip_hash,last_hb,password_hash,password_salt,recovery_hash,email)
-         VALUES(?1,?2,?3,?4,?5,?4,?6,?7,?8,?9)`
-      ).bind(id, await sha256Hex(token), name, now, ih, pwdHash, salt, rcHash, email),
+        `INSERT INTO accounts(id,token_hash,name,created_at,ip_hash,last_hb,password_hash,password_salt,recovery_hash,email,password_iter)
+         VALUES(?1,?2,?3,?4,?5,?4,?6,?7,?8,?9,?10)`
+      ).bind(id, await sha256Hex(token), name, now, ih, pwdHash, salt, rcHash, email, PBKDF2_ITERATIONS_DEFAULT),
       env.DB.prepare(
         "INSERT INTO chars(account_id,character_id,fac,sex,lvl,xp,snapshot,updated_at,sync_n,sync_rev,mode) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,1,1,?9)"
       ).bind(id, characterId, String(state.fac), state.sex ? 1 : 0, Math.floor(state.lvl), +state.xp || 0, JSON.stringify(state), now, state.mode),
@@ -143,10 +163,23 @@ export async function register(req, env, body) {
     throw e;
   }
   const v = await applyValidation(env, id, state, 0, 1);
-  return { id, token, name, character_id: characterId, sync_rev: 1, play_sec: 0, recovery_code: rc, has_password: true, ...v };
+  return {
+    id,
+    token,
+    name,
+    character_id: characterId,
+    sync_rev: 1,
+    play_sec: 0,
+    recovery_code: rc,
+    has_password: true,
+    ...v,
+    ...(measure ? { _benchmark: { pbkdf2_ms: Math.round(hashMs * 100) / 100 } } : {}),
+  };
 }
 
 export async function login(req, env, body) {
+  const measure = req.headers.get("x-measure-auth-cpu") === "1";
+  const loginT0 = measure ? performance.now() : 0;
   if (!body || typeof body !== "object" || Array.isArray(body)) throw new HttpError(400, "bad_request");
   const ih = await ipHash(req, env);
   if (!(await rateLimit(env.DB, "login:" + ih, 40, 3600)))
@@ -161,7 +194,7 @@ export async function login(req, env, body) {
     throw new HttpError(400, "bad_password", "Mật khẩu không hợp lệ");
   }
   const acc = await env.DB.prepare(
-    "SELECT id,name,password_hash,password_salt,login_fails,login_lock_until FROM accounts WHERE name=?1 COLLATE NOCASE"
+    "SELECT id,name,password_hash,password_salt,password_iter,login_fails,login_lock_until FROM accounts WHERE name=?1 COLLATE NOCASE"
   )
     .bind(name)
     .first();
@@ -171,7 +204,10 @@ export async function login(req, env, body) {
     throw new HttpError(429, "locked", "Tài khoản tạm khóa do nhập sai mật khẩu nhiều lần", {
       retry_after_ms: acc.login_lock_until - now,
     });
-  const ok = await verifyPassword(password, acc.password_salt, acc.password_hash);
+  const iters = acc.password_iter || PBKDF2_ITERATIONS_DEFAULT;
+  const verifyT0 = measure ? performance.now() : 0;
+  const ok = await verifyPassword(password, acc.password_salt, acc.password_hash, iters);
+  const verifyMs = measure ? performance.now() - verifyT0 : 0;
   if (!ok) {
     const fails = (+acc.login_fails || 0) + 1;
     const lockUntil = fails >= LOGIN_MAX_FAILS ? now + LOGIN_LOCK_MS : null;
@@ -184,13 +220,22 @@ export async function login(req, env, body) {
       });
     throw new HttpError(401, "bad_credentials", "Tên hoặc mật khẩu không đúng");
   }
-  const token = randomToken(24);
-  await env.DB.prepare(
-    "UPDATE accounts SET token_hash=?2,login_fails=0,login_lock_until=NULL,last_hb=?3 WHERE id=?1"
-  )
-    .bind(acc.id, await sha256Hex(token), now)
-    .run();
-  return { id: acc.id, token, name: acc.name, has_password: true };
+  const token = await issueSessionToken(env.DB, acc.id, now);
+  const totalMs = measure ? performance.now() - loginT0 : 0;
+  return {
+    id: acc.id,
+    token,
+    name: acc.name,
+    has_password: true,
+    ...(measure
+      ? {
+          _benchmark: {
+            pbkdf2_ms: Math.round(verifyMs * 100) / 100,
+            handler_ms: Math.round(totalMs * 100) / 100,
+          },
+        }
+      : {}),
+  };
 }
 
 export async function setPassword(req, env, body) {
@@ -210,13 +255,13 @@ export async function setPassword(req, env, body) {
   }
   const email = body.email != null && body.email !== "" ? optionalEmail(body.email) : acc.email || null;
   const salt = randomSalt();
-  const pwdHash = await hashPassword(password, salt);
+  const pwdHash = await hashPassword(password, salt, PBKDF2_ITERATIONS_DEFAULT);
   const rc = recoveryCode();
   const rcHash = await sha256Hex(rc.replace(/-/g, "").toLowerCase());
   await env.DB.prepare(
-    "UPDATE accounts SET password_hash=?2,password_salt=?3,recovery_hash=?4,email=?5 WHERE id=?1"
+    "UPDATE accounts SET password_hash=?2,password_salt=?3,recovery_hash=?4,email=?5,password_iter=?6 WHERE id=?1"
   )
-    .bind(acc.id, pwdHash, salt, rcHash, email)
+    .bind(acc.id, pwdHash, salt, rcHash, email, PBKDF2_ITERATIONS_DEFAULT)
     .run();
   return { ok: true, recovery_code: rc, has_password: true };
 }
@@ -241,13 +286,8 @@ export async function loginRecover(req, env, body) {
   if (!acc || !acc.recovery_hash) throw new HttpError(401, "bad_recovery", "Mã khôi phục không đúng");
   const got = await sha256Hex(code.replace(/-/g, ""));
   if (got !== acc.recovery_hash) throw new HttpError(401, "bad_recovery", "Mã khôi phục không đúng");
-  const token = randomToken(24);
   const now = Date.now();
-  await env.DB.prepare(
-    "UPDATE accounts SET token_hash=?2,login_fails=0,login_lock_until=NULL,last_hb=?3 WHERE id=?1"
-  )
-    .bind(acc.id, await sha256Hex(token), now)
-    .run();
+  const token = await issueSessionToken(env.DB, acc.id, now);
   return { id: acc.id, token, name: acc.name, has_password: true };
 }
 
@@ -264,7 +304,8 @@ export async function deleteAccount(req, env, body) {
     } catch {
       throw new HttpError(400, "bad_password", "Cần mật khẩu để xóa tài khoản");
     }
-    if (!(await verifyPassword(password, acc.password_salt, acc.password_hash)))
+    const iters = acc.password_iter || PBKDF2_ITERATIONS_DEFAULT;
+    if (!(await verifyPassword(password, acc.password_salt, acc.password_hash, iters)))
       throw new HttpError(401, "bad_credentials", "Mật khẩu không đúng");
   } else if (body.confirm !== acc.name)
     throw new HttpError(400, "confirm_required", "Gõ đúng tên online để xác nhận xóa");

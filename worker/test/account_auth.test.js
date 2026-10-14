@@ -18,6 +18,16 @@ const req = (method = "POST", token = null, ip = "198.51.100.10") =>
     },
   });
 
+test("login elsewhere invalidates previous token with session_replaced", async (t) => {
+  const DB = await localD1();
+  t.after(() => DB.close());
+  const env = { DB };
+  const reg = await register(req(), env, { name: "SessTwo", save: baseSave(), password: "securepass1" });
+  const oldToken = reg.token;
+  await login(req(), env, { username: "SessTwo", password: "securepass1" });
+  await assert.rejects(() => me(req("GET", oldToken), env), (e) => e.code === "session_replaced");
+});
+
 test("login on another device returns the same character", async (t) => {
   const DB = await localD1();
   t.after(() => DB.close());
@@ -67,7 +77,7 @@ test("legacy token account can set password without losing character", async (t)
   const before = await me(req("GET", token), env);
   const set = await setPassword(req("POST", token), env, { password: "newsecure12" });
   assert.ok(set.recovery_code);
-  assert.match(set.recovery_code, /^[A-Za-z0-9-]+$/);
+  assert.match(set.recovery_code, /^[A-Za-z0-9_-]+$/);
   const after = await me(req("GET", token), env);
   assert.equal(after.char.character_id, before.char.character_id);
   assert.equal(after.has_password, true);
@@ -107,9 +117,10 @@ test("no plaintext password stored in accounts table", async (t) => {
   const env = { DB };
   const plain = "MySecretPass99";
   await register(req(), env, { name: "NoPlain", save: baseSave(), password: plain });
-  const row = await DB.prepare("SELECT password_hash,password_salt,name FROM accounts WHERE name=?1").bind("NoPlain").first();
+  const row = await DB.prepare("SELECT password_hash,password_salt,password_iter,name FROM accounts WHERE name=?1").bind("NoPlain").first();
   assert.ok(row.password_hash);
   assert.ok(row.password_salt);
+  assert.equal(row.password_iter, 100_000);
   assert.notEqual(row.password_hash, plain);
   assert.ok(!row.password_hash.includes(plain));
   const dump = JSON.stringify(row);
