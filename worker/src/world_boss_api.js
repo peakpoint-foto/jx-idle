@@ -13,6 +13,7 @@ export async function worldBoss(req, env) {
   if (req.method === 'POST') {
     const body = await req.json().catch(() => ({}));
     const {boss_id, snapshot, nonce} = body;
+    // Legacy rows may use account_id 'anon' from pre-Bearer clients; do not delete or rewrite them here.
     const acc = await auth(req, env);
     const accountId = acc.id;
     if (!boss_id || !nonce) return Response.json({ok: false, msg: 'Thiếu tham số'}, {status: 400});
