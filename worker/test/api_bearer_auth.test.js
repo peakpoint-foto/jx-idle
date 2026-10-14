@@ -21,15 +21,14 @@ const req = (method = "POST", token = null, ip = "198.51.100.10") =>
     },
   });
 
+/** Stacked on password PR: register requires password; omit on bearer-only branch. */
+const regBody = (name, save) => ({ name, save, password: "testpass12" });
+
 test("guild tech POST uses Bearer auth; forged x-account-id is ignored", async (t) => {
   const DB = await localD1();
   t.after(() => DB.close());
   const env = { DB };
-  const reg = await register(req(), env, {
-    name: "BearerGuild",
-    save: baseSave(),
-    password: "testpass12",
-  });
+  const reg = await register(req(), env, regBody("BearerGuild", baseSave()));
   const forged = new Request("https://game.test/api/guild-tech", {
     method: "POST",
     headers: {
@@ -174,7 +173,7 @@ test("legacy token survives reload: same Bearer reuses account and progress", as
   const env = { DB };
   const save = baseSave();
   save.gold = 4242;
-  const reg = await register(req(), env, { name: "ReloadKeep", save });
+  const reg = await register(req(), env, regBody("ReloadKeep", save));
   const token = reg.token;
   const first = await me(req("GET", token), env);
   assert.equal(first.id, reg.id);
