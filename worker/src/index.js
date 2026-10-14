@@ -12,7 +12,7 @@ import { mentor } from "./mentor.js";
 import { guildTech } from "./guild_tech_api.js";
 import { league } from "./league_api.js";
 import { worldBoss } from "./world_boss_api.js";
-import { featureConfig, guardedFeature } from "./capabilities.js";
+import { featureConfig, guardedFeature, guildTechServerGate } from "./capabilities.js";
 import {friends} from './lobby.js';
 import {economy} from './economy.js';
 import {season} from './seasons.js';
@@ -49,8 +49,14 @@ const ROUTES = {
   "GET /api/guild": guardedFeature("guild_online", guild),
   "GET /api/mentor": guardedFeature("mentor", mentor),
   "POST /api/mentor": guardedFeature("mentor", mentor),
-  "GET /api/guild-tech": guardedFeature("guild_tech", guildTech),
-  "POST /api/guild-tech": guardedFeature("guild_tech", guildTech),
+  "GET /api/guild-tech": async (req, env, ...a) => {
+    guildTechServerGate(env);
+    return guardedFeature("guild_tech", guildTech)(req, env, ...a);
+  },
+  "POST /api/guild-tech": async (req, env, ...a) => {
+    guildTechServerGate(env);
+    return guardedFeature("guild_tech", guildTech)(req, env, ...a);
+  },
   "GET /api/league": guardedFeature("duel_league", league),
   "POST /api/league": guardedFeature("duel_league", league),
   "GET /api/world-boss": guardedFeature("world_boss", worldBoss),

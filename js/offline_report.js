@@ -3,11 +3,12 @@
 // thời gian hiệu quả so với trần, lý do delta = 0, lịch sử 7 lần gần nhất.
 function offlineZeroReason() {
   if (typeof S === "undefined" || !S || !S.fac) return "";
-  const raw = (Date.now() - S.last) / 1e3;
+  const now = typeof idleNowMs === "function" ? idleNowMs() : Date.now();
+  const raw = (now - S.last) / 1e3;
   if (!(raw >= 60)) return "Vắng mặt dưới 60 giây — chưa đủ để tính treo máy.";
   if (S.lvl >= MAX_LEVEL) return "Đã đạt cấp tối đa — không nhận thêm kinh nghiệm.";
   const d = S.offDay;
-  if (d && Date.now() - d.t0 < 864e5 && d.secs >= OFFLINE_DAY_MAX) return "Đã hết quota treo máy hôm nay (12 giờ).";
+  if (d && now - d.t0 < 864e5 && d.secs >= OFFLINE_DAY_MAX) return "Đã hết quota treo máy hôm nay (12 giờ).";
   return "Không hạ được quái nào trong thời gian vắng mặt (sát thương quá thấp).";
 }
 // Làm giàu báo cáo từ offlineGains(): tiến độ lên cấp + thời gian hiệu quả.

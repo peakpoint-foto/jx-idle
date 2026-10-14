@@ -78,6 +78,8 @@ async function onlSync(quiet, force = false) {
     const rev = ONL.me && ONL.me.char && ONL.me.char.sync_rev;
     const r = await onlApi("/sync", { body: { save: pack(S), base_rev: rev == null ? null : rev, force } });
     ONL.lastSync = Date.now();
+    if (r.server_now != null && typeof setIdleClockFromServer === "function") setIdleClockFromServer(r.server_now);
+    else if (typeof setIdleClockFromServer === "function") setIdleClockFromServer(Date.now());
     ONL.conflict = null;
     if (ONL.me && ONL.me.char && r.sync_rev != null) ONL.me.char.sync_rev = r.sync_rev;
     if (ONL.me && ONL.me.char) Object.assign(ONL.me.char, { power: r.power, bracket: r.bracket, flagged: r.flagged ? 1 : 0 });
@@ -316,7 +318,11 @@ setInterval(() => { if (document.visibilityState!=="hidden" && onlGet() && docum
 // Heartbeat mỗi phút khi đã đăng ký; đồng bộ save mỗi 5 phút.
 setInterval(() => {
   if (!onlEligible() || !onlGet()) return;
-  onlApi("/hb", { method: "POST", keepalive: true }).then(d => { ONL.serverNow = d.server_now || 0; if (ONL.me) ONL.me.play_sec = d.play_sec }).catch(() => { });
+  onlApi("/hb", { method: "POST", keepalive: true }).then(d => {
+    ONL.serverNow = d.server_now || 0;
+    if (typeof setIdleClockFromServer === "function") setIdleClockFromServer(ONL.serverNow);
+    if (ONL.me) ONL.me.play_sec = d.play_sec;
+  }).catch(() => { });
   if (Date.now() - ONL.lastSync >= ONL_SYNC_MS) onlSync(true);
 }, ONL_HB_MS);
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden" && onlEligible() && onlGet() && Date.now() - ONL.lastSync > 60e3) onlSync(true) });

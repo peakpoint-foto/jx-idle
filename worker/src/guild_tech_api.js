@@ -2,6 +2,9 @@ import {guildTechContribute, guildTechDef, guildTechEffects, guildTechNodes} fro
 import {seasonOf} from './seasons.js';
 const getSeasonIdx = () => seasonOf(Date.now()).idx;
 
+// TODO(anticheat): Không bật GUILD_TECH_SERVER_ENABLED=1 cho tới khi POST dùng Bearer auth
+// (không x-account-id) và trừ vàng từ ledger/snapshot server — hiện client khai gold tùy ý.
+
 // 2.15: API guild tech tree.
 export async function guildTech(req, env) {
   const url = new URL(req.url);

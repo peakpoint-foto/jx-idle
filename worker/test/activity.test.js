@@ -11,10 +11,14 @@ test("activity ledger uses UTC day and week periods", () => {
   assert.notEqual(utcPeriod("siege", T0), utcPeriod("siege", T0 + 8 * 86400e3));
 });
 
-test("activity claims are bounded by activity and replay keys are validated", () => {
-  assert.deepEqual(validateActivityClaim({ activity: "siege", event_key: "siege-2026-10-08", contribution: 12, cleared: 3, won: true }), {
-    kind: "siege", eventKey: "siege-2026-10-08", contribution: 12, cleared: 3, won: 1,
-  });
-  assert.throws(() => validateActivityClaim({ activity: "siege", event_key: "siege-2026-10-08", contribution: 12, cleared: 4 }), /bad_cleared/);
+test("activity claims use server scores and reject tampered client totals", () => {
+  assert.deepEqual(
+    validateActivityClaim({ activity: "siege", event_key: "siege-2026-10-08", contribution: 1, cleared: 1, won: true }),
+    { kind: "siege", eventKey: "siege-2026-10-08", contribution: 1, cleared: 1, won: 1 }
+  );
+  assert.throws(
+    () => validateActivityClaim({ activity: "siege", event_key: "siege-2026-10-08", contribution: 12, cleared: 3, won: true }),
+    err => err.code === "activity_score_tamper"
+  );
   assert.throws(() => validateActivityClaim({ activity: "tower", event_key: "tower-2026-10-08", contribution: 10_000_001, cleared: 1 }), /bad_contribution/);
 });
