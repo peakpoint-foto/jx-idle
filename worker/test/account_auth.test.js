@@ -3,7 +3,6 @@ import assert from "node:assert/strict";
 import { localD1 } from "./helpers/d1.js";
 import { GAME } from "../gen/game.js";
 import { register, login, me, setPassword, deleteAccount, LOGIN_MAX_FAILS } from "../src/account.js";
-import { guildTech } from "../src/guild_tech_api.js";
 import { sha256Hex } from "../src/http.js";
 
 const baseSave = () =>
@@ -81,34 +80,6 @@ test("legacy token account can set password without losing character", async (t)
   const after = await me(req("GET", token), env);
   assert.equal(after.char.character_id, before.char.character_id);
   assert.equal(after.has_password, true);
-});
-
-test("forged x-account-id is ignored; guild tech POST uses Bearer auth", async (t) => {
-  const DB = await localD1();
-  t.after(() => DB.close());
-  const env = { DB };
-  const real = await register(req(), env, { name: "RealGuild", save: baseSave(), password: "guildpass12" });
-  const forged = new Request("https://game.test/api/guild-tech", {
-    method: "POST",
-    headers: {
-      authorization: "Bearer " + real.token,
-      "content-type": "application/json",
-      "x-account-id": "attacker_account_id",
-    },
-    body: JSON.stringify({ guild_id: "g1", node_id: "exp_boost", gold: 1000, nonce: "n-test-1" }),
-  });
-  const r = await guildTech(forged, env);
-  const body = await r.json();
-  assert.equal(body.ok, true);
-  const row = await DB.prepare("SELECT account_id FROM quota_claims WHERE account_id=?1").bind(real.id).first();
-  assert.ok(row);
-  assert.equal(row.account_id, real.id);
-  const noAuth = new Request("https://game.test/api/guild-tech", {
-    method: "POST",
-    headers: { "content-type": "application/json", "x-account-id": "attacker_account_id" },
-    body: JSON.stringify({ guild_id: "g1", node_id: "exp_boost", gold: 1000, nonce: "n-test-2" }),
-  });
-  await assert.rejects(() => guildTech(noAuth, env), (e) => e && e.code === "no_token");
 });
 
 test("no plaintext password stored in accounts table", async (t) => {

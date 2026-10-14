@@ -25,7 +25,11 @@ test("guild tech POST uses Bearer auth; forged x-account-id is ignored", async (
   const DB = await localD1();
   t.after(() => DB.close());
   const env = { DB };
-  const reg = await register(req(), env, { name: "BearerGuild", save: baseSave() });
+  const reg = await register(req(), env, {
+    name: "BearerGuild",
+    save: baseSave(),
+    password: "testpass12",
+  });
   const forged = new Request("https://game.test/api/guild-tech", {
     method: "POST",
     headers: {
