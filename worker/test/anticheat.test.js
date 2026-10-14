@@ -75,29 +75,38 @@ test("activity tamper: inflated client scores rejected", () => {
   assert.equal(ok.cleared, 1);
 });
 
-test("sync log_only accepts tampered save and logs telemetry (T1 server side)", async t => {
-  const { env, DB, state, request } = await player(t);
+test("sync log_only caps offline gold spike and logs telemetry (T1 server side)", async t => {
+  const { env, DB, state, request, id } = await player(t);
+  const stale = Date.now() - 48 * 3600e3;
+  await DB.prepare("UPDATE accounts SET last_hb=?2 WHERE id=?1").bind(id, stale).run();
+  await DB.prepare("UPDATE chars SET updated_at=?2 WHERE account_id=?1").bind(id, stale).run();
   const hacked = { ...state, gold: 50_000_000 };
   env.SYNC_GUARD_MODE = "log_only";
   const r = await sync(request(), env, { save: hacked, base_rev: 1 });
   assert.equal(r.ok, true);
-  assert.ok(r.sync_guard_violations > 0);
+  assert.equal(r.sync_offline_cap, true);
+  const row = await DB.prepare("SELECT snapshot FROM chars WHERE account_id=?1").bind(id).first();
+  const saved = JSON.parse(row.snapshot);
+  assert.ok(saved.gold < hacked.gold);
+  assert.ok(saved.gold >= state.gold);
   const tele = await DB.prepare(
     "SELECT value FROM telemetry_events WHERE event='sync_guard_would_reject' ORDER BY id DESC LIMIT 1"
   ).first();
   assert.ok(tele);
   const payload = JSON.parse(tele.value);
   assert.equal(payload.account_id, "ac1");
-  assert.ok(payload.violations.length > 0);
+  assert.equal(payload.offline_cap, true);
 });
 
-test("sync enforce rejects tampered save", async t => {
-  const { env, state, request } = await player(t);
+test("sync enforce accepts save when server idle cap removes budget violations", async t => {
+  const { env, state, request, id, DB } = await player(t);
   const hacked = { ...state, gold: 50_000_000 };
   env.SYNC_GUARD_MODE = "enforce";
-  await assert.rejects(() => sync(request(), env, { save: hacked, base_rev: 1 }), {
-    code: "sync_budget_exceeded",
-  });
+  const r = await sync(request(), env, { save: hacked, base_rev: 1 });
+  assert.equal(r.ok, true);
+  assert.equal(r.sync_offline_cap, true);
+  const row = await DB.prepare("SELECT snapshot FROM chars WHERE account_id=?1").bind(id).first();
+  assert.ok(JSON.parse(row.snapshot).gold < hacked.gold);
 });
 
 test("guild-tech server gate is fail-closed without GUILD_TECH_SERVER_ENABLED", () => {

@@ -177,11 +177,13 @@ export async function sync(req, env, body) {
   const now = Date.now();
   const guarded = await applySyncGuard(env, env.DB, {
     accountId: acc.id,
+    account: acc,
     prevSnapshot: row.snapshot,
     nextState: state,
     lastUpdatedAt: row.updated_at,
     playSec: +acc.play_sec || 0,
     mode: state.mode,
+    now,
   });
   state = guarded.state;
   const q = body.force || baseRev == null
@@ -207,6 +209,7 @@ export async function sync(req, env, body) {
     sync_rev: updated.sync_rev,
     sync_guard: guarded.guard?.mode || syncGuardMode(env),
     sync_guard_violations: guarded.guard?.violations?.length || 0,
+    sync_offline_cap: !!guarded.guard?.offline_cap,
     ...v,
   };
 }

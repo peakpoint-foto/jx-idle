@@ -2,6 +2,7 @@
 // SYNC_GUARD_MODE (env): off | log_only (default) | enforce
 import { HttpError } from "./http.js";
 const OFFLINE_MAX = 8 * 3600;
+const OFFLINE_DAY_MAX = 12 * 3600;
 const HB_ONLINE_GAP = 150;
 import { GAME } from "../gen/game.js";
 import { levelCapForTime, MODE_TIME_FACTOR, modeOfState } from "./validate.js";
@@ -22,6 +23,24 @@ export function syncElapsedBudgetSec(lastUpdatedAt, now = Date.now()) {
   const wall = Math.max(0, (now - lastUpdatedAt) / 1000);
   if (wall <= HB_ONLINE_GAP) return wall;
   return Math.min(wall, OFFLINE_MAX);
+}
+
+/** Thời gian offline/hybrid server chấp nhận kể từ lần cuối thấy account (hb hoặc tạo). Khớp creditTime(). */
+export function serverSeenBudgetSec(acc, now = Date.now()) {
+  const created = acc?.created_at || 0;
+  const lastHb = acc?.last_hb || created || 0;
+  const gap = lastHb > 0 ? Math.max(0, (now - lastHb) / 1000) : OFFLINE_MAX;
+  if (gap <= HB_ONLINE_GAP) return gap;
+  let offSec = +acc?.off_sec || 0;
+  const offT0 = acc?.off_t0;
+  if (!offT0 || now - offT0 >= 864e5) offSec = 0;
+  return Math.min(OFFLINE_MAX, gap, Math.max(0, OFFLINE_DAY_MAX - offSec));
+}
+
+export function syncIdleBudgetSec(account, lastUpdatedAt, now = Date.now()) {
+  const seen = serverSeenBudgetSec(account, now);
+  const sinceSync = syncElapsedBudgetSec(lastUpdatedAt, now);
+  return Math.min(seen, sinceSync);
 }
 
 function itemCount(state) {
@@ -128,24 +147,70 @@ export function analyzeSyncDelta(prevState, nextState, { elapsedSec, playSec, no
   };
 }
 
-export function clampStateToBudget(prevState, nextState, analysis) {
+function clampLevelXp(out, prevState, analysis, playSec) {
+  const mode = modeOfState(out);
+  const effectivePlay = (playSec != null ? +playSec : 0) + analysis.elapsedSec * (MODE_TIME_FACTOR[mode] || 1);
+  const maxLvl = levelCapForTime(effectivePlay);
+  const prevLvl = Math.floor(+prevState?.lvl || 1);
+  let lvl = Math.floor(+out.lvl || 1);
+  if (lvl > maxLvl) {
+    out.lvl = maxLvl;
+    out.xp = Math.min(Math.max(0, +out.xp || 0), GAME.expNeed(maxLvl) - 1);
+  }
+  const maxTotalXp = xpBudget(analysis.elapsedSec, out, playSec);
+  let total = totalXp(out);
+  if (total > maxTotalXp) {
+    out.lvl = prevLvl;
+    out.xp = Math.min(Math.max(0, +prevState?.xp || 0), GAME.expNeed(prevLvl));
+    total = totalXp(out);
+    if (total > maxTotalXp) {
+      out.lvl = 1;
+      out.xp = 0;
+    }
+  }
+  return out;
+}
+
+function trimItemsToBudget(out, prevState, maxNewItems) {
+  const prevInv = Array.isArray(prevState?.inv) ? prevState.inv.length : 0;
+  const prevGround = Array.isArray(prevState?.ground) ? prevState.ground.length : 0;
+  const capInv = Math.max(prevInv, maxNewItems - prevGround);
+  if (Array.isArray(out.ground) && out.ground.length > prevGround) {
+    out.ground = out.ground.slice(0, prevGround + Math.max(0, maxNewItems - prevInv));
+  }
+  if (Array.isArray(out.inv) && out.inv.length > capInv) out.inv = out.inv.slice(0, capInv);
+  return out;
+}
+
+/** Luôn áp dụng trên sync: giới hạn vàng/EXP/cấp/đồ theo cửa sổ thời gian server. */
+export function capStateToServerIdleWindow(prevState, nextState, { elapsedSec, playSec }) {
+  const analysis = analyzeSyncDelta(prevState, nextState, { elapsedSec, playSec });
   const out = JSON.parse(JSON.stringify(nextState));
   const prevGold = Math.max(0, Math.floor(+prevState?.gold || 0));
-  out.gold = Math.min(Math.max(0, Math.floor(+out.gold || 0)), prevGold + analysis.budgets.gold);
-  // Không cắt item tự động — enforce mode nên reject thay vì clamp mù.
-  return out;
+  const beforeGold = Math.max(0, Math.floor(+out.gold || 0));
+  out.gold = Math.min(beforeGold, prevGold + analysis.budgets.gold);
+  trimItemsToBudget(out, prevState, itemCount(prevState) + analysis.budgets.items);
+  clampLevelXp(out, prevState, analysis, playSec);
+  const clamped =
+    beforeGold !== out.gold ||
+    itemCount(nextState) !== itemCount(out) ||
+    Math.floor(+nextState.lvl) !== Math.floor(+out.lvl) ||
+    Math.floor(+nextState.xp || 0) !== Math.floor(+out.xp || 0);
+  const afterAnalysis = analyzeSyncDelta(prevState, out, { elapsedSec, playSec });
+  return { state: out, analysis: afterAnalysis, clamped, elapsedSec };
 }
 
 export async function applySyncGuard(env, db, {
   accountId,
+  account,
   prevSnapshot,
   nextState,
   lastUpdatedAt,
   playSec,
   mode,
+  now = Date.now(),
 }) {
   const guardMode = syncGuardMode(env);
-  if (guardMode === "off") return { state: nextState, guard: { mode: guardMode, violations: [] } };
 
   let prevState = null;
   try {
@@ -153,31 +218,47 @@ export async function applySyncGuard(env, db, {
   } catch {
     prevState = null;
   }
-  if (!prevState) return { state: nextState, guard: { mode: guardMode, violations: [] } };
+  if (!prevState) return { state: nextState, guard: { mode: guardMode, violations: [], offline_cap: false } };
 
-  const elapsedSec = syncElapsedBudgetSec(lastUpdatedAt);
-  const analysis = analyzeSyncDelta(prevState, nextState, { elapsedSec, playSec });
-  if (!analysis.violations.length) return { state: nextState, guard: { mode: guardMode, ...analysis } };
+  const elapsedSec = syncIdleBudgetSec(account || {}, lastUpdatedAt, now);
+  const capped = capStateToServerIdleWindow(prevState, nextState, { elapsedSec, playSec });
+  let state = capped.state;
+  const analysis = capped.analysis;
 
-  await recordSyncGuardTelemetry(db, {
-    at: Date.now(),
-    accountId,
-    guardMode,
-    mode: mode || modeOfState(nextState),
-    elapsedSec: analysis.elapsedSec,
-    deltas: analysis.deltas,
-    budgets: analysis.budgets,
-    violations: analysis.violations,
-  });
-
-  if (guardMode === "log_only") {
-    return { state: nextState, guard: { mode: guardMode, logged: true, ...analysis } };
+  if (guardMode === "off") {
+    return {
+      state,
+      guard: { mode: guardMode, violations: analysis.violations, offline_cap: capped.clamped, elapsedSec },
+    };
   }
 
-  throw new HttpError(409, "sync_budget_exceeded", "Tiến độ vượt ngân sách thời gian kể từ lần đồng bộ trước", {
+  if (analysis.violations.length || capped.clamped) {
+    await recordSyncGuardTelemetry(db, {
+      at: now,
+      accountId,
+      guardMode,
+      mode: mode || modeOfState(state),
+      elapsedSec: analysis.elapsedSec,
+      deltas: analysis.deltas,
+      budgets: analysis.budgets,
+      violations: analysis.violations,
+      offline_cap: capped.clamped,
+    });
+  }
+
+  if (!analysis.violations.length) {
+    return { state, guard: { mode: guardMode, ...analysis, offline_cap: capped.clamped, logged: capped.clamped } };
+  }
+
+  if (guardMode === "log_only") {
+    return { state, guard: { mode: guardMode, logged: true, ...analysis, offline_cap: capped.clamped } };
+  }
+
+  throw new HttpError(409, "sync_budget_exceeded", "Tiến độ vượt ngân sách thời gian kể từ lần server thấy account", {
     violations: analysis.violations,
     deltas: analysis.deltas,
     budgets: analysis.budgets,
     elapsed_sec: analysis.elapsedSec,
+    offline_cap: capped.clamped,
   });
 }
