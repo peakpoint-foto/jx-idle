@@ -6,12 +6,13 @@ import { auth, parseSave } from "./account.js";
 const LIMITS = { siege: 1, tk: 1, tower: 7, survival: 3 };
 const KINDS = new Set(Object.keys(LIMITS));
 const KEY_RE = /^[A-Za-z0-9:_-]{8,160}$/;
-const CLAIM_CAPS = {
-  siege: { contribution: 1_000_000, cleared: 3 },
-  tk: { contribution: 1_000_000, cleared: 5 },
-  tower: { contribution: 10_000_000, cleared: 10_000 },
-  survival: { contribution: 10_000_000, cleared: 10_000 },
-};
+
+/** Điểm ghi ledger — không tin contribution/cleared do client khai. */
+export function serverActivityScores(kind, won) {
+  const w = won ? 1 : 0;
+  if (kind === "tower" || kind === "survival") return { contribution: w, cleared: w };
+  return { contribution: w, cleared: w ? 1 : 0 };
+}
 
 export function utcPeriod(kind, now = Date.now()) {
   const d = new Date(now);
@@ -31,10 +32,14 @@ export function validateActivityClaim(body) {
   if (!KINDS.has(kind)) throw new HttpError(400, "bad_activity");
   const eventKey = String(body && (body.event_key || body.run_id) || "");
   if (!KEY_RE.test(eventKey)) throw new HttpError(400, "bad_event_key");
-  const cap = CLAIM_CAPS[kind];
-  const contribution = integer(body && body.contribution, 0, cap.contribution, "bad_contribution");
-  const cleared = integer(body && body.cleared, 0, cap.cleared, "bad_cleared");
-  return { kind, eventKey, contribution, cleared, won: body && body.won ? 1 : 0 };
+  const won = body && body.won ? 1 : 0;
+  const server = serverActivityScores(kind, won);
+  const clientContribution = integer(body && body.contribution, 0, 10_000_000, "bad_contribution");
+  const clientCleared = integer(body && body.cleared, 0, 10_000, "bad_cleared");
+  if (clientContribution > server.contribution || clientCleared > server.cleared) {
+    throw new HttpError(400, "activity_score_tamper", "Điểm hoạt động không khớp kết quả máy chủ");
+  }
+  return { kind, eventKey, contribution: server.contribution, cleared: server.cleared, won };
 }
 
 export async function activityClaim(req, env, body) {
@@ -67,5 +72,5 @@ export async function activityClaim(req, env, body) {
   }
   if (!result || result.meta && result.meta.changes === 0)
     throw new HttpError(409, "quota_exhausted", "Đã hết lượt hoạt động theo thời gian máy chủ");
-  return { accepted: true, duplicate: false, event_key: eventKey, period, server_now: Date.now() };
+  return { accepted: true, duplicate: false, event_key: eventKey, period, contribution, cleared, won: !!won, server_now: Date.now() };
 }

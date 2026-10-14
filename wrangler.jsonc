@@ -37,4 +37,7 @@
   //   IP_SALT (secret): muối khi băm IP.
   //   ADMIN_KEY (secret, ≥16 ký tự): khóa cho /api/admin/* (xem và gỡ cờ nghi gian lận, đọc góp ý).
   //   FEEDBACK_WEBHOOK (secret, tùy chọn): URL webhook Discord/Slack nhận thông báo khi có góp ý mới.
+  //   FEATURE_FLAGS (JSON): bật tính năng client qua /api/config — có thể đổi trên Dashboard không cần deploy.
+  //   GUILD_TECH_SERVER_ENABLED=1: bắt buộc (cùng FEATURE_FLAGS guild_tech) để mở /api/guild-tech; mặc định tắt.
+  //   SYNC_GUARD_MODE: off | log_only (default) | enforce — kiểm ngân sách save trên /api/sync.
 }

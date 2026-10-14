@@ -3,6 +3,7 @@ import { HttpError, bearer, sha256Hex, randomToken, ipHash } from "./http.js";
 import { rateLimit } from "./db.js";
 import { applyValidation } from "./ladder.js";
 import { GAME } from "../gen/game.js";
+import { applySyncGuard, syncGuardMode } from "./sync_guard.js";
 
 // Khớp với js/save.js: offline tối đa 8 giờ mỗi lần, 12 giờ mỗi 24 giờ.
 export const OFFLINE_MAX = 8 * 3600;
@@ -153,7 +154,7 @@ export async function sync(req, env, body) {
   const acc = await auth(req, env);
   if (!(await rateLimit(env.DB, "sync:" + acc.id, 20, 3600)))
     throw new HttpError(429, "rate_limited", "Đồng bộ quá nhiều, thử lại sau");
-  const state = parseSave(body.save, env);
+  let state = parseSave(body.save, env);
   const row = await env.DB.prepare("SELECT character_id,sync_rev,snapshot,updated_at,mode FROM chars WHERE account_id=?1").bind(acc.id).first();
   if (!row) throw new HttpError(404, "character_not_found");
   // A character's mode is its identity: a transfer or edited save must never move an account between mode economies and boards.
@@ -174,6 +175,15 @@ export async function sync(req, env, body) {
       server_updated_at: row.updated_at,
     });
   const now = Date.now();
+  const guarded = await applySyncGuard(env, env.DB, {
+    accountId: acc.id,
+    prevSnapshot: row.snapshot,
+    nextState: state,
+    lastUpdatedAt: row.updated_at,
+    playSec: +acc.play_sec || 0,
+    mode: state.mode,
+  });
+  state = guarded.state;
   const q = body.force || baseRev == null
     ? `UPDATE chars SET fac=?2,sex=?3,lvl=?4,xp=?5,snapshot=?6,updated_at=?7,sync_n=sync_n+1,sync_rev=sync_rev+1,validation_status='pending_verification',bracket=NULL WHERE account_id=?1 RETURNING sync_rev`
     : `UPDATE chars SET fac=?2,sex=?3,lvl=?4,xp=?5,snapshot=?6,updated_at=?7,sync_n=sync_n+1,sync_rev=sync_rev+1,validation_status='pending_verification',bracket=NULL WHERE account_id=?1 AND sync_rev=?8 RETURNING sync_rev`;
@@ -189,7 +199,16 @@ export async function sync(req, env, body) {
     });
   }
   const v = await applyValidation(env, acc.id, state, +acc.play_sec || 0, updated.sync_rev);
-  return { ok: true, lvl: Math.floor(state.lvl), play_sec: Math.floor(acc.play_sec), sync_rev: updated.sync_rev, ...v };
+  return {
+    ok: true,
+    lvl: Math.floor(state.lvl),
+    play_sec: Math.floor(acc.play_sec),
+    server_now: now,
+    sync_rev: updated.sync_rev,
+    sync_guard: guarded.guard?.mode || syncGuardMode(env),
+    sync_guard_violations: guarded.guard?.violations?.length || 0,
+    ...v,
+  };
 }
 
 export async function recoverSnapshot(req, env) {

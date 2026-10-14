@@ -495,4 +495,29 @@ Các thử nghiệm sau **phải không làm tăng** item hoặc vàng so với 
 
 ---
 
-*Tài liệu này chỉ phục vụ Milestone 1. Chờ phê duyệt trước khi implement Milestone 2.*
+---
+
+## 9. Bổ sung gói nhỏ (post-M1, PR #25)
+
+### Bật `/api/guild-tech`
+
+| Lớp | Cách bật | Deploy? |
+|-----|----------|---------|
+| Client UI | `FEATURE_FLAGS` JSON (Wrangler **Variables**, ví dụ `{"guild_tech":true}`) → `/api/config` → `featureEnabled("guild_tech")` | **Không** cần deploy code nếu chỉ đổi biến môi trường |
+| Worker route | `assertAccountFeature(..., "guild_tech")` — cùng `FEATURE_FLAGS` | Như trên |
+| **Fail-closed mới** | `GUILD_TECH_SERVER_ENABLED=1` (biến Worker riêng) | Dashboard / wrangler vars |
+
+Mặc định API trả **503** dù client flag bật, trừ khi `GUILD_TECH_SERVER_ENABLED=1`. Xem TODO trong `worker/src/guild_tech_api.js`.
+
+### `/api/sync` guard
+
+- `SYNC_GUARD_MODE`: **`log_only`** (mặc định) | `enforce` | `off`
+- `log_only`: chấp nhận save, ghi `telemetry_events.event=sync_guard_would_reject` kèm account/deltas/lý do
+- `enforce`: HTTP 409 `sync_budget_exceeded`
+
+### Activity & offline
+
+- `activity/claim`: điểm server (`serverActivityScores`), từ chối `activity_score_tamper`
+- Offline: `idleNowMs()` / `S.idleClock` neo từ `server_now` (hb/sync)
+
+*Tài liệu gốc Milestone 1; mục 9 mô tả gói triển khai nhỏ trên cùng PR.*

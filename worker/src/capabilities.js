@@ -26,3 +26,14 @@ export function guardedFeature(feature, handler) {
     return handler(req,env,...args);
   };
 }
+
+/** Fail-closed: guild tech cần biến Worker riêng, không chỉ FEATURE_FLAGS client. */
+export function guildTechServerGate(env) {
+  if (String(env?.GUILD_TECH_SERVER_ENABLED || "") !== "1") {
+    throw new HttpError(
+      503,
+      "feature_disabled",
+      "Cây công nghệ bang tắt trên máy chủ (GUILD_TECH_SERVER_ENABLED)"
+    );
+  }
+}
