@@ -1,6 +1,6 @@
 // Mang truoc, cache du phong: luon lay ban moi khi co mang, choi offline khi mat mang
 // QA-021: truoc day ten cache co dinh 'jxidle-v1' va khong precache -> co the phuc vu HTML cu tro toi JS moi.
-const C = 'jxidle-v24';   // v24: guarded API Bearer auth (guild tech, world boss)
+const C = 'jxidle-v25';   // v25: guild_tech_ui Bearer via onlApi (GET+POST)
 const CORE = ['./index.html', './style.css', './ui/jx2.css', './js/jxshell.js', './manifest.json', './js/core.js', './js/main.js', './ref.js', './data.js', './world.js'];
 self.addEventListener('install', e => e.waitUntil(
   caches.open(C).then(c => c.addAll(CORE)).catch(() => caches.open(C))
