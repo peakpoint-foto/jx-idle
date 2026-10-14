@@ -1,0 +1,28 @@
+# Fresh local D1: wrangler d1 migrations apply DB --local
+# (after rm -rf .wrangler/state/v3/d1)
+
+Migrations to be applied:
+  0001_init.sql
+  0002_boss_receipts.sql
+  0003_guild_management.sql
+  0004_duel_modes.sql
+  0005_party_lobby.sql
+  0006_resource_ledger.sql
+  0007_combat_sessions.sql
+  0008_player_moderation.sql
+  0009_player_mutes.sql
+  0010_room_chat.sql
+  0011_ranked_seasons.sql
+  0012_weekly_trial.sql
+  0013_community_challenge.sql
+  0014_telemetry.sql
+  0015_quota.sql
+  0016_sync_clamp_backups.sql   (PR #25)
+  0017_account_password.sql     (PR #26)
+
+Results (all ✅):
+  0001_init.sql … 0015_quota.sql ✅
+  0016_sync_clamp_backups.sql ✅
+  0017_account_password.sql ✅
+
+No duplicate migration numbers. Full wrangler table output captured in CI/agent run 2026-10-14.
