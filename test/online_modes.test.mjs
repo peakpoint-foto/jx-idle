@@ -21,7 +21,7 @@ test('registration for PHLT checks the mode config first and never calls /regist
   await assert.rejects(() => g.run("onlRegister('N')"), {code: 'mode_not_open'});
   assert.deepEqual(g.json('calls'), ['/config?mode=phlt']);
   g.run("calls=[];onlApi=async(path,opt)=>{calls.push(path);if(path.startsWith('/config'))return {turnstile:'',capabilities:{online_account_phlt:true},feature_flags:{online_account_phlt:true}};return {id:'x',token:'tok',name:'N',character_id:'c_modes_register_0123',sync_rev:1}}");
-  await g.run("onlRegister('N')");
+  await g.run("onlRegister('N',{password:'testpass12'})");
   assert.deepEqual(g.json('calls'), ['/config?mode=phlt', '/register']);
   assert.ok(g.run('onlEligible()'), 'the flags learned during registration make the character eligible');
 });

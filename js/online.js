@@ -15,12 +15,75 @@ const ONL_MODE_FLAGS = { phlt: "online_account_phlt", g2: "online_account_g2" };
 const onlModeOpen = mode => mode === "ctc" || (Object.prototype.hasOwnProperty.call(ONL_MODE_FLAGS, mode) && typeof featureEnabled === "function" && featureEnabled(ONL_MODE_FLAGS[mode], mode));
 const onlEligible = () => typeof S !== "undefined" && S && S.fac && onlModeOpen(S.mode);
 const ONL = { me: null, lastSync: 0, busy: false, serverNow: 0, conflict: null, room: null, roomTimer: 0 };
-const ONL_RELOAD_MSG = "Có bản cập nhật, tải lại trang";
+const ONL_PWD_PROMPT_KEY = "onl_pwd_prompt_dismiss";
 
-function onlGuarded401(quiet) {
+function onlPromptDismissKey() {
+  try {
+    return ONL_PWD_PROMPT_KEY + ":" + (sessionStorage.getItem("jx_slot") || (typeof saveKey === "function" ? saveKey() : "jx"));
+  } catch (e) {
+    return ONL_PWD_PROMPT_KEY;
+  }
+}
+
+function onlShowRecoveryModal(code, title) {
+  if (typeof modal !== "function") return;
+  modal(
+    `<h3>${esc(title || "Lưu mã khôi phục")}</h3><p class="desc">Ghi mã này ra giấy hoặc nơi an toàn. Dùng khi đăng nhập trên thiết bị mới hoặc mất mã phiên trong trình duyệt. Máy chủ <b>không</b> lưu bản rõ của mã.</p><p><code style="user-select:all;font-size:1.1em">${esc(code)}</code></p><div class="btnrow"><button class="btn" onclick="closeModal()">Đã lưu mã</button></div>`,
+    null,
+    true
+  );
+}
+
+async function onlLogin(username, password) {
+  const cfg = await onlApi("/config?mode=" + encodeURIComponent(modeId()), { auth: false });
+  const turnstile = cfg.turnstile ? await onlTurnstile(cfg.turnstile) : "";
+  const r = await onlApi("/login", { body: { username, password, turnstile }, auth: false });
+  onlSet({ id: r.id, name: r.name, token: r.token });
+  ONL.me = null;
+  await onlRefreshMe();
+  ONL.lastSync = Date.now();
+  if (typeof save === "function") save();
+  return r;
+}
+
+async function onlSetPassword(password, email) {
+  const cfg = await onlApi("/config?mode=" + encodeURIComponent(modeId()), { auth: false });
+  const turnstile = cfg.turnstile ? await onlTurnstile(cfg.turnstile) : "";
+  const r = await onlApi("/set-password", { body: { password, email: email || undefined, turnstile } });
+  if (r.recovery_code) onlShowRecoveryModal(r.recovery_code, "Mã khôi phục tài khoản");
+  await onlRefreshMe();
+  onlRemovePasswordBanner();
+  return r;
+}
+
+async function onlLoginRecover(username, recoveryCode) {
+  const cfg = await onlApi("/config?mode=" + encodeURIComponent(modeId()), { auth: false });
+  const turnstile = cfg.turnstile ? await onlTurnstile(cfg.turnstile) : "";
+  const r = await onlApi("/login-recover", { body: { username, recovery_code: recoveryCode, turnstile }, auth: false });
+  onlSet({ id: r.id, name: r.name, token: r.token });
+  ONL.me = null;
+  await onlRefreshMe();
+  ONL.lastSync = Date.now();
+  if (typeof save === "function") save();
+  return r;
+}
+
+async function onlDeleteAccount(password, confirmName) {
+  await onlApi("/delete-account", { body: { password, confirm: confirmName } });
   onlSet(null);
   ONL.me = null;
-  if (!quiet && typeof toast === "function") toast(ONL_RELOAD_MSG);
+  onlRemovePasswordBanner();
+}
+
+const ONL_RELOAD_MSG = "Có bản cập nhật, tải lại trang";
+const ONL_SESSION_MSG = "Tài khoản đã đăng nhập ở thiết bị khác";
+
+function onlGuarded401(code, serverMsg, quiet) {
+  const guardedMsg =
+    code === "session_replaced" ? serverMsg || ONL_SESSION_MSG : ONL_RELOAD_MSG;
+  onlSet(null);
+  ONL.me = null;
+  if (!quiet && typeof toast === "function") toast(guardedMsg);
 }
 
 async function onlApi(path, opt = {}) {
@@ -35,7 +98,7 @@ async function onlApi(path, opt = {}) {
   } catch (e) { throw { code: "offline", msg: "Không kết nối được máy chủ online" } }
   const d = await r.json().catch(() => ({}));
   if (!r.ok) {
-    if (r.status === 401 && guarded) onlGuarded401(opt.quiet);
+    if (r.status === 401 && guarded) onlGuarded401(d.error, d.msg, opt.quiet);
     throw { code: d.error || "http_" + r.status, msg: d.msg || "Lỗi máy chủ (" + r.status + ")", ...d };
   }
   return d;
@@ -57,7 +120,7 @@ function onlTurnstile(sitekey) {
   });
 }
 
-async function onlRegister(name) {
+async function onlRegister(name, opt = {}) {
   if (!S || !S.fac || (S.mode !== "ctc" && !Object.prototype.hasOwnProperty.call(ONL_MODE_FLAGS, S.mode))) throw { code: "not_ctc", msg: "Chế độ này không có tài khoản online" };
   if (S.lvl > ONL_REG_MAX_LVL) throw { code: "too_late", msg: `Chỉ đăng ký được khi nhân vật dưới cấp ${ONL_REG_MAX_LVL + 1}` };
   const cfg = await onlApi("/config?mode=" + encodeURIComponent(S.mode), { auth: false });
@@ -66,13 +129,19 @@ async function onlRegister(name) {
     setFeatureFlags(cfg.feature_flags);
   }
   const turnstile = cfg.turnstile ? await onlTurnstile(cfg.turnstile) : "";
-  const r = await onlApi("/register", { body: { name, save: pack(S), turnstile }, auth: false });
+  const password = String(opt.password || "");
+  if (password.length < 8) throw { code: "bad_password", msg: "Mật khẩu cần ít nhất 8 ký tự" };
+  const r = await onlApi("/register", {
+    body: { name, save: pack(S), turnstile, password, email: opt.email || undefined },
+    auth: false,
+  });
   if (r.character_id) S.cid = r.character_id;
   onlSet({ id: r.id, name: r.name, token: r.token });
-  ONL.me = { char: { character_id: r.character_id, sync_rev: r.sync_rev || 1 } };
+  ONL.me = { char: { character_id: r.character_id, sync_rev: r.sync_rev || 1 }, has_password: true };
   S.online = { id: r.id, name: r.name };
   ONL.conflict = null;
   ONL.lastSync = Date.now();
+  if (r.recovery_code) onlShowRecoveryModal(r.recovery_code, "Mã khôi phục — lưu ngay");
   if (typeof save === "function") save();
   return r;
 }
@@ -103,7 +172,6 @@ async function onlSync(quiet, force = false) {
       return null;
     }
     if (!quiet && typeof toast === "function") toast(e.msg || "Đồng bộ lỗi");
-    if (e.code === "bad_token") onlSet(null);
     return null;
   } finally { ONL.busy = false }
 }
@@ -118,7 +186,7 @@ async function onlRefreshMe() {
       return null;
     }
     ONL.me = me;
-  } catch (e) { if (e.code === "bad_token") onlSet(null) }
+  } catch (e) {}
   return ONL.me;
 }
 
@@ -334,7 +402,8 @@ setInterval(() => {
     if (typeof setIdleClockFromServer === "function") setIdleClockFromServer(ONL.serverNow);
     if (ONL.me) ONL.me.play_sec = d.play_sec;
   }).catch(e => {
-    if (e && (e.code === "bad_token" || e.code === "no_token") && typeof toast === "function") toast(ONL_RELOAD_MSG);
+    if (e && (e.code === "session_replaced" || e.code === "bad_token" || e.code === "no_token"))
+      onlGuarded401(e.code, e.msg, false);
   });
   if (Date.now() - ONL.lastSync >= ONL_SYNC_MS) onlSync(true);
 }, ONL_HB_MS);
@@ -367,24 +436,64 @@ document.addEventListener("click", e => { if (e.target.closest && e.target.close
 function onlWantsRegister() { const cb = document.getElementById("pfOnline"); return !!(cb && cb.checked && !cb.disabled) }
 function onlAfterCreate(want) {
   if (!want || !S || !S.fac) return;
-  onlRegister(S.name).then(r => {
-    toast(`Đã đăng ký chơi Online: ${r.name}`);
-    log(`<span class="good">Đã đăng ký chơi Online với tên <b>${esc(r.name)}</b>. Giờ chơi bắt đầu được đo.</span>`);
-  }).catch(e => {
-    toast(e.msg || "Đăng ký online lỗi");
-    log(`<span class="bad">Chưa đăng ký online được: ${esc(e.msg || e.code || "lỗi")}. Vào Hệ thống › Chơi Online để thử lại (trước cấp 40).</span>`);
-  });
+  if (typeof modal !== "function") return;
+  modal(
+    `<h3>Mật khẩu tài khoản online</h3><p class="desc">Chọn mật khẩu để đăng nhập trên thiết bị khác. Bạn sẽ nhận <b>mã khôi phục một lần</b> — lưu cẩn thận.</p>
+    <div class="row">Mật khẩu <input id="onlPickPass" type="password" autocomplete="new-password"></div>
+    <div class="btnrow"><button class="btn" id="onlPickRegGo">Đăng ký</button><button class="btn sm" id="onlPickRegSkip">Bỏ qua (đăng ký sau)</button></div>`,
+    () => {
+      const go = document.getElementById("onlPickRegGo");
+      const skip = document.getElementById("onlPickRegSkip");
+      if (skip) skip.onclick = () => closeModal();
+      if (go) go.onclick = () => {
+        const pw = (document.getElementById("onlPickPass") || {}).value;
+        closeModal();
+        onlRegister(S.name, { password: pw })
+          .then(r => {
+            toast(`Đã đăng ký chơi Online: ${r.name}`);
+            log(`<span class="good">Đã đăng ký chơi Online với tên <b>${esc(r.name)}</b>. Giờ chơi bắt đầu được đo.</span>`);
+          })
+          .catch(e => {
+            toast(e.msg || "Đăng ký online lỗi");
+            log(`<span class="bad">Chưa đăng ký online được: ${esc(e.msg || e.code || "lỗi")}. Vào Hệ thống › Chơi Online để thử lại (trước cấp 40).</span>`);
+          });
+      };
+    }
+  );
 }
 
 /* ---- Thẻ Hệ thống: trạng thái online ---- */
 const fmtHours = s => (s / 3600).toFixed(1) + " giờ";
 const ONL_BRACKET = { so: "Sơ cấp (40–79)", trung: "Trung cấp (80–99)", cao: "Cao cấp (100–119)", thuong: "Thượng thừa (120+)" };
 // PHLT / 2.0: sync and server-measured play time only. Ladder, PvP, guild and room are CTC-only on the server, so no controls are drawn for them.
+const ONL_LOGIN_BOX = `<div class="card"><b>Đăng nhập thiết bị khác</b><small class="dim">Dùng tên online và mật khẩu (hoặc mã khôi phục).</small>
+    <div class="row">Tên <input id="onlLoginUser" maxlength="16" autocomplete="username"></div>
+    <div class="row">Mật khẩu <input id="onlLoginPass" type="password" autocomplete="current-password"></div>
+    <div class="btnrow"><button class="btn sm" id="onlLoginBtn">Đăng nhập</button></div>
+    <details><summary class="dim">Quên mật khẩu — dùng mã khôi phục</summary>
+    <div class="row">Mã khôi phục <input id="onlRecoverCode" autocomplete="off"></div>
+    <div class="btnrow"><button class="btn sm" id="onlRecoverLoginBtn">Khôi phục phiên</button></div></details></div>`;
+
+function onlSetPasswordCard() {
+  return `<div class="card onlflag"><b>Thiết lập mật khẩu</b><small class="dim">Tài khoản chỉ có mã trong trình duyệt — xóa dữ liệu trình duyệt có thể mất nhân vật online.</small>
+    <div class="row">Mật khẩu mới <input id="onlNewPass" type="password" autocomplete="new-password"></div>
+    <div class="row">Email (tuỳ chọn) <input id="onlEmail" type="email" autocomplete="email" maxlength="120"></div>
+    <div class="btnrow"><button class="btn sm" id="onlSetPassBtn">Lưu mật khẩu &amp; nhận mã khôi phục</button></div></div>`;
+}
+
+function onlDeleteCard(acc) {
+  return `<div class="card"><b>Xóa tài khoản online</b><small class="dim">Xóa dữ liệu cá nhân tối thiểu trên máy chủ (Nghị định 13/2023).</small>
+    <div class="btnrow"><button class="btn sm red" id="onlDeleteBtn">Xóa tài khoản</button></div>
+    <small class="dim" id="onlDeleteHint" hidden>${acc && ONL.me && ONL.me.has_password ? "Cần nhập mật khẩu khi xác nhận." : "Gõ đúng tên online khi xác nhận."}</small></div>`;
+}
+
 function onlModeCardHTML(acc, recoverBox) {
   if (!acc) {
-    if (S.lvl > ONL_REG_MAX_LVL) return `<h3>Chơi Online</h3><div class="card"><small class="dim">Nhân vật đã quá cấp ${ONL_REG_MAX_LVL}, không đăng ký tài khoản online được.</small></div>`;
+    if (S.lvl > ONL_REG_MAX_LVL) return `<h3>Chơi Online</h3><div class="card"><small class="dim">Nhân vật đã quá cấp ${ONL_REG_MAX_LVL}, không đăng ký tài khoản online được.</small></div>${ONL_LOGIN_BOX}`;
     return `<h3>Chơi Online</h3><div class="card lootf onlcard"><div class="row">Tên online <input id="onlName" maxlength="16" value="${esc(S.name || "")}" style="flex:1"></div>
-    <div class="btnrow"><button class="btn" id="onlRegBtn">Đăng ký chơi Online</button></div><small class="dim">Chỉ đăng ký được trước cấp 40. Không vào bảng xếp hạng CTC.</small></div>${recoverBox}`;
+    <div class="row">Mật khẩu <input id="onlRegPass" type="password" autocomplete="new-password"></div>
+    <div class="row">Email (tuỳ chọn) <input id="onlRegEmail" type="email" autocomplete="email" maxlength="120"></div>
+    <div class="btnrow"><button class="btn" id="onlRegBtn">Đăng ký chơi Online</button></div><small class="dim">Chỉ đăng ký được trước cấp 40. Không vào bảng xếp hạng CTC.</small></div>${ONL_LOGIN_BOX}${recoverBox}`;
   }
   const me = ONL.me, ago = ONL.lastSync ? Math.round((Date.now() - ONL.lastSync) / 60e3) + " phút trước" : "chưa";
   return `<h3>Chơi Online · ${esc(MODES[S.mode].short)}</h3><div class="card lootf onlcard"><div class="row">Tên online <b>${esc(acc.name)}</b></div>
@@ -392,8 +501,10 @@ function onlModeCardHTML(acc, recoverBox) {
     <div class="row">Phiên bản save <span>${me && me.char ? me.char.sync_rev : "…"}</span></div>
     ${me && me.flags && me.flags.length ? `<div class="onlflag"><b>Nhân vật đang bị gắn cờ xác minh</b>${me.flags.map(f => `<small>${esc(f.detail || f.code)}</small>`).join("")}</div>` : ""}
     ${ONL.conflict ? `<div class="onlflag"><b>Phát hiện bản lưu mới hơn trên máy chủ.</b><div class="btnrow"><button class="btn sm" id="onlPullConflict">Nạp bản máy chủ</button><button class="btn sm" id="onlPushConflict">Ghi đè bằng bản này</button></div></div>` : ""}
-    <div class="btnrow"><button class="btn" id="onlSyncBtn">Đồng bộ ngay</button><button class="btn" id="onlCodeBtn">Mã khôi phục</button></div>
-    <small class="dim" id="onlCode" hidden>Giữ kín mã này, nó thay cho mật khẩu: <code>${esc(acc.token)}</code></small>
+    <div class="btnrow"><button class="btn" id="onlSyncBtn">Đồng bộ ngay</button><button class="btn" id="onlCodeBtn">Mã phiên (legacy)</button></div>
+    <small class="dim" id="onlCode" hidden>Mã phiên trình duyệt (chỉ thiết bị này): <code>${esc(acc.token)}</code></small>
+    ${!(ONL.me && ONL.me.has_password) ? onlSetPasswordCard() : ""}
+    ${onlDeleteCard(acc)}
     <small class="dim">Tài khoản này khóa theo chế độ ${esc(MODES[S.mode].n)}; không vào bảng xếp hạng, PvP, bang hay phòng của Công Thành Chiến.</small>
     ${featureEnabled("room_presence") ? '<div id="onlRoomPanel" class="onlpanel"></div>' : ""}</div>`;
 }
@@ -411,14 +522,19 @@ function onlCardHTML() {
       ${me && me.char && me.char.validation_status === "pending_verification" ? `<div class="onlflag"><b>Đang chờ xác minh lịch sử chuyển sinh</b><small>${esc(me.char.validation_note || "Chưa đủ lịch sử server để đưa vào bảng xếp hạng.")}</small></div>` : ""}
       ${me && me.flags && me.flags.length ? `<div class="onlflag"><b>Đang bị loại khỏi bảng xếp hạng vì nghi gian lận</b>${me.flags.map(f => `<small>${esc(f.detail || f.code)}</small>`).join("")}</div>` : ""}
       ${ONL.conflict ? `<div class="onlflag"><b>Phát hiện bản lưu mới hơn trên máy chủ.</b><small>Chọn nạp bản máy chủ hoặc ghi đè bằng bản đang mở.</small><div class="btnrow"><button class="btn sm" id="onlPullConflict">Nạp bản máy chủ</button><button class="btn sm" id="onlPushConflict">Ghi đè máy chủ</button></div></div>` : ""}
-      <div class="btnrow"><button class="btn" id="onlSyncBtn">Đồng bộ ngay</button><button class="btn" id="onlRankBtn">Bảng xếp hạng</button><button class="btn" id="onlCodeBtn">Mã khôi phục</button></div>
-      <small class="dim" id="onlCode" hidden>Giữ kín mã này, nó thay cho mật khẩu: <code>${esc(acc.token)}</code></small><div id="onlRankPanel" class="onlpanel" hidden></div>
+      <div class="btnrow"><button class="btn" id="onlSyncBtn">Đồng bộ ngay</button><button class="btn" id="onlRankBtn">Bảng xếp hạng</button><button class="btn" id="onlCodeBtn">Mã phiên (legacy)</button></div>
+      <small class="dim" id="onlCode" hidden>Mã phiên trình duyệt (chỉ thiết bị này): <code>${esc(acc.token)}</code></small>
+      ${!(ONL.me && ONL.me.has_password) ? onlSetPasswordCard() : ""}
+      ${onlDeleteCard(acc)}
+      <div id="onlRankPanel" class="onlpanel" hidden></div>
       <div id="onlDuelPanel" class="onlpanel"><b>PvP bất đồng bộ</b><small class="dim">Phân xử bất đồng bộ bằng ước lượng lực chiến và hệ số cố định theo mã trận. Giao hữu không cộng điểm; ranked cần cùng bậc, lực chiến gần nhau.</small><div class="btnrow">${featureEnabled("duel_modes")?'<select id="onlDuelKind" aria-label="Loại thách đấu"><option value="ranked">Ranked</option><option value="friendly">Giao hữu</option></select>':""}<input id="onlOpponent" maxlength="16" placeholder="Tên đối thủ"><button class="btn sm" id="onlChallengeBtn">Thách đấu</button></div><div id="onlDuelList"></div></div>
       <div id="onlGuildPanel" class="onlpanel"></div><div id="onlMentorPanel" class="onlpanel"></div><div id="onlRoomPanel" class="onlpanel"></div></div>`;
   }
   if (S.lvl > ONL_REG_MAX_LVL) return `<h3>Chơi Online</h3><div class="card"><small class="dim">Nhân vật đã quá cấp ${ONL_REG_MAX_LVL}, không đăng ký bảng xếp hạng được. Vẫn chơi CTC cục bộ được (không xếp hạng).</small></div>${recoverBox}`;
   return `<h3>Chơi Online</h3><div class="card lootf onlcard"><div class="row">Tên online <input id="onlName" maxlength="16" value="${esc(S.name || "")}" style="flex:1"></div>
-    <div class="btnrow"><button class="btn" id="onlRegBtn">Đăng ký chơi Online</button></div><small class="dim">Chỉ đăng ký được trước cấp 40. Có tên trên bảng xếp hạng CTC.</small></div>${recoverBox}`;
+    <div class="row">Mật khẩu <input id="onlRegPass" type="password" autocomplete="new-password"></div>
+    <div class="row">Email (tuỳ chọn) <input id="onlRegEmail" type="email" autocomplete="email" maxlength="120"></div>
+    <div class="btnrow"><button class="btn" id="onlRegBtn">Đăng ký chơi Online</button></div><small class="dim">Chỉ đăng ký được trước cấp 40. Có tên trên bảng xếp hạng CTC.</small></div>${ONL_LOGIN_BOX}${recoverBox}`;
 }
 function onlCardBind() {
   const b = id => document.getElementById(id);
@@ -430,8 +546,58 @@ function onlCardBind() {
   if (b("onlChallengeBtn")) b("onlChallengeBtn").onclick = onlChallenge;
   if (b("onlRegBtn")) b("onlRegBtn").onclick = async () => {
     const btn = b("onlRegBtn"); btn.disabled = true;
-    try { const r = await onlRegister((b("onlName") || {}).value || S.name); toast(`Đã đăng ký chơi Online: ${r.name}`); await onlRefreshMe() } catch (e) { toast(e.msg || "Đăng ký lỗi") }
+    try {
+      const r = await onlRegister((b("onlName") || {}).value || S.name, {
+        password: (b("onlRegPass") || {}).value,
+        email: (b("onlRegEmail") || {}).value,
+      });
+      toast(`Đã đăng ký chơi Online: ${r.name}`);
+      await onlRefreshMe();
+    } catch (e) { toast(e.msg || "Đăng ký lỗi") }
     btn.disabled = false; renderMore();
+  };
+  if (b("onlLoginBtn")) b("onlLoginBtn").onclick = async () => {
+    const btn = b("onlLoginBtn"); btn.disabled = true;
+    try {
+      await onlLogin((b("onlLoginUser") || {}).value, (b("onlLoginPass") || {}).value);
+      toast("Đã đăng nhập online");
+      await onlRefreshMe();
+    } catch (e) { toast(e.msg || "Đăng nhập lỗi") }
+    btn.disabled = false; renderMore();
+  };
+  if (b("onlRecoverLoginBtn")) b("onlRecoverLoginBtn").onclick = async () => {
+    const btn = b("onlRecoverLoginBtn"); btn.disabled = true;
+    try {
+      await onlLoginRecover((b("onlLoginUser") || {}).value, (b("onlRecoverCode") || {}).value);
+      toast("Đã khôi phục phiên online");
+    } catch (e) { toast(e.msg || "Khôi phục lỗi") }
+    btn.disabled = false; renderMore();
+  };
+  if (b("onlSetPassBtn")) b("onlSetPassBtn").onclick = async () => {
+    const btn = b("onlSetPassBtn"); btn.disabled = true;
+    try {
+      await onlSetPassword((b("onlNewPass") || {}).value, (b("onlEmail") || {}).value);
+      toast("Đã thiết lập mật khẩu");
+    } catch (e) { toast(e.msg || "Thiết lập mật khẩu lỗi") }
+    btn.disabled = false; renderMore();
+  };
+  if (b("onlDeleteBtn")) b("onlDeleteBtn").onclick = async () => {
+    const acc = onlGet();
+    const hasPwd = ONL.me && ONL.me.has_password;
+    let password, confirm;
+    if (hasPwd) {
+      password = prompt("Nhập mật khẩu để xóa tài khoản online vĩnh viễn:");
+      if (password == null) return;
+    } else {
+      confirm = prompt(`Gõ đúng tên online "${acc.name}" để xóa tài khoản:`);
+      if (confirm == null) return;
+    }
+    if (!confirm("Xóa tài khoản online và nhân vật trên máy chủ? Không thể hoàn tác.")) return;
+    try {
+      await onlDeleteAccount(password, confirm);
+      toast("Đã xóa tài khoản online");
+    } catch (e) { toast(e.msg || "Xóa tài khoản lỗi") }
+    renderMore();
   };
   if (b("onlRecoverBtn")) b("onlRecoverBtn").onclick = async () => {
     const btn = b("onlRecoverBtn"); btn.disabled = true;
@@ -444,6 +610,45 @@ function onlCardBind() {
   onlRenderGuild(); onlRenderMentor();
   onlRenderRoom();
 }
+function onlRemovePasswordBanner() {
+  const el = document.getElementById("onlPwdBanner");
+  if (el) el.remove();
+}
+
+function onlPasswordPromptMaybe() {
+  if (!onlGet() || !onlEligible()) return;
+  try {
+    if (sessionStorage.getItem(onlPromptDismissKey())) return;
+  } catch (e) {}
+  if (ONL.me && ONL.me.has_password) return;
+  if (document.getElementById("onlPwdBanner")) return;
+  const box = document.createElement("div");
+  box.id = "onlPwdBanner";
+  box.className = "onl-pwd-banner";
+  box.setAttribute("role", "status");
+  box.innerHTML =
+    `<p><b>Bảo vệ tài khoản online.</b> Bạn chưa đặt mật khẩu — mã đăng nhập chỉ nằm trong trình duyệt này. Nếu xóa dữ liệu trình duyệt hoặc đổi máy, bạn có thể <b>mất nhân vật online</b> trừ khi đã lưu mã khôi phục.</p>
+    <div class="btnrow"><button class="btn sm" type="button" id="onlPwdBannerSetup">Thiết lập mật khẩu</button><button class="btn sm" type="button" id="onlPwdBannerLater">Để sau</button></div>`;
+  document.body.appendChild(box);
+  box.querySelector("#onlPwdBannerLater").onclick = () => {
+    try {
+      sessionStorage.setItem(onlPromptDismissKey(), "1");
+    } catch (e) {}
+    onlRemovePasswordBanner();
+  };
+  box.querySelector("#onlPwdBannerSetup").onclick = () => {
+    onlRemovePasswordBanner();
+    if (typeof showTab === "function") showTab("more");
+    else if (typeof renderMore === "function") renderMore();
+    if (typeof toast === "function") toast("Cuộn tới mục Chơi Online để đặt mật khẩu");
+  };
+}
+
+function onlBootPasswordPrompt() {
+  if (typeof S === "undefined" || !S || !S.fac || !onlGet()) return;
+  onlRefreshMe().then(() => onlPasswordPromptMaybe());
+}
+
 if (typeof renderMore === "function") {
   const _renderMore = renderMore;
   renderMore = function () {
@@ -452,6 +657,15 @@ if (typeof renderMore === "function") {
     if (!t) return;
     t.insertAdjacentHTML("afterbegin", onlCardHTML());
     onlCardBind();
-    if (onlGet() && !ONL.me) onlRefreshMe().then(me => { if (me && typeof curTab !== "undefined" && curTab === "more") renderMore() });
+    if (onlGet() && !ONL.me) onlRefreshMe().then(me => { if (me && typeof curTab !== "undefined" && curTab === "more") renderMore(); onlPasswordPromptMaybe(); });
   };
 }
+
+(function onlScheduleBootPrompt() {
+  const tick = () => {
+    if (typeof S !== "undefined" && S && S.fac) onlBootPasswordPrompt();
+    else requestAnimationFrame(tick);
+  };
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", () => requestAnimationFrame(tick));
+  else requestAnimationFrame(tick);
+})();

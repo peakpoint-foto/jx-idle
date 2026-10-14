@@ -2,7 +2,18 @@
 // Chỉ đường dẫn /api/* chạy qua Worker (assets.run_worker_first trong wrangler.jsonc).
 import { HttpError, json, readJson, CORS } from "./http.js";
 import { ensureSchema } from "./db.js";
-import { register, heartbeat, sync, me, recover, recoverSnapshot } from "./account.js";
+import {
+  register,
+  heartbeat,
+  sync,
+  me,
+  recover,
+  recoverSnapshot,
+  login,
+  setPassword,
+  loginRecover,
+  deleteAccount,
+} from "./account.js";
 import { ladder, notices, adminFlags, adminUnflag } from "./ladder.js";
 import { feedback, adminFeedback, adminFeedbackSet, adminFeedbackMetrics } from "./feedback.js";
 import { activityClaim } from "./activity.js";
@@ -35,6 +46,10 @@ const ROUTES = {
   "POST /api/season": season,
   "GET /api/config": featureConfig,
   "POST /api/register": (req, env, body) => register(req, env, body),
+  "POST /api/login": (req, env, body) => login(req, env, body),
+  "POST /api/set-password": (req, env, body) => setPassword(req, env, body),
+  "POST /api/login-recover": (req, env, body) => loginRecover(req, env, body),
+  "POST /api/delete-account": (req, env, body) => deleteAccount(req, env, body),
   "POST /api/hb": (req, env) => heartbeat(req, env),
   "POST /api/sync": (req, env, body) => sync(req, env, body),
   "POST /api/activity/claim": (req, env, body) => activityClaim(req, env, body),

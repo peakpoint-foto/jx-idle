@@ -16,7 +16,7 @@ async function fixture(t, flags = {}) {
   const DB = await localD1(); t.after(() => DB.close());
   const env = {DB, FEATURE_FLAGS: flags};
   const enroll = async (name, mode, extra) => {
-    const result = await register(req(), env, {name, save: base(mode, extra)});
+    const result = await register(req(), env, {name, save: base(mode, extra), password: 'testpass12'});
     return {...result, token: result.token, sync: (save, more = {}) => sync(req('POST', result.token), env, {save, base_rev: result.sync_rev, ...more})};
   };
   return {DB, env, enroll};
@@ -38,7 +38,7 @@ test('account modes: CTC always open, PHLT/2.0 only with their own flag, legacy 
 });
 test('register stores the mode, keeps non-CTC characters off the CTC ladder and reports the mode', async t => {
   const f = await fixture(t, {online_account_phlt: true});
-  await assert.rejects(() => register(req(), f.env, {name: 'GTwo', save: base('g2')}), {code: 'mode_not_open'});
+  await assert.rejects(() => register(req(), f.env, {name: 'GTwo', save: base('g2'), password: 'testpass12'}), {code: 'mode_not_open'});
   const ctc = await f.enroll('CtcPlayer', 'ctc'), phlt = await f.enroll('PhltPlayer', 'phlt');
   assert.equal((await f.DB.prepare('SELECT mode FROM chars WHERE account_id=?1').bind(ctc.id).first()).mode, 'ctc');
   assert.equal((await f.DB.prepare('SELECT mode FROM chars WHERE account_id=?1').bind(phlt.id).first()).mode, 'phlt');

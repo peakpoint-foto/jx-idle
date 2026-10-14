@@ -1,6 +1,13 @@
 // Tài khoản online: đăng ký, heartbeat (đo giờ chơi phía server), đồng bộ save.
 import { HttpError, bearer, sha256Hex, randomToken, ipHash } from "./http.js";
 import { rateLimit } from "./db.js";
+import {
+  hashPassword,
+  randomSalt,
+  verifyPassword,
+  recoveryCode,
+  validatePassword,
+} from "./auth_crypto.js";
 import { applyValidation } from "./ladder.js";
 import { GAME } from "../gen/game.js";
 import { applySyncGuard, syncGuardMode } from "./sync_guard.js";
@@ -13,6 +20,8 @@ export const HB_ONLINE_GAP = 150;
 // Chỉ nhận đăng ký khi nhân vật còn dưới bậc Sơ cấp, để đồng hồ server đo được từ đầu.
 export const REGISTER_MAX_LVL = 39;
 const SAVE_MAX_BYTES = 1 << 20;
+export const LOGIN_MAX_FAILS = 5;
+export const LOGIN_LOCK_MS = 15 * 60 * 1000;
 
 const NAME_RE = /^[\p{L}\p{N} _.\-]{1,16}$/u;
 
@@ -80,6 +89,17 @@ async function verifyTurnstile(env, token, ip) {
   return !!d.success;
 }
 
+function optionalEmail(raw) {
+  const e = String(raw ?? "").trim().toLowerCase();
+  if (!e) return null;
+  if (e.length > 120 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) throw new HttpError(400, "bad_email", "Email không hợp lệ");
+  return e;
+}
+
+function accountHasPassword(acc) {
+  return !!(acc && acc.password_hash && acc.password_salt);
+}
+
 export async function register(req, env, body) {
   if (!body || typeof body !== "object" || Array.isArray(body)) throw new HttpError(400, "bad_request");
   const ih = await ipHash(req, env);
@@ -88,6 +108,13 @@ export async function register(req, env, body) {
   if (!(await verifyTurnstile(env, body.turnstile, req.headers.get("cf-connecting-ip"))))
     throw new HttpError(403, "captcha", "Xác minh chống bot không thành công");
   const name = cleanName(body.name);
+  let password;
+  try {
+    password = validatePassword(body.password);
+  } catch {
+    throw new HttpError(400, "bad_password", "Mật khẩu cần ít nhất 8 ký tự");
+  }
+  const email = body.email != null && body.email !== "" ? optionalEmail(body.email) : null;
   const state = parseSave(body.save, env);
   if (state.lvl > REGISTER_MAX_LVL)
     throw new HttpError(400, "too_late", `Chỉ đăng ký được khi nhân vật dưới cấp ${REGISTER_MAX_LVL + 1}`);
@@ -97,11 +124,16 @@ export async function register(req, env, body) {
   const characterId = String(state.cid || "c_" + randomToken(12));
   state.cid = characterId;
   const now = Date.now();
+  const salt = randomSalt();
+  const pwdHash = await hashPassword(password, salt);
+  const rc = recoveryCode();
+  const rcHash = await sha256Hex(rc.replace(/-/g, "").toLowerCase());
   try {
     await env.DB.batch([
       env.DB.prepare(
-        "INSERT INTO accounts(id,token_hash,name,created_at,ip_hash,last_hb) VALUES(?1,?2,?3,?4,?5,?4)"
-      ).bind(id, await sha256Hex(token), name, now, ih),
+        `INSERT INTO accounts(id,token_hash,name,created_at,ip_hash,last_hb,password_hash,password_salt,recovery_hash,email)
+         VALUES(?1,?2,?3,?4,?5,?4,?6,?7,?8,?9)`
+      ).bind(id, await sha256Hex(token), name, now, ih, pwdHash, salt, rcHash, email),
       env.DB.prepare(
         "INSERT INTO chars(account_id,character_id,fac,sex,lvl,xp,snapshot,updated_at,sync_n,sync_rev,mode) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,1,1,?9)"
       ).bind(id, characterId, String(state.fac), state.sex ? 1 : 0, Math.floor(state.lvl), +state.xp || 0, JSON.stringify(state), now, state.mode),
@@ -111,7 +143,138 @@ export async function register(req, env, body) {
     throw e;
   }
   const v = await applyValidation(env, id, state, 0, 1);
-  return { id, token, name, character_id: characterId, sync_rev: 1, play_sec: 0, ...v };
+  return { id, token, name, character_id: characterId, sync_rev: 1, play_sec: 0, recovery_code: rc, has_password: true, ...v };
+}
+
+export async function login(req, env, body) {
+  if (!body || typeof body !== "object" || Array.isArray(body)) throw new HttpError(400, "bad_request");
+  const ih = await ipHash(req, env);
+  if (!(await rateLimit(env.DB, "login:" + ih, 40, 3600)))
+    throw new HttpError(429, "rate_limited", "Đăng nhập quá nhiều, thử lại sau");
+  if (!(await verifyTurnstile(env, body.turnstile, req.headers.get("cf-connecting-ip"))))
+    throw new HttpError(403, "captcha", "Xác minh chống bot không thành công");
+  const name = cleanName(body.username || body.name);
+  let password;
+  try {
+    password = validatePassword(body.password);
+  } catch {
+    throw new HttpError(400, "bad_password", "Mật khẩu không hợp lệ");
+  }
+  const acc = await env.DB.prepare(
+    "SELECT id,name,password_hash,password_salt,login_fails,login_lock_until FROM accounts WHERE name=?1 COLLATE NOCASE"
+  )
+    .bind(name)
+    .first();
+  if (!acc || !accountHasPassword(acc)) throw new HttpError(401, "bad_credentials", "Tên hoặc mật khẩu không đúng");
+  const now = Date.now();
+  if (acc.login_lock_until && acc.login_lock_until > now)
+    throw new HttpError(429, "locked", "Tài khoản tạm khóa do nhập sai mật khẩu nhiều lần", {
+      retry_after_ms: acc.login_lock_until - now,
+    });
+  const ok = await verifyPassword(password, acc.password_salt, acc.password_hash);
+  if (!ok) {
+    const fails = (+acc.login_fails || 0) + 1;
+    const lockUntil = fails >= LOGIN_MAX_FAILS ? now + LOGIN_LOCK_MS : null;
+    await env.DB.prepare("UPDATE accounts SET login_fails=?2,login_lock_until=?3 WHERE id=?1")
+      .bind(acc.id, fails, lockUntil)
+      .run();
+    if (lockUntil)
+      throw new HttpError(429, "locked", "Tài khoản tạm khóa do nhập sai mật khẩu nhiều lần", {
+        retry_after_ms: LOGIN_LOCK_MS,
+      });
+    throw new HttpError(401, "bad_credentials", "Tên hoặc mật khẩu không đúng");
+  }
+  const token = randomToken(24);
+  await env.DB.prepare(
+    "UPDATE accounts SET token_hash=?2,login_fails=0,login_lock_until=NULL,last_hb=?3 WHERE id=?1"
+  )
+    .bind(acc.id, await sha256Hex(token), now)
+    .run();
+  return { id: acc.id, token, name: acc.name, has_password: true };
+}
+
+export async function setPassword(req, env, body) {
+  if (!body || typeof body !== "object" || Array.isArray(body)) throw new HttpError(400, "bad_request");
+  const acc = await auth(req, env);
+  if (accountHasPassword(acc)) throw new HttpError(409, "password_set", "Tài khoản đã có mật khẩu");
+  const ih = await ipHash(req, env);
+  if (!(await rateLimit(env.DB, "setpwd:" + ih, 10, 3600)))
+    throw new HttpError(429, "rate_limited", "Thử lại sau");
+  if (!(await verifyTurnstile(env, body.turnstile, req.headers.get("cf-connecting-ip"))))
+    throw new HttpError(403, "captcha", "Xác minh chống bot không thành công");
+  let password;
+  try {
+    password = validatePassword(body.password);
+  } catch {
+    throw new HttpError(400, "bad_password", "Mật khẩu cần ít nhất 8 ký tự");
+  }
+  const email = body.email != null && body.email !== "" ? optionalEmail(body.email) : acc.email || null;
+  const salt = randomSalt();
+  const pwdHash = await hashPassword(password, salt);
+  const rc = recoveryCode();
+  const rcHash = await sha256Hex(rc.replace(/-/g, "").toLowerCase());
+  await env.DB.prepare(
+    "UPDATE accounts SET password_hash=?2,password_salt=?3,recovery_hash=?4,email=?5 WHERE id=?1"
+  )
+    .bind(acc.id, pwdHash, salt, rcHash, email)
+    .run();
+  return { ok: true, recovery_code: rc, has_password: true };
+}
+
+export async function loginRecover(req, env, body) {
+  if (!body || typeof body !== "object" || Array.isArray(body)) throw new HttpError(400, "bad_request");
+  const ih = await ipHash(req, env);
+  if (!(await rateLimit(env.DB, "reclog:" + ih, 10, 3600)))
+    throw new HttpError(429, "rate_limited", "Thử lại sau");
+  if (!(await verifyTurnstile(env, body.turnstile, req.headers.get("cf-connecting-ip"))))
+    throw new HttpError(403, "captcha", "Xác minh chống bot không thành công");
+  const name = cleanName(body.username || body.name);
+  const code = String(body.recovery_code || body.code || "")
+    .replace(/\s+/g, "")
+    .toLowerCase();
+  if (code.length < 12) throw new HttpError(400, "bad_recovery", "Mã khôi phục không hợp lệ");
+  const acc = await env.DB.prepare(
+    "SELECT id,name,recovery_hash FROM accounts WHERE name=?1 COLLATE NOCASE"
+  )
+    .bind(name)
+    .first();
+  if (!acc || !acc.recovery_hash) throw new HttpError(401, "bad_recovery", "Mã khôi phục không đúng");
+  const got = await sha256Hex(code.replace(/-/g, ""));
+  if (got !== acc.recovery_hash) throw new HttpError(401, "bad_recovery", "Mã khôi phục không đúng");
+  const token = randomToken(24);
+  const now = Date.now();
+  await env.DB.prepare(
+    "UPDATE accounts SET token_hash=?2,login_fails=0,login_lock_until=NULL,last_hb=?3 WHERE id=?1"
+  )
+    .bind(acc.id, await sha256Hex(token), now)
+    .run();
+  return { id: acc.id, token, name: acc.name, has_password: true };
+}
+
+export async function deleteAccount(req, env, body) {
+  if (!body || typeof body !== "object" || Array.isArray(body)) throw new HttpError(400, "bad_request");
+  const acc = await auth(req, env);
+  const ih = await ipHash(req, env);
+  if (!(await rateLimit(env.DB, "delacc:" + acc.id, 3, 86400)))
+    throw new HttpError(429, "rate_limited", "Thử lại sau");
+  if (accountHasPassword(acc)) {
+    let password;
+    try {
+      password = validatePassword(body.password);
+    } catch {
+      throw new HttpError(400, "bad_password", "Cần mật khẩu để xóa tài khoản");
+    }
+    if (!(await verifyPassword(password, acc.password_salt, acc.password_hash)))
+      throw new HttpError(401, "bad_credentials", "Mật khẩu không đúng");
+  } else if (body.confirm !== acc.name)
+    throw new HttpError(400, "confirm_required", "Gõ đúng tên online để xác nhận xóa");
+  const id = acc.id;
+  await env.DB.batch([
+    env.DB.prepare("DELETE FROM flags WHERE account_id=?1").bind(id),
+    env.DB.prepare("DELETE FROM chars WHERE account_id=?1").bind(id),
+    env.DB.prepare("DELETE FROM accounts WHERE id=?1").bind(id),
+  ]);
+  return { ok: true };
 }
 
 // Cộng giờ chơi theo đồng hồ server. Hai tab cùng gửi cũng chỉ cộng đúng thời gian thực đã trôi.
@@ -225,7 +388,15 @@ export async function me(req, env) {
   const acc = await auth(req, env);
   const ch = await env.DB.prepare("SELECT character_id,fac,lvl,updated_at,power,bracket,flagged,validation_status,validation_note,sync_rev,mode FROM chars WHERE account_id=?1").bind(acc.id).first();
   const fl = await env.DB.prepare("SELECT code,detail,at FROM flags WHERE account_id=?1 AND cleared_at IS NULL ORDER BY at").bind(acc.id).all();
-  return { id: acc.id, name: acc.name, created_at: acc.created_at, play_sec: Math.floor(acc.play_sec), char: ch || null, flags: fl.results };
+  return {
+    id: acc.id,
+    name: acc.name,
+    created_at: acc.created_at,
+    play_sec: Math.floor(acc.play_sec),
+    has_password: accountHasPassword(acc),
+    char: ch || null,
+    flags: fl.results,
+  };
 }
 
 // One-time migration for legacy accounts created before character_id existed.

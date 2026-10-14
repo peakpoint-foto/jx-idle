@@ -245,6 +245,12 @@ const COLUMNS = [
   "ALTER TABLE chars ADD COLUMN sync_rev INTEGER NOT NULL DEFAULT 1",
   "ALTER TABLE chars ADD COLUMN mode TEXT NOT NULL DEFAULT 'ctc'",
   "ALTER TABLE rooms ADD COLUMN mode TEXT NOT NULL DEFAULT 'ctc'",
+  "ALTER TABLE accounts ADD COLUMN password_hash TEXT",
+  "ALTER TABLE accounts ADD COLUMN password_salt TEXT",
+  "ALTER TABLE accounts ADD COLUMN recovery_hash TEXT",
+  "ALTER TABLE accounts ADD COLUMN email TEXT",
+  "ALTER TABLE accounts ADD COLUMN login_fails INTEGER NOT NULL DEFAULT 0",
+  "ALTER TABLE accounts ADD COLUMN login_lock_until INTEGER",
 ];
 
 const readyByDatabase = new WeakMap();
