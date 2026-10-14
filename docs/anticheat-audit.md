@@ -518,6 +518,27 @@ Mặc định API trả **503** dù client flag bật, trừ khi `GUILD_TECH_SER
 ### Activity & offline
 
 - `activity/claim`: điểm server (`serverActivityScores`), từ chối `activity_score_tamper`
-- Offline: `idleNowMs()` / `S.idleClock` neo từ `server_now` (hb/sync)
+- Offline client: `idleNowMs()` / `S.idleClock` neo từ `server_now` (hb/sync)
+- **Offline gap trên sync:** mọi `/api/sync` có snapshot trước đó chạy `capStateToServerIdleWindow` với `syncIdleBudgetSec` = min(thời gian kể từ `chars.updated_at`, ngân sách `last_hb`/`created_at` khớp `creditTime()`). Response `sync_offline_cap`; telemetry `offline_cap`.
 
 *Tài liệu gốc Milestone 1; mục 9 mô tả gói triển khai nhỏ trên cùng PR.*
+
+---
+
+## 10. §5.3 audit vs PR #25 (reconciliation)
+
+| Hạng mục §5.3 | Trạng thái | Ghi chú |
+|---------------|------------|---------|
+| Thay `S.last` offline bằng `accounts.last_hb` / session idle cursor | **Một phần — done (client)** | `S.idleClock` + `idleNowMs()` neo từ `server_now`; chưa thay toàn bộ `S.last` / session idle cursor server-side |
+| Hook `validateChar` từ chối sync vượt budget (không chỉ flag) | **Một phần — done (sync guard)** | Luôn **clamp** vàng/EXP/cấp/inv+ground trên sync; `SYNC_GUARD_MODE=enforce` → 409 nếu còn vi phạm (vd. spike `eq`). `validateChar`/`ladder` vẫn flag, chưa là gate duy nhất |
+| Telemetry counters vs server wallet drift | **Chưa (M2)** | Có `sync_guard_would_reject` + deltas; **không** có đối chiếu định kỳ wallet ledger vs snapshot |
+
+### Giờ thực tế vs ước lượng audit
+
+| Phạm vi | Audit (h) | Thực tế gói PR #25 (h) | Lý do chênh |
+|---------|-----------|-------------------------|-------------|
+| §5.3 idle + validate + telemetry | 26–36 | ~3–4 (trong ~7–9 tổng PR) | Chỉ slice: client clock anchor, sync budget + clamp, activity scores, guild-tech gate — **không** full validate reject path, **không** wallet drift |
+| §5.4 migration | 32–48 | 0 | Ngoài phạm vi PR |
+| **Milestone 2 tổng** | **194–278** | — | **Không cần hạ** tổng M2: phần còn lại §5.1–5.2 + drift + migration vẫn ~180–260h; gói nhỏ **trừ** ~20–30h đã làm một phần §5.3 (điều chỉnh tinh: **~170–250h** nếu muốn một số duy nhất) |
+
+**7–9h vs 34–48h:** 34–48h là **§5.4 migration**, không phải §5.3 (26–36h). PR ~7–9h ≈ audit M1 + gói nhỏ (§5.3 subset + activity + sync guard), không bao gồm ledger/drops/migration.
