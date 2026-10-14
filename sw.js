@@ -1,5 +1,11 @@
+<<<<<<< HEAD
 const C = 'jxidle-v24';   // v24: bỏ ref.js/data.js (5,3MB) khỏi precache — nặng, làm chậm install;
 // chúng được cache ở lần fetch đầu (network-first + put trong fetch handler).
+// + guarded API Bearer <redacted> (guild tech, world boss) — ab3862b
+const CORE = ['./index.html', './style.css', './ui/jx2.css', './js/jxshell.js', './manifest.json', './js/core.js', './js/main.js', './world.js'];
+=======
+const C = 'jxidle-v25';   // v25: guild_tech_ui Bearer <redacted> onlApi (GET+POST); bỏ ref.js/data.js khỏi precache (W0-4);
+// ref.js/data.js được cache ở lần fetch đầu (network-first + put trong fetch handler).
 // + guarded API Bearer <redacted> (guild tech, world boss) — ab3862b
 const CORE = ['./index.html', './style.css', './ui/jx2.css', './js/jxshell.js', './manifest.json', './js/core.js', './js/main.js', './world.js'];
 self.addEventListener('install', e => e.waitUntil(

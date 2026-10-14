@@ -7,6 +7,7 @@ import { guildTech } from "../src/guild_tech_api.js";
 import { worldBoss } from "../src/world_boss_api.js";
 import { sha256Hex } from "../src/http.js";
 import { HttpError } from "../src/http.js";
+import { seasonOf } from "../src/seasons.js";
 
 const baseSave = () =>
   Object.assign(GAME.newSave(), { mode: "ctc", fac: "shaolin", cid: "c_bearer_0123456789", lvl: 20, xp: 1 });
@@ -46,6 +47,86 @@ test("guild tech POST uses Bearer auth; forged x-account-id is ignored", async (
     body: JSON.stringify({ guild_id: "g1", node_id: "exp_boost", gold: 1000, nonce: "n-bearer-2" }),
   });
   await assert.rejects(() => guildTech(noAuth, env), (e) => e && e.code === "no_token");
+});
+
+/** Mirrors `onlApi` headers/body from `js/guild_tech_ui.js` (GET query + POST donate). */
+function clientGuildTechRequest(method, token, { guildId, nodeId, gold, nonce, forgedAccountId }) {
+  const headers = {
+    authorization: "Bearer " + token,
+    "content-type": "application/json",
+  };
+  if (forgedAccountId) headers["x-account-id"] = forgedAccountId;
+  if (method === "GET") {
+    return new Request(
+      "https://game.test/api/guild-tech?guild_id=" + encodeURIComponent(guildId),
+      { method: "GET", headers }
+    );
+  }
+  return new Request("https://game.test/api/guild-tech", {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ guild_id: guildId, node_id: nodeId, gold, nonce }),
+  });
+}
+
+test("client-style guild tech GET/POST with Bearer records donate on token account", async (t) => {
+  const DB = await localD1();
+  t.after(() => DB.close());
+  const env = { DB };
+  const donor = await register(req(), env, { name: "TechDonor", save: baseSave() });
+  const bystanderSave = baseSave();
+  bystanderSave.cid = "c_bearer_bystander012345678";
+  const bystander = await register(req("POST", null, "198.51.100.11"), env, {
+    name: "TechBystander",
+    save: bystanderSave,
+  });
+  const guildId = "g_client_e2e";
+  const nodeId = "exp_boost";
+  const gold = 2500;
+  const nonce = "client-nonce-gt-1";
+  const seasonIdx = seasonOf(Date.now()).index;
+  const period = `s${seasonIdx}`;
+
+  const loaded = await guildTech(clientGuildTechRequest("GET", donor.token, { guildId }), env);
+  const loadBody = await loaded.json();
+  assert.equal(loadBody.ok, true);
+  assert.equal(loadBody.seasonIdx, seasonIdx);
+  assert.ok(loadBody.def?.nodes?.length);
+
+  const donated = await guildTech(
+    clientGuildTechRequest("POST", donor.token, {
+      guildId,
+      nodeId,
+      gold,
+      nonce,
+      forgedAccountId: bystander.id,
+    }),
+    env
+  );
+  assert.equal((await donated.json()).ok, true);
+
+  const donorClaim = await DB.prepare(
+    "SELECT account_id, idem_key FROM quota_claims WHERE account_id=?1 AND scope='guild_tech' AND period=?2"
+  )
+    .bind(donor.id, period)
+    .first();
+  assert.ok(donorClaim);
+  assert.equal(donorClaim.idem_key, `donate:${guildId}:${nodeId}:${nonce}`);
+
+  const bystanderClaims = await DB.prepare(
+    "SELECT COUNT(*) AS n FROM quota_claims WHERE account_id=?1 AND scope='guild_tech'"
+  )
+    .bind(bystander.id)
+    .first();
+  assert.equal(bystanderClaims.n, 0);
+
+  const node = await DB.prepare(
+    "SELECT contributed FROM guild_tech_nodes WHERE guild_id=?1 AND node_id=?2 AND season_idx=?3"
+  )
+    .bind(guildId, nodeId, seasonIdx)
+    .first();
+  assert.ok(node);
+  assert.equal(node.contributed, gold);
 });
 
 test("world boss POST requires Bearer; x-account-id does not authenticate", async (t) => {
