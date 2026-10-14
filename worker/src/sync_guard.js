@@ -7,6 +7,7 @@ const HB_ONLINE_GAP = 150;
 import { GAME } from "../gen/game.js";
 import { levelCapForTime, MODE_TIME_FACTOR, modeOfState } from "./validate.js";
 import { recordSyncGuardTelemetry } from "./telemetry.js";
+import { storeSyncClampBackup } from "./sync_clamp_backup.js";
 
 export const SYNC_GUARD_MODES = Object.freeze(["off", "log_only", "enforce"]);
 
@@ -41,6 +42,13 @@ export function syncIdleBudgetSec(account, lastUpdatedAt, now = Date.now()) {
   const seen = serverSeenBudgetSec(account, now);
   const sinceSync = syncElapsedBudgetSec(lastUpdatedAt, now);
   return Math.min(seen, sinceSync);
+}
+
+export function isOfflineAccountGap(account, now = Date.now()) {
+  const created = account?.created_at || 0;
+  const lastHb = account?.last_hb || created || 0;
+  if (!lastHb) return true;
+  return (now - lastHb) / 1000 > HB_ONLINE_GAP;
 }
 
 function itemCount(state) {
@@ -182,8 +190,7 @@ function trimItemsToBudget(out, prevState, maxNewItems) {
   return out;
 }
 
-/** Luôn áp dụng trên sync: giới hạn vàng/EXP/cấp/đồ theo cửa sổ thời gian server. */
-export function capStateToServerIdleWindow(prevState, nextState, { elapsedSec, playSec }) {
+function applyBudgetClamp(prevState, nextState, { elapsedSec, playSec }) {
   const analysis = analyzeSyncDelta(prevState, nextState, { elapsedSec, playSec });
   const out = JSON.parse(JSON.stringify(nextState));
   const prevGold = Math.max(0, Math.floor(+prevState?.gold || 0));
@@ -200,6 +207,36 @@ export function capStateToServerIdleWindow(prevState, nextState, { elapsedSec, p
   return { state: out, analysis: afterAnalysis, clamped, elapsedSec };
 }
 
+/** Luôn khi offline gap: giới hạn phần thưởng idle/offline theo thời gian server thấy account. */
+export function capIdleOfflineRewards(prevState, nextState, { account, lastUpdatedAt, playSec, now = Date.now() }) {
+  if (!isOfflineAccountGap(account, now)) {
+    const elapsedSec = syncElapsedBudgetSec(lastUpdatedAt, now);
+    const analysis = analyzeSyncDelta(prevState, nextState, { elapsedSec, playSec });
+    return { state: nextState, analysis, capped: false, elapsedSec };
+  }
+  const elapsedSec = syncIdleBudgetSec(account, lastUpdatedAt, now);
+  const r = applyBudgetClamp(prevState, nextState, { elapsedSec, playSec });
+  return { ...r, capped: r.clamped };
+}
+
+/** Chỉ khi SYNC_GUARD_MODE=enforce: clamp vàng/EXP/cấp/đồ theo ngân sách sync. */
+export function clampStateToSyncBudget(prevState, nextState, { elapsedSec, playSec }) {
+  return applyBudgetClamp(prevState, nextState, { elapsedSec, playSec });
+}
+
+/** @deprecated alias — dùng capIdleOfflineRewards / clampStateToSyncBudget */
+export function capStateToServerIdleWindow(prevState, nextState, { elapsedSec, playSec }) {
+  return applyBudgetClamp(prevState, nextState, { elapsedSec, playSec });
+}
+
+async function backupBeforeClamp(db, accountId, save, reason, now) {
+  try {
+    return await storeSyncClampBackup(db, accountId, save, reason, now);
+  } catch {
+    return null;
+  }
+}
+
 export async function applySyncGuard(env, db, {
   accountId,
   account,
@@ -211,6 +248,7 @@ export async function applySyncGuard(env, db, {
   now = Date.now(),
 }) {
   const guardMode = syncGuardMode(env);
+  const acc = account || {};
 
   let prevState = null;
   try {
@@ -220,45 +258,97 @@ export async function applySyncGuard(env, db, {
   }
   if (!prevState) return { state: nextState, guard: { mode: guardMode, violations: [], offline_cap: false } };
 
-  const elapsedSec = syncIdleBudgetSec(account || {}, lastUpdatedAt, now);
-  const capped = capStateToServerIdleWindow(prevState, nextState, { elapsedSec, playSec });
-  let state = capped.state;
-  const analysis = capped.analysis;
+  const rawNext = nextState;
+  const budgetElapsedSec = syncIdleBudgetSec(acc, lastUpdatedAt, now);
+  const analysisRaw = analyzeSyncDelta(prevState, rawNext, { elapsedSec: budgetElapsedSec, playSec });
 
-  if (guardMode === "off") {
-    return {
-      state,
-      guard: { mode: guardMode, violations: analysis.violations, offline_cap: capped.clamped, elapsedSec },
-    };
+  let state = rawNext;
+  let offlineCap = false;
+  let budgetClamped = false;
+
+  if (isOfflineAccountGap(acc, now)) {
+    const idleElapsed = syncIdleBudgetSec(acc, lastUpdatedAt, now);
+    const idle = applyBudgetClamp(prevState, rawNext, { elapsedSec: idleElapsed, playSec });
+    if (idle.clamped) {
+      await backupBeforeClamp(db, accountId, rawNext, "idle_offline_cap", now);
+      state = idle.state;
+      offlineCap = true;
+    }
   }
 
-  if (analysis.violations.length || capped.clamped) {
+  let analysis = analyzeSyncDelta(prevState, state, { elapsedSec: budgetElapsedSec, playSec });
+
+  if (guardMode === "enforce" && analysisRaw.violations.length) {
+    await backupBeforeClamp(db, accountId, rawNext, "sync_budget_enforce", now);
+    const clamped = clampStateToSyncBudget(prevState, state, { elapsedSec: budgetElapsedSec, playSec });
+    state = clamped.state;
+    budgetClamped = clamped.clamped;
+    analysis = clamped.analysis;
+  }
+
+  const shouldLog =
+    guardMode !== "off" &&
+    (analysisRaw.violations.length > 0 || offlineCap || budgetClamped);
+
+  if (shouldLog) {
     await recordSyncGuardTelemetry(db, {
       at: now,
       accountId,
       guardMode,
       mode: mode || modeOfState(state),
-      elapsedSec: analysis.elapsedSec,
-      deltas: analysis.deltas,
-      budgets: analysis.budgets,
-      violations: analysis.violations,
-      offline_cap: capped.clamped,
+      elapsedSec: budgetElapsedSec,
+      deltas: analysisRaw.deltas,
+      budgets: analysisRaw.budgets,
+      violations: analysisRaw.violations,
+      offline_cap: offlineCap,
+      budget_clamped: budgetClamped,
+      persisted_unchanged: guardMode === "log_only" && analysisRaw.violations.length > 0 && !offlineCap,
     });
   }
 
-  if (!analysis.violations.length) {
-    return { state, guard: { mode: guardMode, ...analysis, offline_cap: capped.clamped, logged: capped.clamped } };
+  if (guardMode === "off") {
+    return {
+      state,
+      guard: { mode: guardMode, violations: analysisRaw.violations, offline_cap: offlineCap, elapsedSec: budgetElapsedSec },
+    };
   }
 
   if (guardMode === "log_only") {
-    return { state, guard: { mode: guardMode, logged: true, ...analysis, offline_cap: capped.clamped } };
+    let persisted = state;
+    if (analysisRaw.violations.length > 0 && !offlineCap) persisted = rawNext;
+    return {
+      state: persisted,
+      guard: {
+        mode: guardMode,
+        logged: shouldLog,
+        violations: analysisRaw.violations,
+        offline_cap: offlineCap,
+        elapsedSec: budgetElapsedSec,
+        deltas: analysisRaw.deltas,
+        budgets: analysisRaw.budgets,
+      },
+    };
+  }
+
+  if (!analysis.violations.length) {
+    return {
+      state,
+      guard: {
+        mode: guardMode,
+        violations: analysisRaw.violations,
+        offline_cap: offlineCap,
+        budget_clamped: budgetClamped,
+        elapsedSec: budgetElapsedSec,
+      },
+    };
   }
 
   throw new HttpError(409, "sync_budget_exceeded", "Tiến độ vượt ngân sách thời gian kể từ lần server thấy account", {
     violations: analysis.violations,
     deltas: analysis.deltas,
     budgets: analysis.budgets,
-    elapsed_sec: analysis.elapsedSec,
-    offline_cap: capped.clamped,
+    elapsed_sec: budgetElapsedSec,
+    offline_cap: offlineCap,
+    budget_clamped: budgetClamped,
   });
 }

@@ -75,7 +75,7 @@ test("activity tamper: inflated client scores rejected", () => {
   assert.equal(ok.cleared, 1);
 });
 
-test("sync log_only caps offline gold spike and logs telemetry (T1 server side)", async t => {
+test("sync log_only caps offline gold spike (idle window) and logs telemetry", async t => {
   const { env, DB, state, request, id } = await player(t);
   const stale = Date.now() - 48 * 3600e3;
   await DB.prepare("UPDATE accounts SET last_hb=?2 WHERE id=?1").bind(id, stale).run();
@@ -96,17 +96,56 @@ test("sync log_only caps offline gold spike and logs telemetry (T1 server side)"
   const payload = JSON.parse(tele.value);
   assert.equal(payload.account_id, "ac1");
   assert.equal(payload.offline_cap, true);
+  const backup = await DB.prepare(
+    "SELECT reason FROM sync_clamp_backups WHERE account_id=?1 ORDER BY id DESC LIMIT 1"
+  )
+    .bind(id)
+    .first();
+  assert.equal(backup?.reason, "idle_offline_cap");
 });
 
-test("sync enforce accepts save when server idle cap removes budget violations", async t => {
+test("sync log_only persists over-threshold save unchanged (online) and logs telemetry only", async t => {
+  const { env, DB, state, request, id } = await player(t);
+  const recent = Date.now() - 30e3;
+  await DB.prepare("UPDATE accounts SET last_hb=?2 WHERE id=?1").bind(id, recent).run();
+  const hacked = { ...state, gold: 50_000_000 };
+  env.SYNC_GUARD_MODE = "log_only";
+  const r = await sync(request(), env, { save: hacked, base_rev: 1 });
+  assert.equal(r.ok, true);
+  assert.equal(r.sync_offline_cap, false);
+  assert.ok(r.sync_guard_violations > 0);
+  const row = await DB.prepare("SELECT snapshot FROM chars WHERE account_id=?1").bind(id).first();
+  assert.equal(JSON.parse(row.snapshot).gold, hacked.gold);
+  const tele = await DB.prepare(
+    "SELECT value FROM telemetry_events WHERE event='sync_guard_would_reject' ORDER BY id DESC LIMIT 1"
+  ).first();
+  const payload = JSON.parse(tele.value);
+  assert.equal(payload.persisted_unchanged, true);
+  assert.equal(payload.budget_clamped, false);
+  const backups = await DB.prepare("SELECT COUNT(*) AS n FROM sync_clamp_backups WHERE account_id=?1")
+    .bind(id)
+    .first();
+  assert.equal(backups.n, 0);
+});
+
+test("sync enforce clamps budget, stores pre-clamp backup", async t => {
   const { env, state, request, id, DB } = await player(t);
+  const recent = Date.now() - 30e3;
+  await DB.prepare("UPDATE accounts SET last_hb=?2 WHERE id=?1").bind(id, recent).run();
   const hacked = { ...state, gold: 50_000_000 };
   env.SYNC_GUARD_MODE = "enforce";
   const r = await sync(request(), env, { save: hacked, base_rev: 1 });
   assert.equal(r.ok, true);
-  assert.equal(r.sync_offline_cap, true);
   const row = await DB.prepare("SELECT snapshot FROM chars WHERE account_id=?1").bind(id).first();
   assert.ok(JSON.parse(row.snapshot).gold < hacked.gold);
+  const backup = await DB.prepare(
+    "SELECT reason,snapshot,bytes FROM sync_clamp_backups WHERE account_id=?1 ORDER BY id DESC LIMIT 1"
+  )
+    .bind(id)
+    .first();
+  assert.equal(backup.reason, "sync_budget_enforce");
+  assert.equal(JSON.parse(backup.snapshot).gold, hacked.gold);
+  assert.ok(backup.bytes > 100);
 });
 
 test("guild-tech server gate is fail-closed without GUILD_TECH_SERVER_ENABLED", () => {

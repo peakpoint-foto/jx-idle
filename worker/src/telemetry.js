@@ -37,6 +37,8 @@ export async function recordSyncGuardTelemetry(db, payload) {
     budgets: payload.budgets,
     violations: payload.violations,
     offline_cap: !!payload.offline_cap,
+    budget_clamped: !!payload.budget_clamped,
+    persisted_unchanged: !!payload.persisted_unchanged,
   }).slice(0, 4000);
   await db.prepare(
     "INSERT INTO telemetry_events(at,event,install_week,active_days,mode,value) VALUES(?1,?2,?3,?4,?5,?6)"
