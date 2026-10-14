@@ -2,10 +2,11 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { localD1 } from "./helpers/d1.js";
 import { GAME } from "../gen/game.js";
-import { register } from "../src/account.js";
+import { register, me, sync } from "../src/account.js";
 import { guildTech } from "../src/guild_tech_api.js";
 import { worldBoss } from "../src/world_boss_api.js";
 import { sha256Hex } from "../src/http.js";
+import { HttpError } from "../src/http.js";
 
 const baseSave = () =>
   Object.assign(GAME.newSave(), { mode: "ctc", fac: "shaolin", cid: "c_bearer_0123456789", lvl: 20, xp: 1 });
@@ -80,4 +81,82 @@ test("world boss POST requires Bearer; x-account-id does not authenticate", asyn
     body: JSON.stringify({ boss_id: bossId, snapshot: {}, nonce: "wb-n2" }),
   });
   await assert.rejects(() => worldBoss(noAuth, env), (e) => e && e.code === "no_token");
+});
+
+test("legacy token survives reload: same Bearer reuses account and progress", async (t) => {
+  const DB = await localD1();
+  t.after(() => DB.close());
+  const env = { DB };
+  const save = baseSave();
+  save.gold = 4242;
+  const reg = await register(req(), env, { name: "ReloadKeep", save });
+  const token = reg.token;
+  const first = await me(req("GET", token), env);
+  assert.equal(first.id, reg.id);
+  assert.equal(first.char.character_id, reg.character_id);
+  assert.equal(JSON.parse((await DB.prepare("SELECT snapshot FROM chars WHERE account_id=?1").bind(reg.id).first()).snapshot).gold, 4242);
+  // Simulate page reload: client sends the same stored token again.
+  const again = await me(req("GET", token), env);
+  assert.equal(again.id, reg.id);
+  assert.equal(again.name, "ReloadKeep");
+  const synced = await sync(req("POST", token), env, { save: { ...save, gold: 4300 }, base_rev: 1 });
+  assert.equal(synced.ok, true);
+  assert.equal((await DB.prepare("SELECT COUNT(*) AS n FROM accounts").first()).n, 1);
+  const third = await me(req("GET", token), env);
+  assert.equal(third.id, reg.id);
+  assert.equal(JSON.parse((await DB.prepare("SELECT snapshot FROM chars WHERE account_id=?1").bind(reg.id).first()).snapshot).gold, 4300);
+});
+
+test("legacy anon world_boss_hits are preserved; new POST never writes anon", async (t) => {
+  const DB = await localD1();
+  t.after(() => DB.close());
+  const env = { DB };
+  const bossId = "wb_legacy_anon";
+  const now = Date.now();
+  await DB.batch([
+    DB.prepare("INSERT INTO world_boss(id,starts_at,ends_at,hp,max_hp) VALUES(?1,?2,?3,500,500)").bind(
+      bossId,
+      now - 1000,
+      now + 3600000
+    ),
+    DB.prepare(
+      "INSERT INTO world_boss_hits(id,boss_id,account_id,damage,created_at) VALUES('legacy-anon-1',?1,'anon',999,?2)"
+    ).bind(bossId, now - 500),
+  ]);
+  const anonBefore = (await DB.prepare("SELECT COUNT(*) AS n FROM world_boss_hits WHERE account_id='anon'").first()).n;
+  assert.equal(anonBefore, 1);
+  const noAuth = new Request("https://game.test/api/world-boss", {
+    method: "POST",
+    headers: { "content-type": "application/json", "x-account-id": "anon" },
+    body: JSON.stringify({ boss_id: bossId, snapshot: { power: 1e9 }, nonce: "anon-attempt" }),
+  });
+  await assert.rejects(() => worldBoss(noAuth, env), (e) => e instanceof HttpError && e.code === "no_token");
+  assert.equal(
+    (await DB.prepare("SELECT COUNT(*) AS n FROM world_boss_hits WHERE account_id='anon'").first()).n,
+    anonBefore
+  );
+  const token = "wb-real-after-anon-012345678901234567890";
+  const id = "wbreal01";
+  await DB.prepare("INSERT INTO accounts(id,token_hash,name,created_at) VALUES(?1,?2,?3,?4)")
+    .bind(id, await sha256Hex(token), "RealAfterAnon", now)
+    .run();
+  const authed = new Request("https://game.test/api/world-boss", {
+    method: "POST",
+    headers: { authorization: "Bearer " + token, "content-type": "application/json" },
+    body: JSON.stringify({ boss_id: bossId, snapshot: { power: 50 }, nonce: "real-hit-1" }),
+  });
+  const body = await (await worldBoss(authed, env)).json();
+  assert.equal(body.ok, true);
+  assert.equal(
+    (await DB.prepare("SELECT COUNT(*) AS n FROM world_boss_hits WHERE account_id='anon'").first()).n,
+    anonBefore
+  );
+  const newHit = await DB.prepare(
+    "SELECT account_id FROM world_boss_hits WHERE id<> 'legacy-anon-1' AND boss_id=?1"
+  )
+    .bind(bossId)
+    .first();
+  assert.ok(newHit);
+  assert.notEqual(newHit.account_id, "anon");
+  assert.equal(newHit.account_id, id);
 });
