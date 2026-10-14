@@ -4,7 +4,10 @@ import { GAME } from "../gen/game.js";
 import {
   analyzeSyncDelta,
   applySyncGuard,
+  capIdleOfflineRewards,
   capStateToServerIdleWindow,
+  clampStateToSyncBudget,
+  isOfflineAccountGap,
   serverSeenBudgetSec,
   syncGuardMode,
   syncElapsedBudgetSec,
@@ -46,13 +49,24 @@ test("syncIdleBudgetSec is min(server seen, since last char updated_at)", () => 
   assert.equal(syncIdleBudgetSec(acc, staleChar, now), 8 * 3600);
 });
 
-test("capStateToServerIdleWindow clamps inflated gold to elapsed budget", () => {
+test("clampStateToSyncBudget clamps inflated gold to elapsed budget", () => {
   const prev = Object.assign(GAME.newSave(), { mode: "ctc", fac: "shaolin", gold: 1000, lvl: 40, xp: 0 });
   const next = { ...prev, gold: 50_000_000 };
-  const r = capStateToServerIdleWindow(prev, next, { elapsedSec: 3600, playSec: 5000 });
+  const r = clampStateToSyncBudget(prev, next, { elapsedSec: 3600, playSec: 5000 });
   assert.equal(r.clamped, true);
   assert.ok(r.state.gold < next.gold);
   assert.equal(r.analysis.violations.length, 0);
+});
+
+test("capIdleOfflineRewards skips clamp when account is online (recent hb)", () => {
+  const now = Date.now();
+  const prev = Object.assign(GAME.newSave(), { mode: "ctc", fac: "shaolin", gold: 1000, lvl: 40, xp: 0 });
+  const next = { ...prev, gold: 50_000_000 };
+  const acc = { created_at: now - 864e5, last_hb: now - 30e3 };
+  assert.equal(isOfflineAccountGap(acc, now), false);
+  const r = capIdleOfflineRewards(prev, next, { account: acc, lastUpdatedAt: now - 3600e3, playSec: 5000, now });
+  assert.equal(r.capped, false);
+  assert.equal(r.state.gold, next.gold);
 });
 
 test("applySyncGuard enforce rejects when cap cannot trim eq item spike", async () => {

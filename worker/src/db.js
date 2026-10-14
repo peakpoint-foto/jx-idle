@@ -2,6 +2,9 @@
 // nên deploy không cần bước "d1 migrations apply" riêng. Bản SQL tham chiếu: migrations/0001_init.sql.
 
 export const SCHEMA = [
+  `CREATE TABLE IF NOT EXISTS sync_clamp_backups(id INTEGER PRIMARY KEY AUTOINCREMENT,account_id TEXT NOT NULL,created_at INTEGER NOT NULL,reason TEXT NOT NULL,snapshot TEXT NOT NULL,bytes INTEGER NOT NULL)`,
+  `CREATE INDEX IF NOT EXISTS sync_clamp_backups_account ON sync_clamp_backups(account_id,created_at DESC)`,
+  `CREATE INDEX IF NOT EXISTS sync_clamp_backups_created ON sync_clamp_backups(created_at)`,
   `CREATE TABLE IF NOT EXISTS telemetry_events(id INTEGER PRIMARY KEY AUTOINCREMENT,at INTEGER NOT NULL,event TEXT NOT NULL,install_week TEXT NOT NULL,active_days TEXT NOT NULL,mode TEXT NOT NULL DEFAULT '',value TEXT)`,
   `CREATE INDEX IF NOT EXISTS telemetry_event_at ON telemetry_events(event,at)`,
   `CREATE TABLE IF NOT EXISTS player_blocks(blocker_id TEXT NOT NULL,target_id TEXT NOT NULL,created_at INTEGER NOT NULL,PRIMARY KEY(blocker_id,target_id),CHECK(blocker_id<>target_id))`,
