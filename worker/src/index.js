@@ -93,7 +93,16 @@ export default {
       if (!env.DB) throw new HttpError(503, "no_db", "Chưa gắn cơ sở dữ liệu D1");
       await ensureSchema(env.DB);
       const body = req.method === "POST" ? await readJson(req,url.pathname==="/api/feedback"?32768:1<<20) : null;
-      return json(await fn(req, env, body, url, ctx));
+      const out = await fn(req, env, body, url, ctx);
+      // Một số handler (world_boss_api, guild_tech_api, league_api) trả về Response
+      // trực tiếp kèm status riêng — KHÔNG bọc lại bằng json() (JSON.stringify(Response)
+      // cho ra "{}"). Giữ nguyên status, chỉ bổ sung header CORS còn thiếu.
+      if (out instanceof Response) {
+        const h = new Headers(out.headers);
+        for (const [k, v] of Object.entries(CORS)) if (!h.has(k)) h.set(k, v);
+        return new Response(out.body, { status: out.status, statusText: out.statusText, headers: h });
+      }
+      return json(out);
     } catch (e) {
       if (e instanceof HttpError) return json({ error: e.code, msg: e.message, ...(e.data || {}) }, e.status);
       console.error("api", url.pathname, e && e.stack);
