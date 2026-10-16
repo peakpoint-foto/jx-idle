@@ -2,21 +2,20 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {game} from "./helpers/game.mjs";
 
-// Phase 1 — N5 (định giá đặc quyền "nội công luôn trúng") + N6 (crit mở cho mọi
-// loại sát thương trừ poison DoT). Các hằng số N5_* là số MINH HỌA - CHỜ USER CHỐT;
-// test chỉ kiểm tra CƠ CHẾ, không pin giá trị minh họa.
+// Phase 1 — N5 (user chốt 16/10/2026: BỎ PHÍ đặc quyền hẳn, để med/v tự cân
+// chênh hit-rate: chiêu nội công đo ở hit=1, vật lý ở hit mục tiêu 85%)
+// + N6 (crit mở cho mọi loại sát thương trừ poison DoT).
+// Test chỉ kiểm tra CƠ CHẾ.
 
-test("N5: hằng số minh họa có tên rõ ràng, nằm trong khoảng hợp lý", () => {
+test("N5: không còn phí đặc quyền (đã bỏ theo quyết định user 16/10/2026)", () => {
   const g = game();
-  const fee = g.json(`N5_PRIVILEGE_FEE_PCT`);
+  assert.equal(g.json(`typeof N5_PRIVILEGE_FEE_PCT`), "undefined");
   const hit = g.json(`N5_TARGET_HIT_PCT`);
-  assert.equal(typeof fee, "number");
   assert.equal(typeof hit, "number");
-  assert.ok(fee > 0 && fee <= 50, `phí đặc quyền trong (0,50], got ${fee}`);
   assert.ok(hit > 50 && hit <= 100, `hit mục tiêu trong (50,100], got ${hit}`);
 });
 
-test("N5: refDps trừ phí đặc quyền cho chiêu không dùng AR, build vật lý đo ở hit mục tiêu", () => {
+test("N5: refDps KHÔNG trừ phí — med/v tự định giá chênh hit-rate", () => {
   const g = game();
   const r = g.json(`(() => {
     const atk = FACTIONS.flatMap(f => f.skills).map(id => SK[id])
@@ -24,8 +23,7 @@ test("N5: refDps trừ phí đặc quyền cho chiêu không dùng AR, build v�
     const sI = atk.find(s => skillUsesAR(s) === 0); // chiêu nội công: luôn trúng
     const sP = atk.find(s => skillUsesAR(s) === 1); // chiêu vật lý: roll chính xác
     if (!sI || !sP) throw new Error("thiếu skill mẫu cho test N5");
-    // Công thức refDps KHÔNG có phí — để đối chiếu cơ chế phí/mẫu số.
-    function manualNoFee(s) {
+    function manual(s) {
       let best = 0;
       for (const k of [0, 1]) {
         const a = activeInfo(refChar(Math.max(10, s.req), s.fac, k), s, 20);
@@ -35,21 +33,16 @@ test("N5: refDps trừ phí đặc quyền cho chiêu không dùng AR, build v�
       }
       return best;
     }
-    const mI = manualNoFee(sI), mP = manualNoFee(sP);
+    const mI = manual(sI), mP = manual(sP);
     const rI = refDps(sI), rP = refDps(sP);
-    const fee = N5_PRIVILEGE_FEE_PCT;
     return {
       sI: sI.n, sP: sP.n,
-      // chiêu nội công: refDps = manual / (1 + phí) — phí nằm ở MẪU SỐ
-      relI: Math.abs(rI - mI / (1 + fee / 100)) / Math.max(1e-9, mI),
-      feeApplied: rI < mI,
-      // chiêu vật lý: refDps = manual (đo ở hit mục tiêu, không phí)
+      relI: Math.abs(rI - mI) / Math.max(1e-9, mI),
       relP: Math.abs(rP - mP) / Math.max(1e-9, mP),
     };
   })()`);
-  assert.ok(r.feeApplied, `chiêu nội công phải bị trừ phí trong refDps (${r.sI})`);
-  assert.ok(r.relI < 1e-9, `phí phải nằm đúng mẫu số, rel err=${r.relI}`);
-  assert.ok(r.relP < 1e-9, `chiêu vật lý không chịu phí, rel err=${r.relP} (${r.sP})`);
+  assert.ok(r.relI < 1e-9, `chiêu nội công không chịu phí: refDps phải bằng manual, rel err=${r.relI} (${r.sI})`);
+  assert.ok(r.relP < 1e-9, `chiêu vật lý đo ở hit mục tiêu, rel err=${r.relP} (${r.sP})`);
 });
 
 test("N6: activeInfo cộng crit cho mọi loại sát thương trừ poison", () => {
