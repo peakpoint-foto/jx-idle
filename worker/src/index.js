@@ -2,7 +2,7 @@
 // Chỉ đường dẫn /api/* chạy qua Worker (assets.run_worker_first trong wrangler.jsonc).
 import { HttpError, json, readJson, CORS } from "./http.js";
 import { ensureSchema } from "./db.js";
-import { register, heartbeat, sync, me, recover, recoverSnapshot } from "./account.js";
+import { register, heartbeat, sync, me, recover, recoverSnapshot, rotateToken, listDevices, revokeDevice } from "./account.js";
 import { ladder, notices, adminFlags, adminUnflag } from "./ladder.js";
 import { feedback, adminFeedback, adminFeedbackSet, adminFeedbackMetrics } from "./feedback.js";
 import { activityClaim } from "./activity.js";
@@ -40,6 +40,9 @@ const ROUTES = {
   "POST /api/activity/claim": (req, env, body) => activityClaim(req, env, body),
   "GET /api/me": (req, env) => me(req, env),
   "POST /api/recover": (req, env, body) => recover(req, env, body),
+  "POST /api/token/rotate": (req, env, body) => rotateToken(req, env, body),
+  "GET /api/devices": (req, env) => listDevices(req, env),
+  "POST /api/devices/revoke": (req, env, body) => revokeDevice(req, env, body),
   "GET /api/ladder": ladder,
   "GET /api/notices": notices,
   "GET /api/profile": profile,

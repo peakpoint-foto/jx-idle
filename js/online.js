@@ -57,6 +57,16 @@ function onlTurnstile(sitekey) {
   });
 }
 
+// W1-5: xoay token chính. Server giữ token cũ hiệu lực thêm 24h (grace period)
+// để các tab/thiết bị khác không bị khóa đột ngột; client phải lưu token mới ngay.
+async function onlRotateToken() {
+  const d = await onlApi("/api/token/rotate", { body: {} });
+  if (d && d.token && d.rotated === "primary") { const acc = onlGet(); if (acc) { acc.token = d.token; onlSet(acc); } }
+  return d;
+}
+// W1-5: danh sách thiết bị + tự thu hồi thiết bị lạ (UI quản trị sẽ dùng 2 hàm này).
+async function onlDevices() { return onlApi("/api/devices"); }
+async function onlRevokeDevice(deviceId) { return onlApi("/api/devices/revoke", { body: { device_id: deviceId } }); }
 async function onlRegister(name) {
   if (!S || !S.fac || (S.mode !== "ctc" && !Object.prototype.hasOwnProperty.call(ONL_MODE_FLAGS, S.mode))) throw { code: "not_ctc", msg: "Chế độ này không có tài khoản online" };
   if (S.lvl > ONL_REG_MAX_LVL) throw { code: "too_late", msg: `Chỉ đăng ký được khi nhân vật dưới cấp ${ONL_REG_MAX_LVL + 1}` };

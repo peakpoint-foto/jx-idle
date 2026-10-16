@@ -58,13 +58,38 @@ export function parseSave(save, env = null) {
   return state;
 }
 
+// W1-5: token chính sau khi xoay vẫn hiệu lực thêm 24h (grace period) để các
+// tab/thiết bị khác của user không bị khóa đột ngột trước khi kịp đổi token mới.
+export const TOKEN_GRACE_MS = 24 * 3600e3;
+
 export async function auth(req, env) {
   const tok = bearer(req);
   if (!tok) throw new HttpError(401, "no_token");
-  const acc = await env.DB.prepare("SELECT * FROM accounts WHERE token_hash=?1")
-    .bind(await sha256Hex(tok))
-    .first();
+  const h = await sha256Hex(tok);
+  const now = Date.now();
+  // 1. Token chính hiện tại.
+  let acc = await env.DB.prepare("SELECT * FROM accounts WHERE token_hash=?1").bind(h).first();
+  let via = "primary", device = null;
+  if (!acc) {
+    // 2. Token cũ vừa xoay: còn hiệu lực trong grace period 24h.
+    acc = await env.DB.prepare("SELECT * FROM accounts WHERE prev_token_hash=?1 AND prev_token_expires_at>?2").bind(h, now).first();
+    if (acc) via = "grace";
+  }
+  if (!acc) {
+    // 3. Token theo thiết bị (chưa bị revoke).
+    device = await env.DB.prepare("SELECT * FROM account_devices WHERE token_hash=?1 AND revoked_at IS NULL").bind(h).first();
+    if (device) {
+      acc = await env.DB.prepare("SELECT * FROM accounts WHERE id=?1").bind(device.account_id).first();
+      via = "device";
+    }
+  }
   if (!acc) throw new HttpError(401, "bad_token");
+  acc._auth_via = via;
+  acc._device = device;
+  // Ghi nhận lần dùng cuối của thiết bị (giới hạn 1 write/giờ để bớt tải D1).
+  if (device && (!device.last_used_at || now - device.last_used_at > 3600e3)) {
+    await env.DB.prepare("UPDATE account_devices SET last_used_at=?2 WHERE id=?1").bind(device.id, now).run().catch(() => {});
+  }
   return acc;
 }
 
@@ -212,6 +237,82 @@ export async function sync(req, env, body) {
     sync_offline_cap: !!guarded.guard?.offline_cap,
     ...v,
   };
+}
+
+// W1-5: xoay token / cấp token thiết bị.
+// - Không device_label + auth bằng primary/grace: xoay token CHÍNH. Token cũ vào
+//   prev_token_hash, hiệu lực thêm 24h (grace) rồi mới 401 — client gọi xong phải
+//   lưu token mới ngay (xem js/online.js onlRotateToken).
+// - Có device_label + auth bằng primary/grace: cấp token RIÊNG cho thiết bị mới.
+//   Token thiết bị không xoay được token chính, không cấp thêm thiết bị.
+// - Không device_label + auth bằng device token: tự xoay token của chính thiết bị
+//   đó (token cũ của thiết bị bị vô hiệu ngay; muốn cấp lại thì dùng token chính).
+export async function rotateToken(req, env, body) {
+  const acc = await auth(req, env);
+  if (!(await rateLimit(env.DB, "rot:" + acc.id, 10, 3600)))
+    throw new HttpError(429, "rate_limited", "Xoay token quá nhiều, thử lại sau");
+  const label = body && typeof body.device_label === "string" ? body.device_label.trim().slice(0, 40) : "";
+  const now = Date.now();
+  const newToken = randomToken(24);
+  const newHash = await sha256Hex(newToken);
+  if (label) {
+    if (acc._auth_via === "device")
+      throw new HttpError(403, "device_cannot_provision", "Token thiết bị không được cấp token cho thiết bị khác — hãy dùng token chính");
+    const id = randomToken(9);
+    await env.DB.prepare(
+      "INSERT INTO account_devices(id,account_id,token_hash,device_label,created_at) VALUES(?1,?2,?3,?4,?5)"
+    ).bind(id, acc.id, newHash, label, now).run();
+    return { token: newToken, device_id: id, device_label: label, rotated: "device" };
+  }
+  if (acc._auth_via === "device") {
+    const d = acc._device;
+    await env.DB.batch([
+      env.DB.prepare("UPDATE account_devices SET revoked_at=?2 WHERE id=?1").bind(d.id, now),
+      env.DB.prepare(
+        "INSERT INTO account_devices(id,account_id,token_hash,device_label,created_at) VALUES(?1,?2,?3,?4,?5)"
+      ).bind(randomToken(9), acc.id, newHash, d.device_label || "", now),
+    ]);
+    return { token: newToken, rotated: "device", device_label: d.device_label || "" };
+  }
+  const graceUntil = now + TOKEN_GRACE_MS;
+  await env.DB.prepare(
+    "UPDATE accounts SET token_hash=?2,prev_token_hash=?3,prev_token_expires_at=?4 WHERE id=?1"
+  ).bind(acc.id, newHash, acc.token_hash, graceUntil).run();
+  return { token: newToken, rotated: "primary", grace_until: graceUntil, grace_hours: 24 };
+}
+
+// W1-5: liệt kê thiết bị (không bao giờ lộ token/hash).
+export async function listDevices(req, env) {
+  const acc = await auth(req, env);
+  const rows = await env.DB.prepare(
+    "SELECT id,device_label,created_at,last_used_at,revoked_at FROM account_devices WHERE account_id=?1 ORDER BY created_at DESC"
+  ).bind(acc.id).all();
+  const devices = (rows.results || []).map((d) => ({
+    ...d,
+    current: !!(acc._device && acc._device.id === d.id),
+  }));
+  return {
+    primary: { created_at: acc.created_at, via: acc._auth_via, grace_until: acc.prev_token_expires_at || null },
+    devices,
+  };
+}
+
+// W1-5: thu hồi token của thiết bị lạ -> token đó 401 ngay.
+// Chỉ token chính (kể cả đang trong grace) được revoke thiết bị khác;
+// token thiết bị chỉ được tự revoke chính nó (= đăng xuất thiết bị này).
+export async function revokeDevice(req, env, body) {
+  const acc = await auth(req, env);
+  if (!(await rateLimit(env.DB, "devrev:" + acc.id, 20, 3600)))
+    throw new HttpError(429, "rate_limited", "Thu hồi quá nhiều, thử lại sau");
+  const deviceId = String((body && body.device_id) || "");
+  if (!deviceId) throw new HttpError(400, "bad_request");
+  if (acc._auth_via === "device" && (!acc._device || acc._device.id !== deviceId))
+    throw new HttpError(403, "forbidden", "Token thiết bị chỉ được tự thu hồi chính nó");
+  const r = await env.DB.prepare(
+    "UPDATE account_devices SET revoked_at=?3 WHERE id=?1 AND account_id=?2 AND revoked_at IS NULL"
+  ).bind(deviceId, acc.id, Date.now()).run();
+  if (!r.meta.changes) throw new HttpError(404, "device_not_found");
+  return { ok: true, device_id: deviceId };
 }
 
 export async function recoverSnapshot(req, env) {

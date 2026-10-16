@@ -3,6 +3,9 @@
 
 export const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS sync_clamp_backups(id INTEGER PRIMARY KEY AUTOINCREMENT,account_id TEXT NOT NULL,created_at INTEGER NOT NULL,reason TEXT NOT NULL,snapshot TEXT NOT NULL,bytes INTEGER NOT NULL)`,
+  // W1-5: token theo thiết bị — mỗi thiết bị một token, revoke độc lập, không đụng token chính.
+  `CREATE TABLE IF NOT EXISTS account_devices(id TEXT PRIMARY KEY,account_id TEXT NOT NULL,token_hash TEXT NOT NULL UNIQUE,device_label TEXT NOT NULL DEFAULT '',created_at INTEGER NOT NULL,last_used_at INTEGER,revoked_at INTEGER)`,
+  `CREATE INDEX IF NOT EXISTS account_devices_account ON account_devices(account_id,revoked_at)`,
   `CREATE INDEX IF NOT EXISTS sync_clamp_backups_account ON sync_clamp_backups(account_id,created_at DESC)`,
   `CREATE INDEX IF NOT EXISTS sync_clamp_backups_created ON sync_clamp_backups(created_at)`,
   `CREATE TABLE IF NOT EXISTS telemetry_events(id INTEGER PRIMARY KEY AUTOINCREMENT,at INTEGER NOT NULL,event TEXT NOT NULL,install_week TEXT NOT NULL,active_days TEXT NOT NULL,mode TEXT NOT NULL DEFAULT '',value TEXT)`,
@@ -245,6 +248,9 @@ const COLUMNS = [
   "ALTER TABLE chars ADD COLUMN sync_rev INTEGER NOT NULL DEFAULT 1",
   "ALTER TABLE chars ADD COLUMN mode TEXT NOT NULL DEFAULT 'ctc'",
   "ALTER TABLE rooms ADD COLUMN mode TEXT NOT NULL DEFAULT 'ctc'",
+  // W1-5: xoay token chính — token cũ vào prev_token_hash, hiệu lực thêm 24h (grace period).
+  "ALTER TABLE accounts ADD COLUMN prev_token_hash TEXT",
+  "ALTER TABLE accounts ADD COLUMN prev_token_expires_at INTEGER",
 ];
 
 const readyByDatabase = new WeakMap();
