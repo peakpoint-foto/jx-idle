@@ -36,3 +36,19 @@ test("chuyển sinh: không chọn đường thì từ chối", () => {
   g.run(`var _c=confirm;confirm=()=>true;doReborn("khong_ton_tai");confirm=_c;`);
   assert.equal(g.json("S.rw.stat.reborn"), 0, "không chuyển sinh khi đường sai");
 });
+
+test("chuyển sinh: điểm tiềm năng tồn dư được cộng dồn (regression N2)", () => {
+  // N2: doReborn gán S.attrPts = reborn*50 (ghi đè) → mất điểm tồn dư. Fix: S.attrPts += 50.
+  // So sánh vi phân để loại nhiễu từ thưởng thành tựu (achCheck chạy trong doReborn).
+  const run = (leftover) => {
+    const g = rebornReady();
+    g.run(`S.attrPts=${leftover};`);
+    g.run(`var _c=confirm;confirm=()=>true;doReborn("voda");confirm=_c;`);
+    assert.equal(g.json("S.rw.stat.reborn"), 1);
+    return g.json("S.attrPts");
+  };
+  const base = run(0);      // không tồn dư
+  const withLeft = run(30); // tồn dư 30
+  assert.equal(withLeft - base, 30, "30 điểm tồn dư được giữ nguyên sau chuyển sinh (không bị ghi đè mất)");
+  assert.ok(base >= 50, "thưởng chuyển sinh lần 1 tối thiểu 50 điểm");
+});
