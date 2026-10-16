@@ -15,18 +15,29 @@ const ONL_MODE_FLAGS = { phlt: "online_account_phlt", g2: "online_account_g2" };
 const onlModeOpen = mode => mode === "ctc" || (Object.prototype.hasOwnProperty.call(ONL_MODE_FLAGS, mode) && typeof featureEnabled === "function" && featureEnabled(ONL_MODE_FLAGS[mode], mode));
 const onlEligible = () => typeof S !== "undefined" && S && S.fac && onlModeOpen(S.mode);
 const ONL = { me: null, lastSync: 0, busy: false, serverNow: 0, conflict: null, room: null, roomTimer: 0 };
+const ONL_RELOAD_MSG = "Có bản cập nhật, tải lại trang";
+
+function onlGuarded401(quiet) {
+  onlSet(null);
+  ONL.me = null;
+  if (!quiet && typeof toast === "function") toast(ONL_RELOAD_MSG);
+}
 
 async function onlApi(path, opt = {}) {
   const acc = onlGet(), headers = {};
   if (opt.body !== undefined) headers["content-type"] = "application/json";
-  if (opt.auth !== false && acc) headers.authorization = "Bearer " + acc.token;
+  const guarded = opt.auth !== false && !!acc;
+  if (guarded) headers.authorization = "Bearer " + acc.token;
   Object.assign(headers, opt.headers || {});
   let r;
   try {
     r = await fetch(onlBase() + path, { method: opt.method || (opt.body !== undefined ? "POST" : "GET"), headers, body: opt.body !== undefined ? JSON.stringify(opt.body) : undefined, keepalive: !!opt.keepalive });
   } catch (e) { throw { code: "offline", msg: "Không kết nối được máy chủ online" } }
   const d = await r.json().catch(() => ({}));
-  if (!r.ok) throw { code: d.error || "http_" + r.status, msg: d.msg || "Lỗi máy chủ (" + r.status + ")", ...d };
+  if (!r.ok) {
+    if (r.status === 401 && guarded) onlGuarded401(opt.quiet);
+    throw { code: d.error || "http_" + r.status, msg: d.msg || "Lỗi máy chủ (" + r.status + ")", ...d };
+  }
   return d;
 }
 
@@ -318,11 +329,13 @@ setInterval(() => { if (document.visibilityState!=="hidden" && onlGet() && docum
 // Heartbeat mỗi phút khi đã đăng ký; đồng bộ save mỗi 5 phút.
 setInterval(() => {
   if (!onlEligible() || !onlGet()) return;
-  onlApi("/hb", { method: "POST", keepalive: true }).then(d => {
+  onlApi("/hb", { method: "POST", keepalive: true, quiet: true }).then(d => {
     ONL.serverNow = d.server_now || 0;
     if (typeof setIdleClockFromServer === "function") setIdleClockFromServer(ONL.serverNow);
     if (ONL.me) ONL.me.play_sec = d.play_sec;
-  }).catch(() => { });
+  }).catch(e => {
+    if (e && (e.code === "bad_token" || e.code === "no_token") && typeof toast === "function") toast(ONL_RELOAD_MSG);
+  });
   if (Date.now() - ONL.lastSync >= ONL_SYNC_MS) onlSync(true);
 }, ONL_HB_MS);
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden" && onlEligible() && onlGet() && Date.now() - ONL.lastSync > 60e3) onlSync(true) });

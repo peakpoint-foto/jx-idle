@@ -4,10 +4,12 @@ async function guildTechLoad() {
   if (!featureEnabled("guild_tech")) return null;
   const gid = S.guildId || (S.guild && S.guild.id);
   if (!gid) return {error: "Chưa vào bang"};
+  if (typeof onlGet !== "function" || !onlGet()?.token) return { error: "Chưa đăng nhập online" };
   try {
-    const r = await fetch(`/api/guild-tech?guild_id=${encodeURIComponent(gid)}`);
-    return await r.json();
-  } catch (e) { return {error: "Không tải được"}; }
+    return await onlApi("/guild-tech?guild_id=" + encodeURIComponent(gid));
+  } catch (e) {
+    return { error: e.msg || "Không tải được" };
+  }
 }
 function guildTechHTML(data) {
   if (!data) return "";
@@ -32,13 +34,13 @@ function guildTechHTML(data) {
 async function guildTechDonate(nodeId, gold) {
   const gid = S.guildId || (S.guild && S.guild.id);
   if (!gid || S.gold < gold) { toast("Không đủ vàng"); return; }
+  if (typeof onlGet !== "function" || !onlGet()?.token) {
+    toast("Cần đăng nhập online (mã Bearer)");
+    return;
+  }
   const nonce = Math.random().toString(36).slice(2);
   try {
-    const r = await fetch("/api/guild-tech", {
-      method: "POST", headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({guild_id: gid, node_id: nodeId, gold, nonce}),
-    });
-    const j = await r.json();
+    const j = await onlApi("/guild-tech", { body: { guild_id: gid, node_id: nodeId, gold, nonce } });
     if (j.ok) {
       S.gold -= gold; save();
       toast(j.leveledUp ? `Lên cấp ${j.level}!` : "Đã đóng góp");

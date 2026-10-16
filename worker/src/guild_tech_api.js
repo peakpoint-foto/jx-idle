@@ -1,12 +1,11 @@
 import {guildTechContribute, guildTechDef, guildTechEffects, guildTechNodes} from './guild_tech.js';
 import {seasonOf} from './seasons.js';
-const getSeasonIdx = () => seasonOf(Date.now()).idx;
-
-// TODO(anticheat): Không bật GUILD_TECH_SERVER_ENABLED=1 cho tới khi POST dùng Bearer auth
-// (không x-account-id) và trừ vàng từ ledger/snapshot server — hiện client khai gold tùy ý.
+import {auth} from './account.js';
+const getSeasonIdx = () => seasonOf(Date.now()).index;
 
 // 2.15: API guild tech tree.
-export async function guildTech(req, env) {
+// NOTE (wave1 W1-0): body do index.js truyền vào (xem world_boss_api.js).
+export async function guildTech(req, env, body) {
   const url = new URL(req.url);
   if (req.method === 'GET') {
     const guildId = url.searchParams.get('guild_id');
@@ -19,10 +18,10 @@ export async function guildTech(req, env) {
     return Response.json({ok: true, def: guildTechDef(), nodes, effects: eff, seasonIdx});
   }
   if (req.method === 'POST') {
-    const body = await req.json().catch(() => ({}));
-    const {guild_id, node_id, gold, nonce} = body;
-    // accountId từ auth — đơn giản hóa, lấy từ header
-    const accountId = req.headers.get('x-account-id') || 'anon';
+    const b = body && typeof body === "object" ? body : await req.json().catch(() => ({}));
+    const {guild_id, node_id, gold, nonce} = b;
+    const acc = await auth(req, env);
+    const accountId = acc.id;
     if (!guild_id || !node_id || !nonce)
       return Response.json({ok: false, msg: 'Thiếu tham số'}, {status: 400});
     const seasonIdx = getSeasonIdx();
