@@ -241,3 +241,41 @@ test("legacy anon world_boss_hits are preserved; new POST never writes anon", as
   assert.notEqual(newHit.account_id, "anon");
   assert.equal(newHit.account_id, id);
 });
+
+test("W1-1: rotating x-account-id across hits never changes attribution", async (t) => {
+  const DB = await localD1();
+  t.after(() => DB.close());
+  const env = { DB };
+  const holder = await register(req(), env, { name: "W1RotHolder", save: baseSave() });
+  const bossId = "wb_w1_rotate";
+  const now = Date.now();
+  await DB.prepare("INSERT INTO world_boss(id,starts_at,ends_at,hp,max_hp) VALUES(?1,?2,?3,100000,100000)")
+    .bind(bossId, now - 1000, now + 3600e3).run();
+  const forgedIds = ["evil1", "evil2", holder.id, "evil3"];
+  for (let i = 0; i < forgedIds.length; i++) {
+    const r = await worldBoss(
+      new Request("https://game.test/api/world-boss", {
+        method: "POST",
+        headers: {
+          authorization: "Bearer " + holder.token,
+          "content-type": "application/json",
+          "x-account-id": forgedIds[i],
+        },
+        body: JSON.stringify({ boss_id: bossId, snapshot: { power: 100 }, nonce: "w1rot-" + i }),
+      }),
+      env
+    );
+    assert.equal((await r.json()).ok, true);
+  }
+  const hits = await DB.prepare("SELECT DISTINCT account_id AS a FROM world_boss_hits WHERE boss_id=?1")
+    .bind(bossId).all();
+  assert.deepEqual((hits.results || []).map((x) => x.a), [holder.id]);
+  const q = await DB.prepare(
+    "SELECT COUNT(*) AS n FROM quota_claims WHERE account_id=?1 AND scope='world_boss'"
+  ).bind(holder.id).first();
+  assert.equal(q.n, forgedIds.length);
+  const evil = await DB.prepare(
+    "SELECT COUNT(*) AS n FROM quota_claims WHERE account_id LIKE 'evil%'"
+  ).first();
+  assert.equal(evil.n, 0);
+});
