@@ -126,6 +126,9 @@ function sessionCombatUtility(state,actor,command){
     sessionEvent(state,"heal",{sourceId:actor.id,targetId:target.id,raw,capacity,reason:"party_support"});
   }
 }
+// W1-6 (G1-3): combat async dùng sessionRandom(state) (LCG theo seed, deterministic)
+// thay vì Math.random để có thể replay/xác minh; CÓ hit-check qua a.useAR (khác svHit
+// luôn trúng). Không dùng heroGuard của combat.js — khác biệt là THIẾT KẾ có chủ ý.
 function sessionCombatHit(state,actor){
   const p=actor.p,b=state.boss,a=actor.mp>=p.main.cost?p.main:p.basic;
   actor.cooldown=1/Math.max(.2,a.rate);actor.mp=Math.max(0,actor.mp-a.cost);
