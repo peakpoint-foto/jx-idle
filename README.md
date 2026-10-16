@@ -4,7 +4,7 @@
 
 Võ Lâm Idle là trò chơi nhập vai offline chạy trên trình duyệt. Nhân vật có thể tự hành tẩu, chiến đấu, nhặt đồ và vượt ải; người chơi quản lý trang bị, võ công, cách nhặt đồ và tốc độ mô phỏng.
 
-**Gói này chỉ dành cho nghiên cứu, học tập và tìm hiểu cách một trò chơi offline vận hành. Không được sử dụng, phân phối hoặc khai thác vì mục đích kinh doanh.** Tên gọi, hình ảnh, âm thanh và dữ liệu liên quan tới Võ Lâm Truyền Kỳ thuộc về các chủ sở hữu tương ứng. Đây là bản fan-made không chính thức, không được chủ sở hữu nhãn hiệu hay dữ liệu bảo trợ.
+**Gói này chỉ dành cho nghiên cứu, học tập và tìm hiểu cách một trò chơi offline vận hành. Không được sử dụng, phân phối hoặc khai thác vì mục đích kinh doanh.** Võ Lâm Idle là bản fan-made **lấy cảm hứng từ Võ Lâm Truyền Kỳ 1 (Jx1)**, không phải bản sao chính thức và không tái hiện đầy đủ nội dung gốc. Tên gọi, hình ảnh, âm thanh và dữ liệu liên quan tới Võ Lâm Truyền Kỳ thuộc về các chủ sở hữu tương ứng (bao gồm Kingsoft / Kingsoft-Seasun). Dự án này không liên kết, không được bảo trợ hay xác nhận bởi các chủ sở hữu đó.
 
 ## Cài đặt và khởi động trên Windows
 
