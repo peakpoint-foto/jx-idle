@@ -1,455 +1,455 @@
 {
  "version": 1,
- "generated_at": "2026-10-09T05:04:15.783Z",
+ "generated_at": "2026-10-16T07:55:31.857Z",
  "cells": {
   "shaolin/60/weak": {
-   "dps": 18,
-   "ticks": 190,
+   "dps": 19,
+   "ticks": 181,
    "status": "completed"
   },
   "shaolin/60/mid": {
-   "dps": 9244,
-   "ticks": 126,
+   "dps": 10934,
+   "ticks": 107,
    "status": "completed"
   },
   "shaolin/60/strong": {
-   "dps": 26507,
-   "ticks": 49,
+   "dps": 30621,
+   "ticks": 44,
    "status": "completed"
   },
   "shaolin/100/weak": {
-   "dps": 18,
-   "ticks": 192,
+   "dps": 19,
+   "ticks": 175,
    "status": "completed"
   },
   "shaolin/100/mid": {
-   "dps": 19263,
-   "ticks": 263,
+   "dps": 19319,
+   "ticks": 229,
    "status": "completed"
   },
   "shaolin/100/strong": {
-   "dps": 18383,
-   "ticks": 305,
+   "dps": 19175,
+   "ticks": 248,
    "status": "completed"
   },
   "shaolin/180/weak": {
-   "dps": 14,
-   "ticks": 182,
+   "dps": 15,
+   "ticks": 173,
    "status": "aborted"
   },
   "shaolin/180/mid": {
-   "dps": 52787,
-   "ticks": 321,
+   "dps": 52477,
+   "ticks": 270,
    "status": "completed"
   },
   "shaolin/180/strong": {
-   "dps": 74025,
-   "ticks": 308,
+   "dps": 75002,
+   "ticks": 287,
    "status": "aborted"
   },
   "tianwang/60/weak": {
    "dps": 14,
-   "ticks": 189,
+   "ticks": 209,
    "status": "completed"
   },
   "tianwang/60/mid": {
-   "dps": 1929,
-   "ticks": 81,
+   "dps": 1750,
+   "ticks": 69,
    "status": "completed"
   },
   "tianwang/60/strong": {
-   "dps": 10050,
-   "ticks": 37,
+   "dps": 8758,
+   "ticks": 33,
    "status": "completed"
   },
   "tianwang/100/weak": {
-   "dps": 85,
-   "ticks": 186,
+   "dps": 98,
+   "ticks": 179,
    "status": "completed"
   },
   "tianwang/100/mid": {
-   "dps": 36472,
-   "ticks": 104,
+   "dps": 35637,
+   "ticks": 89,
    "status": "completed"
   },
   "tianwang/100/strong": {
-   "dps": 179842,
-   "ticks": 86,
+   "dps": 173611,
+   "ticks": 79,
    "status": "completed"
   },
   "tianwang/180/weak": {
-   "dps": 61,
-   "ticks": 167,
+   "dps": 65,
+   "ticks": 171,
    "status": "aborted"
   },
   "tianwang/180/mid": {
-   "dps": 108646,
-   "ticks": 83,
+   "dps": 115939,
+   "ticks": 77,
    "status": "completed"
   },
   "tianwang/180/strong": {
-   "dps": 884512,
-   "ticks": 107,
+   "dps": 847001,
+   "ticks": 98,
    "status": "aborted"
   },
   "tangmen/60/weak": {
-   "dps": 54,
-   "ticks": 84,
+   "dps": 66,
+   "ticks": 80,
    "status": "completed"
   },
   "tangmen/60/mid": {
-   "dps": 1312,
-   "ticks": 271,
+   "dps": 1193,
+   "ticks": 242,
    "status": "aborted"
   },
   "tangmen/60/strong": {
-   "dps": 2302,
-   "ticks": 322,
-   "status": "completed"
+   "dps": 2347,
+   "ticks": 298,
+   "status": "aborted"
   },
   "tangmen/100/weak": {
-   "dps": 77,
-   "ticks": 84,
+   "dps": 95,
+   "ticks": 80,
    "status": "completed"
   },
   "tangmen/100/mid": {
-   "dps": 6511,
-   "ticks": 239,
+   "dps": 6507,
+   "ticks": 203,
    "status": "completed"
   },
   "tangmen/100/strong": {
-   "dps": 38550,
-   "ticks": 96,
+   "dps": 43880,
+   "ticks": 76,
    "status": "completed"
   },
   "tangmen/180/weak": {
-   "dps": 79,
-   "ticks": 84,
+   "dps": 98,
+   "ticks": 79,
    "status": "completed"
   },
   "tangmen/180/mid": {
-   "dps": 27912,
-   "ticks": 191,
+   "dps": 27182,
+   "ticks": 176,
    "status": "aborted"
   },
   "tangmen/180/strong": {
-   "dps": 56923,
-   "ticks": 147,
+   "dps": 68983,
+   "ticks": 136,
    "status": "completed"
   },
   "wudu/60/weak": {
-   "dps": 25,
-   "ticks": 93,
+   "dps": 30,
+   "ticks": 94,
    "status": "completed"
   },
   "wudu/60/mid": {
-   "dps": 3334,
-   "ticks": 99,
+   "dps": 6237,
+   "ticks": 119,
    "status": "completed"
   },
   "wudu/60/strong": {
-   "dps": 10984,
-   "ticks": 99,
-   "status": "completed"
+   "dps": 21925,
+   "ticks": 145,
+   "status": "aborted"
   },
   "wudu/100/weak": {
-   "dps": 30,
+   "dps": 37,
    "ticks": 92,
    "status": "completed"
   },
   "wudu/100/mid": {
-   "dps": 3689,
-   "ticks": 219,
+   "dps": 3372,
+   "ticks": 211,
    "status": "completed"
   },
   "wudu/100/strong": {
-   "dps": 20583,
-   "ticks": 127,
+   "dps": 22545,
+   "ticks": 99,
    "status": "completed"
   },
   "wudu/180/weak": {
-   "dps": 45,
-   "ticks": 95,
+   "dps": 53,
+   "ticks": 97,
    "status": "completed"
   },
   "wudu/180/mid": {
-   "dps": 19431,
-   "ticks": 177,
+   "dps": 20679,
+   "ticks": 149,
    "status": "aborted"
   },
   "wudu/180/strong": {
-   "dps": 304643,
-   "ticks": 80,
+   "dps": 317995,
+   "ticks": 65,
    "status": "completed"
   },
   "emei/60/weak": {
-   "dps": 16,
-   "ticks": 88,
+   "dps": 21,
+   "ticks": 79,
    "status": "completed"
   },
   "emei/60/mid": {
-   "dps": 984,
-   "ticks": 195,
+   "dps": 8216,
+   "ticks": 152,
    "status": "completed"
   },
   "emei/60/strong": {
-   "dps": 2320,
-   "ticks": 124,
-   "status": "completed"
+   "dps": 34146,
+   "ticks": 167,
+   "status": "aborted"
   },
   "emei/100/weak": {
-   "dps": 26,
-   "ticks": 89,
+   "dps": 34,
+   "ticks": 81,
    "status": "completed"
   },
   "emei/100/mid": {
-   "dps": 2820,
-   "ticks": 219,
+   "dps": 2504,
+   "ticks": 201,
    "status": "aborted"
   },
   "emei/100/strong": {
-   "dps": 25078,
-   "ticks": 238,
+   "dps": 29361,
+   "ticks": 212,
    "status": "aborted"
   },
   "emei/180/weak": {
-   "dps": 15,
-   "ticks": 89,
+   "dps": 18,
+   "ticks": 84,
    "status": "completed"
   },
   "emei/180/mid": {
-   "dps": 10465,
+   "dps": 11754,
    "ticks": 304,
    "status": "completed"
   },
   "emei/180/strong": {
-   "dps": 32492,
-   "ticks": 209,
+   "dps": 45436,
+   "ticks": 233,
    "status": "completed"
   },
   "cuiyan/60/weak": {
-   "dps": 31,
-   "ticks": 80,
+   "dps": 33,
+   "ticks": 73,
    "status": "completed"
   },
   "cuiyan/60/mid": {
-   "dps": 1591,
-   "ticks": 201,
+   "dps": 1862,
+   "ticks": 157,
    "status": "completed"
   },
   "cuiyan/60/strong": {
-   "dps": 4924,
-   "ticks": 110,
+   "dps": 6444,
+   "ticks": 76,
    "status": "completed"
   },
   "cuiyan/100/weak": {
-   "dps": 18,
-   "ticks": 80,
+   "dps": 19,
+   "ticks": 73,
    "status": "completed"
   },
   "cuiyan/100/mid": {
-   "dps": 2364,
-   "ticks": 169,
+   "dps": 2193,
+   "ticks": 203,
    "status": "aborted"
   },
   "cuiyan/100/strong": {
-   "dps": 14388,
-   "ticks": 232,
+   "dps": 95527,
+   "ticks": 179,
    "status": "aborted"
   },
   "cuiyan/180/weak": {
-   "dps": 12,
-   "ticks": 80,
+   "dps": 13,
+   "ticks": 72,
    "status": "completed"
   },
   "cuiyan/180/mid": {
-   "dps": 6004,
-   "ticks": 116,
+   "dps": 7417,
+   "ticks": 84,
    "status": "completed"
   },
   "cuiyan/180/strong": {
-   "dps": 38413,
-   "ticks": 62,
+   "dps": 38063,
+   "ticks": 55,
    "status": "completed"
   },
   "gaibang/60/weak": {
-   "dps": 14,
-   "ticks": 214,
+   "dps": 16,
+   "ticks": 203,
    "status": "completed"
   },
   "gaibang/60/mid": {
-   "dps": 615,
-   "ticks": 218,
+   "dps": 734,
+   "ticks": 206,
    "status": "completed"
   },
   "gaibang/60/strong": {
-   "dps": 1570,
-   "ticks": 142,
+   "dps": 5470,
+   "ticks": 146,
    "status": "completed"
   },
   "gaibang/100/weak": {
    "dps": 12,
-   "ticks": 241,
-   "status": "completed"
+   "ticks": 240,
+   "status": "aborted"
   },
   "gaibang/100/mid": {
-   "dps": 2269,
-   "ticks": 468,
+   "dps": 2354,
+   "ticks": 430,
    "status": "aborted"
   },
   "gaibang/100/strong": {
-   "dps": 6530,
-   "ticks": 404,
+   "dps": 7235,
+   "ticks": 351,
    "status": "aborted"
   },
   "gaibang/180/weak": {
-   "dps": 22,
-   "ticks": 166,
+   "dps": 25,
+   "ticks": 174,
    "status": "completed"
   },
   "gaibang/180/mid": {
-   "dps": 8404,
-   "ticks": 480,
+   "dps": 8152,
+   "ticks": 447,
    "status": "aborted"
   },
   "gaibang/180/strong": {
-   "dps": 46073,
-   "ticks": 258,
+   "dps": 52754,
+   "ticks": 226,
    "status": "completed"
   },
   "tianren/60/weak": {
-   "dps": 45,
-   "ticks": 78,
+   "dps": 48,
+   "ticks": 72,
    "status": "completed"
   },
   "tianren/60/mid": {
-   "dps": 4461,
-   "ticks": 377,
+   "dps": 4284,
+   "ticks": 280,
    "status": "completed"
   },
   "tianren/60/strong": {
-   "dps": 15929,
-   "ticks": 212,
+   "dps": 59816,
+   "ticks": 305,
    "status": "completed"
   },
   "tianren/100/weak": {
-   "dps": 68,
-   "ticks": 80,
+   "dps": 72,
+   "ticks": 73,
    "status": "completed"
   },
   "tianren/100/mid": {
-   "dps": 14437,
-   "ticks": 372,
+   "dps": 19499,
+   "ticks": 296,
    "status": "completed"
   },
   "tianren/100/strong": {
-   "dps": 25381,
-   "ticks": 355,
+   "dps": 33667,
+   "ticks": 317,
    "status": "aborted"
   },
   "tianren/180/weak": {
-   "dps": 43,
-   "ticks": 80,
+   "dps": 47,
+   "ticks": 72,
    "status": "completed"
   },
   "tianren/180/mid": {
-   "dps": 27858,
-   "ticks": 315,
+   "dps": 33577,
+   "ticks": 283,
    "status": "completed"
   },
   "tianren/180/strong": {
-   "dps": 322946,
-   "ticks": 116,
+   "dps": 366968,
+   "ticks": 105,
    "status": "completed"
   },
   "wudang/60/weak": {
-   "dps": 23,
-   "ticks": 89,
-   "status": "completed"
-  },
-  "wudang/60/mid": {
-   "dps": 19344,
+   "dps": 26,
    "ticks": 83,
    "status": "completed"
   },
+  "wudang/60/mid": {
+   "dps": 31475,
+   "ticks": 61,
+   "status": "completed"
+  },
   "wudang/60/strong": {
-   "dps": 123073,
-   "ticks": 84,
+   "dps": 203736,
+   "ticks": 61,
    "status": "completed"
   },
   "wudang/100/weak": {
-   "dps": 7,
-   "ticks": 91,
+   "dps": 8,
+   "ticks": 81,
    "status": "completed"
   },
   "wudang/100/mid": {
-   "dps": 10915,
-   "ticks": 200,
+   "dps": 31023,
+   "ticks": 89,
    "status": "completed"
   },
   "wudang/100/strong": {
-   "dps": 164220,
-   "ticks": 82,
+   "dps": 242041,
+   "ticks": 56,
    "status": "completed"
   },
   "wudang/180/weak": {
-   "dps": 5,
-   "ticks": 88,
+   "dps": 6,
+   "ticks": 81,
    "status": "completed"
   },
   "wudang/180/mid": {
-   "dps": 7926,
-   "ticks": 333,
+   "dps": 18194,
+   "ticks": 208,
    "status": "aborted"
   },
   "wudang/180/strong": {
-   "dps": 68555,
-   "ticks": 394,
+   "dps": 237967,
+   "ticks": 231,
    "status": "completed"
   },
   "kunlun/60/weak": {
-   "dps": 26,
-   "ticks": 78,
+   "dps": 29,
+   "ticks": 70,
    "status": "completed"
   },
   "kunlun/60/mid": {
-   "dps": 1538,
-   "ticks": 149,
+   "dps": 2051,
+   "ticks": 110,
    "status": "completed"
   },
   "kunlun/60/strong": {
-   "dps": 2468,
-   "ticks": 127,
+   "dps": 3070,
+   "ticks": 96,
    "status": "completed"
   },
   "kunlun/100/weak": {
-   "dps": 21,
-   "ticks": 78,
+   "dps": 23,
+   "ticks": 72,
    "status": "completed"
   },
   "kunlun/100/mid": {
-   "dps": 2341,
-   "ticks": 397,
-   "status": "aborted"
+   "dps": 2308,
+   "ticks": 377,
+   "status": "completed"
   },
   "kunlun/100/strong": {
-   "dps": 4896,
-   "ticks": 417,
+   "dps": 6430,
+   "ticks": 328,
    "status": "completed"
   },
   "kunlun/180/weak": {
-   "dps": 25,
-   "ticks": 78,
+   "dps": 26,
+   "ticks": 73,
    "status": "completed"
   },
   "kunlun/180/mid": {
-   "dps": 13311,
-   "ticks": 329,
+   "dps": 14651,
+   "ticks": 295,
    "status": "aborted"
   },
   "kunlun/180/strong": {
-   "dps": 215369,
-   "ticks": 216,
+   "dps": 234111,
+   "ticks": 190,
    "status": "completed"
   }
  }
