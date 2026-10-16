@@ -11,10 +11,13 @@ async function guildTechLoad() {
     return { error: e.msg || "Không tải được" };
   }
 }
+// W1-3 (G1-2): donate bị khóa tạm ở server — nút đóng góp hiển thị trạng thái khóa.
+let GT_DONATE_ON = true;
 function guildTechHTML(data) {
   if (!data) return "";
   if (data.error) return `<p class="dim">${esc(data.error)}</p>`;
   const {def, nodes} = data;
+  GT_DONATE_ON = data.donations !== false;
   return `<h4>Cây công nghệ bang (mùa ${data.seasonIdx})</h4>` +
     `<p class="dim small">Hiệu quả hiện tại: +${data.effects.expPct}% EXP, -${data.effects.forgeDiscount}% phí rèn, +${data.effects.memberSlots} slot.</p>` +
     def.nodes.map(n => {
@@ -27,7 +30,9 @@ function guildTechHTML(data) {
         (maxed ? `<small class="ok">Đã max</small>` :
           locked ? `<small class="dim">Cần mở ${esc(n.requires)} trước</small>` :
           `<small>Đã góp ${fmt(st.contributed)}/${fmt(cost)} vàng</small>
-           <div class="btnrow"><button class="btn sm" data-tech="${n.id}" data-cost="${cost - st.contributed}">Đóng góp ${fmt(cost - st.contributed)} vàng</button></div>`) +
+           <div class="btnrow">` + (!GT_DONATE_ON
+             ? `<small class="dim">Tạm khóa đóng góp để chống gian lận</small>`
+             : `<button class="btn sm" data-tech="${n.id}" data-cost="${cost - st.contributed}">Đóng góp ${fmt(cost - st.contributed)} vàng</button>`) + `</div>`) +
         `</div>`;
     }).join("");
 }
@@ -38,6 +43,7 @@ async function guildTechDonate(nodeId, gold) {
     toast("Cần đăng nhập online (mã Bearer)");
     return;
   }
+  if (!GT_DONATE_ON) { toast("Đóng góp bang đang tạm khóa để chống gian lận"); return; }
   const nonce = Math.random().toString(36).slice(2);
   try {
     const j = await onlApi("/guild-tech", { body: { guild_id: gid, node_id: nodeId, gold, nonce } });
@@ -46,5 +52,5 @@ async function guildTechDonate(nodeId, gold) {
       toast(j.leveledUp ? `Lên cấp ${j.level}!` : "Đã đóng góp");
       if (typeof refreshGuild === "function") refreshGuild();
     } else toast(j.msg || "Thất bại");
-  } catch (e) { toast("Lỗi mạng"); }
+  } catch (e) { toast((e && e.msg) || "Lỗi mạng"); }
 }

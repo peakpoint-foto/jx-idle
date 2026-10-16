@@ -39,5 +39,6 @@
   //   FEEDBACK_WEBHOOK (secret, tùy chọn): URL webhook Discord/Slack nhận thông báo khi có góp ý mới.
   //   FEATURE_FLAGS (JSON): bật tính năng client qua /api/config — có thể đổi trên Dashboard không cần deploy.
   //   GUILD_TECH_SERVER_ENABLED=1: bắt buộc (cùng FEATURE_FLAGS guild_tech) để mở /api/guild-tech; mặc định tắt.
+  //   GUILD_TECH_DONATIONS_ENABLED=1: mở donate guild tech (mặc định KHÓA — W1-3/G1-2, chỉ mở khi có ledger server-side).
   //   SYNC_GUARD_MODE: off | log_only (default) | enforce — kiểm ngân sách save trên /api/sync.
 }

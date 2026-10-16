@@ -30,6 +30,16 @@ export async function guildTechEffects(db, guildId, seasonIdx) {
   return eff;
 }
 
+// W1-3 (quyết định G1-2): KHÓA TẠM donate guild tech — không làm ledger.
+// Vàng nằm client-side nên mọi cách "tin client đã trừ vàng" đều sai;
+// chỉ mở lại khi có ledger server-side. Fail-closed: mặc định KHÓA,
+// chỉ mở khi env.GUILD_TECH_DONATIONS_ENABLED === "1".
+export function donationsEnabled(env) {
+  return String(env?.GUILD_TECH_DONATIONS_ENABLED || "") === "1";
+}
+export const DONATION_DISABLED_MSG =
+  "Đóng góp bang đang tạm khóa để chống gian lận (chờ ledger server-side).";
+
 // Đóng góp vàng. Idempotent theo nonce của client.
 export async function guildTechContribute(db, guildId, accountId, nodeId, gold, seasonIdx, nonce) {
   const node = TECH.nodes.find(n => n.id === nodeId);

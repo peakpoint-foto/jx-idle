@@ -24,7 +24,8 @@ const req = (method = "POST", token = null, ip = "198.51.100.10") =>
 test("guild tech POST uses Bearer auth; forged x-account-id is ignored", async (t) => {
   const DB = await localD1();
   t.after(() => DB.close());
-  const env = { DB };
+  // W1-3: mở cờ donate cho test attribution (mặc định khóa -> 403, test riêng ở dưới)
+  const env = { DB, GUILD_TECH_DONATIONS_ENABLED: "1" };
   const reg = await register(req(), env, { name: "BearerGuild", save: baseSave() });
   const forged = new Request("https://game.test/api/guild-tech", {
     method: "POST",
@@ -92,6 +93,23 @@ test("client-style guild tech GET/POST with Bearer records donate on token accou
   assert.equal(loadBody.ok, true);
   assert.equal(loadBody.seasonIdx, seasonIdx);
   assert.ok(loadBody.def?.nodes?.length);
+  // W1-3: GET báo cờ donations=false khi chưa mở (mặc định khóa)
+  assert.equal(loadBody.donations, false);
+
+  // W1-3: donate khi cờ khóa -> 403 donation_disabled (G1-2: khóa tạm, không ledger)
+  const blocked = await guildTech(
+    clientGuildTechRequest("POST", donor.token, { guildId, nodeId, gold, nonce }),
+    env
+  );
+  assert.equal(blocked.status, 403);
+  const blockedBody = await blocked.json();
+  assert.equal(blockedBody.ok, false);
+  assert.equal(blockedBody.error, "donation_disabled");
+
+  // Mở cờ bằng env -> donate lại chạy, attribution vẫn theo token holder
+  const openEnv = { DB, GUILD_TECH_DONATIONS_ENABLED: "1" };
+  const loadedOpen = await guildTech(clientGuildTechRequest("GET", donor.token, { guildId }), openEnv);
+  assert.equal((await loadedOpen.json()).donations, true);
 
   const donated = await guildTech(
     clientGuildTechRequest("POST", donor.token, {
@@ -101,7 +119,7 @@ test("client-style guild tech GET/POST with Bearer records donate on token accou
       nonce,
       forgedAccountId: bystander.id,
     }),
-    env
+    openEnv
   );
   assert.equal((await donated.json()).ok, true);
 

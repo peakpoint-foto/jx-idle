@@ -1,4 +1,4 @@
-import {guildTechContribute, guildTechDef, guildTechEffects, guildTechNodes} from './guild_tech.js';
+import {guildTechContribute, guildTechDef, guildTechEffects, guildTechNodes, donationsEnabled, DONATION_DISABLED_MSG} from './guild_tech.js';
 import {seasonOf} from './seasons.js';
 import {auth} from './account.js';
 const getSeasonIdx = () => seasonOf(Date.now()).index;
@@ -15,7 +15,7 @@ export async function guildTech(req, env, body) {
       guildTechNodes(env.DB, guildId, seasonIdx),
       guildTechEffects(env.DB, guildId, seasonIdx),
     ]);
-    return Response.json({ok: true, def: guildTechDef(), nodes, effects: eff, seasonIdx});
+    return Response.json({ok: true, def: guildTechDef(), nodes, effects: eff, seasonIdx, donations: donationsEnabled(env)});
   }
   if (req.method === 'POST') {
     const b = body && typeof body === "object" ? body : await req.json().catch(() => ({}));
@@ -24,6 +24,9 @@ export async function guildTech(req, env, body) {
     const accountId = acc.id;
     if (!guild_id || !node_id || !nonce)
       return Response.json({ok: false, msg: 'Thiếu tham số'}, {status: 400});
+    // W1-3 (G1-2): khóa tạm donate — vàng client-side không có ledger server-side.
+    if (!donationsEnabled(env))
+      return Response.json({ok: false, error: "donation_disabled", msg: DONATION_DISABLED_MSG}, {status: 403});
     const seasonIdx = getSeasonIdx();
     const r = await guildTechContribute(env.DB, guild_id, accountId, node_id, gold, seasonIdx, nonce);
     return Response.json(r, {status: r.ok ? 200 : 400});
