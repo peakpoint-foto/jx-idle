@@ -9,7 +9,7 @@ const FEATURE_REGISTRY = Object.freeze({
   guild_tech: { modes: ["ctc","phlt","g2"], enabled: false, online: true },
   duel_league: { modes: ["ctc","phlt","g2"], enabled: false, online: true },
   world_boss: { modes: ["ctc","phlt","g2"], enabled: false, online: true },
-  faction_mechanics: { modes: ["ctc","phlt","g2"], enabled: false, online: false },
+  faction_mechanics: { modes: ["ctc","phlt","g2"], enabled: true, online: false }, // Wave 2 (G1-1): cơ chế phái chính thức có hiệu lực cho ctc
   build_advice: { modes: ["ctc","phlt","g2"], enabled: false, online: false },
   combat_policy: { modes: ["ctc","phlt","g2"], enabled: false, online: false },
   loot_codex: { modes: ["ctc","phlt","g2"], enabled: false, online: false },

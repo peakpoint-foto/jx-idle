@@ -15,9 +15,15 @@ test("chất phái: framework 3 cơ chế mẫu", () => {
   assert.equal(m4, null, "phái chưa có cơ chế -> null");
 });
 
-test("chất phái: flag tắt thì không có cơ chế", () => {
+test("chất phái: flag mặc định BẬT (G1-1) -> cơ chế chạy", () => {
   const g = game();
-  // flag mặc định tắt
+  const m = g.json(`facMechanic("shaolin").id`);
+  assert.equal(m, "lahan", "flag mặc định bật -> non-null");
+});
+
+test("chất phái: set flag tắt tay -> không có cơ chế", () => {
+  const g = game();
+  g.run(`setFeatureFlags({faction_mechanics:false});`);
   const m = g.json(`facMechanic("shaolin")`);
   assert.equal(m, null, "flag tắt -> null");
 });
