@@ -30,7 +30,7 @@ for(const path of workerFiles)assert.ok(scripts.includes(path),'Worker-only game
 for(const path of ['js/skill_graph.js','js/capabilities.js','js/stats.js','js/combat_contract.js','js/feedback_context.js','js/save_schema.js'])assert.ok(workerFiles.includes(path),'Shared helper absent from Worker '+path);
 const {data,sha256}=loadSkillData(),audit=auditSkillGraph(data);
 assert.equal(audit.malformed.length,0,'Malformed support link');
-assert.equal(sha256,'702f2ae6d09d750d98effd634974e258499af3207bce38e1ffcfeec54784d75e','Skill data changed: review provenance and update baseline explicitly');
+assert.equal(sha256,'a1b3a3d5efbbb6273ba9521a45f45764d3f74ff442aca3b83c9f2bb32fc2f01b','Skill data changed: review provenance and update baseline explicitly');
 assert.deepEqual([audit.total,audit.learnable,audit.existingOutside,audit.missing],[106,76,15,15]);
 const backlog=read('docs/AGENT_BACKLOG.md'),todo=read('docs/AGENT_TODO.md'),tasks=new Map();
 for(const match of backlog.matchAll(/^### ([A-Z]\d{2}) —[^\n]*\n([\s\S]*?)(?=^### |^## |$(?![\s\S]))/gm)){

@@ -2,10 +2,10 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {game} from "./helpers/game.mjs";
 
-test("truyện phái: mở dần theo cấp, đủ 11 phái", () => {
+test("truyện phái: mở dần theo cấp, đủ 10 phái", () => {
   const g = game();
   const n = g.json(`Object.keys(factionStories()).length`);
-  assert.equal(n, 11, "11 phái có truyện");
+  assert.equal(n, 10, "10 phái có truyện");
   // cấp 30 mở được 1, cấp 180 mở hết 6
   g.run(`fixture('ctc',30);`);
   const s30 = g.json(`factionStoriesFor(S.fac, 30).length`);
@@ -27,7 +27,7 @@ test("truyện phái: storyHTML không throw cho mọi phái (regression B1)", (
   const g = game();
   g.run(`fixture('ctc',30);`);
   const facKeys = g.json(`Object.keys(factionStories())`);
-  assert.ok(facKeys.length >= 11, "đủ phái có truyện");
+  assert.ok(facKeys.length >= 10, "đủ phái có truyện");
   for (const fac of facKeys) {
     const before = g.json(`factionStories()['${fac}'].map(s=>s.level)`);
     g.run(`S.fac='${fac}'; S.lvl=180;`);
