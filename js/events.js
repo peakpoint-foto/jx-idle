@@ -179,8 +179,10 @@ function forgeHub() {
 }
 
 /* ---------- Thông cáo cập nhật (hiện một lần cho mỗi phiên bản) ---------- */
+/* Đổi tên từ UPDATE_NOTES (16/10/2026): trùng const top-level với js/ui.js
+   (Wave 2 B4) khiến cả file events.js ném SyntaxError ở production. */
 const UPDATE_VER = "2026-10-07b";
-const UPDATE_NOTES = [
+const UPDATE_NOTES_LEGACY = [
   ["Luyện công: Trùm Hoàng Kim cuối ván", "Đến phút thứ 9 (sớm hơn nếu đã hạ đủ 4 trùm), mọi quái con tan biến và Trùm Hoàng Kim xuất hiện: máu gấp 3,5 lần trùm thường, sát thương gấp đôi, có đòn dậm chân báo trước. Hạ được thì chọn 1 trong 2: một món đồ Cực phẩm (6 dòng, mỗi dòng đạt giá trị tối đa) hoặc +50% EXP trên mọi bản đồ trong 30 phút. Tối đa 3 lần nhận thưởng mỗi ngày."],
   ["Sự kiện Ngũ Hành Tương Sinh (tháng 9–10)", "Thay cho sự kiện Bánh Trung Thu. Quái rơi Đèn Ngũ Hành đúng hệ của nó; đủ Kim, Mộc, Thủy, Hỏa, Thổ sẽ tự ghép thành Đèn Kéo Quân để mở quà và nhận thưởng theo mốc. Cứ khoảng 20 phút cày có Thỏ Ngọc xuất hiện, hạ nó nhận Bánh Trung Thu tăng EXP 15 phút. Xem ở Quà › Sự kiện."],
   ["Lệnh bài Triệu hồi", "Quái ở mọi bản đồ cày có 0,5% rơi Lệnh bài Triệu hồi. Dùng một lệnh bài: số quái mỗi đợt ×3 trong 30 phút (dùng thêm cộng dồn, tối đa 60 phút, giữ tối đa 5 lệnh bài). Không tác dụng ở Tháp, Tống Kim, công thành và đợt trùm. Áp dụng cho mọi chế độ."],
@@ -192,7 +194,7 @@ function updateNotice() {
   if (!S || !S.fac || !S.tut) return;
   let seen = ""; try { seen = localStorage.getItem("jx_update_seen") || "" } catch (e) { }
   if (seen === UPDATE_VER || !document.getElementById("modal").classList.contains("hidden")) return;
-  modal(`<h3>Thông cáo cập nhật <small>${UPDATE_VER}</small></h3>${UPDATE_NOTES.map(([t, d]) => `<div class="card"><b>${esc(t)}</b><br><small>${esc(d)}</small></div>`).join("")}<div class="btnrow"><button class="btn" id="bUpd">Đã hiểu</button></div>`, () => {
+  modal(`<h3>Thông cáo cập nhật <small>${UPDATE_VER}</small></h3>${UPDATE_NOTES_LEGACY.map(([t, d]) => `<div class="card"><b>${esc(t)}</b><br><small>${esc(d)}</small></div>`).join("")}<div class="btnrow"><button class="btn" id="bUpd">Đã hiểu</button></div>`, () => {
     document.getElementById("bUpd").onclick = () => { try { localStorage.setItem("jx_update_seen", UPDATE_VER) } catch (e) { } closeModal() };
   });
 }
