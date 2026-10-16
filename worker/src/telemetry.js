@@ -24,6 +24,27 @@ const EVENT_CHECKS = {
   story_read: v => typeof v === "string" && /^[a-z0-9_]{1,16}$/.test(v),
 };
 
+const SERVER_TELE_EVENTS = new Set(["sync_guard_would_reject"]);
+
+/** Ghi nội bộ (sync guard log-only) — không qua batch client. */
+export async function recordSyncGuardTelemetry(db, payload) {
+  const at = Math.floor(payload.at || Date.now());
+  const value = JSON.stringify({
+    account_id: String(payload.accountId || "").slice(0, 80),
+    guard_mode: payload.guardMode,
+    elapsed_sec: payload.elapsedSec,
+    deltas: payload.deltas,
+    budgets: payload.budgets,
+    violations: payload.violations,
+    offline_cap: !!payload.offline_cap,
+    budget_clamped: !!payload.budget_clamped,
+    persisted_unchanged: !!payload.persisted_unchanged,
+  }).slice(0, 4000);
+  await db.prepare(
+    "INSERT INTO telemetry_events(at,event,install_week,active_days,mode,value) VALUES(?1,?2,?3,?4,?5,?6)"
+  ).bind(at, "sync_guard_would_reject", "server", "internal", String(payload.mode || "ctc").slice(0, 8), value).run();
+}
+
 export function cleanTelemetryEvent(e) {
   if (!e || typeof e !== "object" || Array.isArray(e)) throw new HttpError(400, "bad_event", "Sự kiện không hợp lệ");
   const check = EVENT_CHECKS[e.e];
@@ -69,7 +90,7 @@ export async function adminTelemetry(req, env, body, url) {
   admin(req, env);
   const days = Math.min(90, Math.max(1, parseInt(url.searchParams.get("days") || "30", 10) || 30));
   const event = url.searchParams.get("event") || null;
-  if (event && !EVENT_CHECKS[event]) throw new HttpError(400, "bad_event", "Loại sự kiện không được phép");
+  if (event && !EVENT_CHECKS[event] && !SERVER_TELE_EVENTS.has(event)) throw new HttpError(400, "bad_event", "Loại sự kiện không được phép");
   const since = Date.now() - days * 864e5;
   const rows = await env.DB.prepare(
     `SELECT event, CAST(at/86400000 AS INTEGER) AS day, COUNT(*) AS n
