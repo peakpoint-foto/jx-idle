@@ -33,12 +33,15 @@ export function validateActivityClaim(body) {
   const eventKey = String(body && (body.event_key || body.run_id) || "");
   if (!KEY_RE.test(eventKey)) throw new HttpError(400, "bad_event_key");
   const won = body && body.won ? 1 : 0;
+  // Ledger chỉ ghi điểm do máy chủ tự tính (không tin số client khai).
+  // Không reject khi client khai cao hơn — clamp về server scores để receipt
+  // của run thật (thua, hoặc kills nhiều) vẫn clear được; quota theo period +
+  // idempotency theo event_key vẫn chặn spam. (16/10/2026: bỏ 400
+  // activity_score_tamper — reject làm mọi receipt thật không bao giờ clear
+  // được, gãy CI smoke và chết ledger production.)
+  integer(body && body.contribution, 0, 10_000_000, "bad_contribution");
+  integer(body && body.cleared, 0, 10_000, "bad_cleared");
   const server = serverActivityScores(kind, won);
-  const clientContribution = integer(body && body.contribution, 0, 10_000_000, "bad_contribution");
-  const clientCleared = integer(body && body.cleared, 0, 10_000, "bad_cleared");
-  if (clientContribution > server.contribution || clientCleared > server.cleared) {
-    throw new HttpError(400, "activity_score_tamper", "Điểm hoạt động không khớp kết quả máy chủ");
-  }
   return { kind, eventKey, contribution: server.contribution, cleared: server.cleared, won };
 }
 

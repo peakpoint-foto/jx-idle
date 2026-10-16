@@ -11,14 +11,20 @@ test("activity ledger uses UTC day and week periods", () => {
   assert.notEqual(utcPeriod("siege", T0), utcPeriod("siege", T0 + 8 * 86400e3));
 });
 
-test("activity claims use server scores and reject tampered client totals", () => {
+test("activity claims use server scores: inflated client totals are clamped, not rejected", () => {
   assert.deepEqual(
     validateActivityClaim({ activity: "siege", event_key: "siege-2026-10-08", contribution: 1, cleared: 1, won: true }),
     { kind: "siege", eventKey: "siege-2026-10-08", contribution: 1, cleared: 1, won: 1 }
   );
-  assert.throws(
-    () => validateActivityClaim({ activity: "siege", event_key: "siege-2026-10-08", contribution: 12, cleared: 3, won: true }),
-    err => err.code === "activity_score_tamper"
+  // 16/10/2026: bỏ 400 activity_score_tamper — client khai cao hơn thì clamp về
+  // server scores để receipt thật clear được (reject làm ledger chết + gãy CI).
+  assert.deepEqual(
+    validateActivityClaim({ activity: "siege", event_key: "siege-2026-10-08", contribution: 12, cleared: 3, won: true }),
+    { kind: "siege", eventKey: "siege-2026-10-08", contribution: 1, cleared: 1, won: 1 }
+  );
+  assert.deepEqual(
+    validateActivityClaim({ activity: "tower", event_key: "tower-2026-10-08", contribution: 4, cleared: 1, won: 0 }),
+    { kind: "tower", eventKey: "tower-2026-10-08", contribution: 0, cleared: 0, won: 0 }
   );
   assert.throws(() => validateActivityClaim({ activity: "tower", event_key: "tower-2026-10-08", contribution: 10_000_001, cleared: 1 }), /bad_contribution/);
 });

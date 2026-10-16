@@ -52,18 +52,18 @@ test("T3 / activity: replay same event_key is duplicate", async t => {
   assert.equal(b.duplicate, true);
 });
 
-test("activity tamper: inflated client scores rejected", () => {
-  assert.throws(
-    () =>
-      validateActivityClaim({
-        activity: "tower",
-        event_key: "tower-2026-10-08-test",
-        contribution: 999,
-        cleared: 99,
-        won: 1,
-      }),
-    err => err.code === "activity_score_tamper"
-  );
+test("activity tamper: inflated client scores clamped to server-owned values", () => {
+  // 16/10/2026: bỏ 400 activity_score_tamper — clamp thay vì reject để receipt
+  // thật clear được; server không tin số client một chút nào (đã clamp).
+  const clamped = validateActivityClaim({
+    activity: "tower",
+    event_key: "tower-2026-10-08-test",
+    contribution: 999,
+    cleared: 99,
+    won: 1,
+  });
+  assert.equal(clamped.contribution, 1);
+  assert.equal(clamped.cleared, 1);
   const ok = validateActivityClaim({
     activity: "tower",
     event_key: "tower-2026-10-08-test",
