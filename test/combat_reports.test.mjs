@@ -84,3 +84,21 @@ test("companion damage is recorded separately with useful HP clipping",()=>{
   const g=ready();g.run("window.dirOf=()=>0;H.x=0;H.y=0;RW().pet={tid:Object.keys(MON)[0],lvl:1,xp:0};R.petPos={x:0,y:0,t:0};R.enemies=[{hp:1,max:1,x:0,y:0,r:100}];petTick(.05);var report=combatFinish('won')");
   assert.equal(g.run("report.totals['damage:outgoing:pet'].useful"),1);assert.ok(g.run("report.totals['damage:outgoing:pet'].excess>0"));
 });
+
+test("W0-6: regen mỗi frame không flood timeline — damage chiếm >50% trace sau 60s mô phỏng", () => {
+  const g = ready();
+  // Mô phỏng 60s: 1200 frame x (heal regen + mana regen_recover) + 5 damage (số liệu proposal)
+  g.run(`for(let i=0;i<1200;i++){combatRecord("heal",{sourceId:"player",targetId:"player",raw:1,capacity:100,reason:"regen"});combatRecord("mana",{sourceId:"player",targetId:"player",raw:1,capacity:100,reason:"regen_recover"});}`);
+  g.run(`for(let i=0;i<5;i++)combatRecord("damage",{sourceId:"player",targetId:"enemy",raw:10,capacity:100,reason:"direct"});`);
+  const kinds = g.json(`R.combatTrace.events.map(e=>e.kind)`);
+  const regenInTimeline = kinds.filter(k => k === "heal" || k === "mana").length;
+  const dmg = kinds.filter(k => k === "damage").length;
+  assert.equal(regenInTimeline, 0, "không còn event regen trong timeline");
+  assert.ok(kinds.length > 0, "timeline có event");
+  assert.ok(dmg / kinds.length > 0.5, `damage chiếm ${dmg}/${kinds.length} timeline`);
+  // totals vẫn giữ regen để báo cáo tổng hợp không mất thông tin
+  const totals = g.json(`Object.keys(R.combatTrace.totals)`);
+  assert.ok(totals.includes("heal:incoming:regen"), "totals giữ heal regen");
+  assert.ok(totals.includes("mana:incoming:regen_recover"), "totals giữ mana regen");
+  assert.equal(g.json(`R.combatTrace.totals['heal:incoming:regen'].count`), 1200);
+});

@@ -25,6 +25,9 @@ function combatRecord(kind,data={}) {
   if(!trace.totals[key] && Object.keys(trace.totals).length>=64) {trace.partial=true;return;}
   const total=trace.totals[key]||(trace.totals[key]={kind,direction,reason:String(data.reason||"").slice(0,40),raw:0,useful:0,excess:0,count:0,duration:0});
   total.count++;total.raw+=event.raw||0;total.useful+=event.useful||0;total.excess+=event.excess||0;total.duration+=event.duration||0;
+  // W0-6: regen mỗi frame (heal/mana reason regen/regen_recover) là noise ~96% timeline —
+  // giữ trong totals (báo cáo vẫn thấy), không đẩy vào events nữa.
+  if((kind==="heal"||kind==="mana")&&(data.reason==="regen"||data.reason==="regen_recover"))return;
   trace.events.push(event);if(trace.events.length>COMBAT_TIMELINE_MAX){trace.events.shift();trace.dropped++;}
 }
 function combatReportHistory() {
