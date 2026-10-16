@@ -33,3 +33,31 @@ test("lý do delta = 0: dưới 60s / cấp tối đa / hết quota", () => {
   g.run(`S.lvl=50;S.offDay={t0:Date.now(),secs:OFFLINE_DAY_MAX};S.last=Date.now()-3600*1000;`);
   assert.ok(g.run("offlineZeroReason()").includes("quota"), "hết quota ngày");
 });
+
+test("W0-3: quota treo máy còn lại hiển thị trước khi hết", () => {
+  const g = game();
+  g.run(`fixture('ctc',50);`);
+  // chưa dùng quota hôm nay -> còn đủ 12h
+  let q = g.json(`offlineQuotaLeft()`);
+  assert.equal(q.dayMax, 12 * 3600, "trần ngày 12h");
+  assert.equal(q.perMax, 8 * 3600, "trần mỗi lần 8h");
+  assert.equal(q.used, 0);
+  assert.equal(q.left, 12 * 3600);
+  // đã dùng 10h hôm nay -> còn 2h
+  g.run(`S.offDay={t0:Date.now(),secs:10*3600};`);
+  q = g.json(`offlineQuotaLeft()`);
+  assert.equal(q.used, 10 * 3600);
+  assert.equal(q.left, 2 * 3600);
+  // hết quota -> còn 0, không âm
+  g.run(`S.offDay={t0:Date.now(),secs:12*3600};`);
+  q = g.json(`offlineQuotaLeft()`);
+  assert.equal(q.left, 0);
+  // qua ngày mới -> reset về đủ
+  g.run(`S.offDay={t0:Date.now()-2*864e5,secs:12*3600};`);
+  assert.equal(g.json(`offlineQuotaLeft().left`), 12 * 3600, "sang ngày mới reset quota");
+  // báo cáo chi tiết có dòng quota còn lại (đọc S.offDay trực tiếp, không qua offlineGains)
+  g.run(`S.offDay={t0:Date.now(),secs:10*3600};`);
+  const html = g.run(`offlineDetailHTML({secs:3600,kills:1,xp:1,gold:1,lv0:50,lv1:50,got:0,sold:0,chests:0,capped:false,eff:3600,nearLevel:{up:0,pct:50},rarest:null})`);
+  assert.ok(html.includes("Quota treo máy hôm nay còn"), "báo cáo hiện quota còn lại");
+  assert.ok(html.includes("2 giờ 0 phút"), "hiện đúng số giờ còn lại");
+});

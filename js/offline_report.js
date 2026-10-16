@@ -35,6 +35,23 @@ function offlineHistoryHTML() {
   }).join("");
   return `<details class="card"><summary>Lịch sử treo máy (7 lần gần nhất)</summary>${rows}</details>`;
 }
+// W0-3: quota treo máy còn lại — cho người chơi thấy TRƯỚC khi hết.
+// Thuần túy theo S.offDay (đã được offlineGains() cộng dồn sau mỗi lần tính).
+function offlineQuotaLeft(now) {
+  now = now == null ? Date.now() : now;
+  const d = (typeof S !== "undefined" && S && S.offDay) || null;
+  const sameDay = d && d.t0 <= now && now - d.t0 < 864e5;
+  const used = sameDay ? Math.max(0, Math.floor(+d.secs) || 0) : 0;
+  return {dayMax: OFFLINE_DAY_MAX, perMax: OFFLINE_MAX, used: used,
+    left: Math.max(0, OFFLINE_DAY_MAX - used)};
+}
+const fmtQuotaDur = sec => { const h = Math.floor(sec / 3600), m = Math.round(sec % 3600 / 60);
+  return h > 0 ? `${h} giờ ${m} phút` : `${m} phút`; };
+function offlineQuotaHTML() {
+  const q = offlineQuotaLeft();
+  const cls = q.left <= 0 ? "bad" : "";
+  return `<span>Quota treo máy hôm nay còn</span><span class="${cls}">${fmtQuotaDur(q.left)} / ${fmtQuotaDur(q.dayMax)} (mỗi lần tối đa ${fmtQuotaDur(q.perMax)})</span>`;
+}
 // HTML chi tiết cho modal chào mừng trở lại.
 function offlineDetailHTML(o) {
   const h = Math.floor(o.secs / 3600), m = Math.floor(o.secs % 3600 / 60);
@@ -47,7 +64,7 @@ function offlineDetailHTML(o) {
     <div class="card stats"><span>Quái bị hạ</span><span>${fmt(o.kills)}</span><span>Kinh nghiệm</span><span>${fmt(o.xp)}</span>
     <span>Ngân lượng</span><span>${fmt(o.gold)}</span>${lvl}
     <span>Vật phẩm</span><span>${o.got}${o.sold ? ` (+${o.sold} bán)` : ""}</span>
-    <span>Rương tu luyện</span><span>${o.chests || 0} / 3 mốc (1 · 4 · 8 giờ)</span>${eff}</div>
+    <span>Rương tu luyện</span><span>${o.chests || 0} / 3 mốc (1 · 4 · 8 giờ)</span>${eff}${offlineQuotaHTML()}</div>
     ${rare}
     ${o.chests ? '<p class="desc">Quà các mốc đã vào túi — xem nhật ký Giang hồ.</p>' : ""}
     ${typeof weeklyReturnGuideHTML === "function" ? weeklyReturnGuideHTML() : ""}
