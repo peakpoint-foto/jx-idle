@@ -169,7 +169,13 @@
 <script defer src="js/forge.js"></script>
 <script defer src="js/gold_sinks.js"></script>
 <script defer src="js/auto.js"></script>
-<script defer src="js/admin.js"></script>
+<script>
+// W0-5: js/admin.js (cheat kit điều khiển) CHỈ nạp ở môi trường dev (file://, localhost,
+// 127.0.0.1 hoặc ?dev=1). Production không deploy file này (.assetsignore) nên chuỗi
+// cheat-kit không xuất hiện trong output prod (grep = 0); game vẫn chạy vì ADMV đã có
+// giá trị mặc định ở js/modes.js và nút #bAdmin đã guard typeof adminModal==="function".
+(function(){try{var dev=location.protocol==="file:"||/^(localhost|127\.0\.0\.1)$/.test(location.hostname)||/[?&]dev=1(?:&|$)/.test(location.search);if(!dev)return;var s=document.createElement("script");s.src="js/admin.js";s.defer=true;document.head.appendChild(s);}catch(e){}})();
+</script>
 <script defer src="js/guide.js"></script>
 <script defer src="js/codex_waves.js"></script>
 <script defer src="js/onboarding_goals.js"></script>
