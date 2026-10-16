@@ -279,3 +279,35 @@ test("W1-1: rotating x-account-id across hits never changes attribution", async 
   ).first();
   assert.equal(evil.n, 0);
 });
+
+test("W1-2: world boss damage comes from DB power, not client snapshot.power", async (t) => {
+  const { guardedFeature } = await import("../src/capabilities.js");
+  const DB = await localD1();
+  t.after(() => DB.close());
+  const env = { DB, FEATURE_FLAGS: JSON.stringify({ world_boss: true }) };
+  const holder = await register(req(), env, { name: "W1DmgHolder", save: baseSave() });
+  // power đã validate trong DB = 50000 (server tính lúc validate)
+  await DB.prepare("UPDATE chars SET power=?1 WHERE account_id=?2").bind(50000, holder.id).run();
+  const bossId = "wb_w1_dmg";
+  const now = Date.now();
+  await DB.prepare("INSERT INTO world_boss(id,starts_at,ends_at,hp,max_hp) VALUES(?1,?2,?3,100000,100000)")
+    .bind(bossId, now - 1000, now + 3600e3).run();
+  // đi qua đúng pipeline production: guardedFeature -> assertAccountFeature -> handler
+  const route = guardedFeature("world_boss", worldBoss);
+  const hit = (body) =>
+    route(
+      new Request("https://game.test/api/world-boss", {
+        method: "POST",
+        headers: { authorization: "Bearer " + holder.token, "content-type": "application/json" },
+        body: JSON.stringify(body),
+      }),
+      env,
+      body
+    );
+  const evil = await hit({ boss_id: bossId, snapshot: { power: 1e15 }, nonce: "w1dmg-evil" });
+  const ej = await evil.json();
+  assert.equal(ej.ok, true);
+  assert.equal(ej.damage, 5000, "damage = floor(50000/10) từ DB, không phải 1e14 từ client");
+  const row = await DB.prepare("SELECT damage FROM world_boss_hits WHERE boss_id=?1").bind(bossId).first();
+  assert.equal(row.damage, 5000);
+});

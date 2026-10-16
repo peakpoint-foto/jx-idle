@@ -7,6 +7,16 @@ import {quotaClaim} from './quota.js';
 // Thưởng theo mốc cá nhân + mốc chung.
 export const WB_HP_BASE = 100000000; // 100M
 export const WB_MAX_HITS = 5; // 5 lượt/người/boss
+// W1-2: trần sanity cho power dùng tính damage. Power hợp lệ (G.power = dps^w * ehp^(1-w))
+// thực tế dưới ~1e7; 1e9 cao hơn ~100 lần mà vẫn chặn được giá trị phi lý (1e15).
+export const WB_POWER_SANE_MAX = 1e9;
+
+/** Power dùng tính damage: chỉ từ số server đã tính lúc validate; chặn giá trị phi lý. */
+export function bossHitPower(raw) {
+  const p = Math.floor(+raw || 0);
+  if (!Number.isFinite(p) || p <= 0) return 0;
+  return Math.min(p, WB_POWER_SANE_MAX);
+}
 
 export function worldBossSchedule(now = Date.now()) {
   // 2 lần/tuần: Thứ 4 và Thứ 7, 20h-22h VN (UTC+7).
@@ -33,11 +43,13 @@ export async function worldBossHit(db, bossId, accountId, snapshot, nonce) {
   }).catch(() => null);
   if (!q || !q.accepted) return {ok: false, msg: "Hết lượt đánh"};
   if (q.duplicate) return {ok: false, msg: "Lượt đánh trùng lặp", already: true};
-  // damage từ snapshot đã xác thực (đơn giản: power/10)
-  const power = snapshot.power || 0;
-  const damage = Math.max(1, Math.floor(power / 10));
   const boss = await db.prepare(`SELECT * FROM world_boss WHERE id=?1`).bind(bossId).first();
   if (!boss || boss.status !== 'active') return {ok: false, msg: "Boss không còn"};
+  // W1-2: `snapshot` ở đây do API handler dựng từ chars.power (server tự tính lúc
+  // validate trong applyValidation) — KHÔNG phải snapshot.power từ body client.
+  // Sanity bound + trần theo max HP boss (một hit không thể vượt tổng HP).
+  const power = bossHitPower(snapshot && snapshot.power);
+  const damage = Math.max(1, Math.min(Math.floor(power / 10), boss.max_hp));
   const newHp = Math.max(0, boss.hp - damage);
   await db.batch([
     db.prepare(`INSERT INTO world_boss_hits(id,boss_id,account_id,damage,created_at)
