@@ -2,6 +2,9 @@
 // 3.1: Chất cơ chế riêng từng phái — framework.
 // Mỗi phái một cơ chế đặc trưng. Hook vào combat qua các hàm dưới.
 // Làm từng phái một; 3 phái mẫu: shaolin, tangmen, wudang.
+// Phase2-N7: hằng số minh họa — đòn thêm của Đường Môn bằng 50% sát thương của đòn vừa kích hoạt.
+// MINH HỌA - CHỜ USER CHỐT (user chuẩn y 16/10: sửa code theo desc, giá trị 50% lấy từ desc).
+const TANGMEN_EXTRA_HIT_RATIO = 0.5;
 const FAC_MECHANICS = Object.freeze({
   shaolin: Object.freeze({
     id: "lahan", name: "La Hán Kim Cang",
@@ -14,7 +17,7 @@ const FAC_MECHANICS = Object.freeze({
     desc: "15% cơ hội đánh thêm 1 đòn (50% sát thương).",
     // trả về true nếu kích hoạt đòn thêm
     onAttack(rand) { return rand() < 0.15; },
-    extraDmgMul: 0.5,
+    extraDmgMul: TANGMEN_EXTRA_HIT_RATIO,
   }),
   wudang: Object.freeze({
     id: "thaicuc", name: "Thái Cực Phản Kích",
