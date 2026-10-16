@@ -139,7 +139,7 @@ function sessionCombatHit(state,actor){
       b.poisonShares[actor.id]=(b.poisonShares[actor.id]||0)+d/POISON_TIME;
       b.poisonDmg=Object.values(b.poisonShares).reduce((x,y)=>x+y,0);b.poison=POISON_TIME;continue;
     }
-    raw+=crit&&el==="phys"?d*CRIT_MULT:d;
+    raw+=crit&&el!=="poison"?d*CRIT_MULT:d;/*Phase1-N6: như heroHit — crit mọi loại sát thương trừ poison*/
   }
   if(counters(a.series,b.series))raw+=p.series5;if(p.bossDmg>1)raw*=p.bossDmg;if(state.activity==="dungeon"&&b.ward>0)raw*=.2;if(state.activity==="siege"&&b.gate)raw*=SESSION_SIEGE.gateDamage;raw=Math.max(1,raw);
   // 2.13: phản ứng ngũ hành (parity với client).
