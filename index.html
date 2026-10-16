@@ -8,6 +8,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <link rel="manifest" href="manifest.json">
 <title>Võ Lâm Idle</title>
+<!-- W0-4: preload 2 file data nặng để fetch sớm nhưng KHÔNG parse ở boot (parse khi script defer chạy) -->
+<link rel="preload" href="data.js" as="script">
+<link rel="preload" href="ref.js" as="script">
 <link rel="stylesheet" href="fonts/font.css">
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="ui/jx2.css">
@@ -140,8 +143,8 @@
 <script defer src="js/offline_report.js"></script>
 <script defer src="js/save_waves.js"></script>
 <script defer src="js/save_schema.js"></script>
-<script defer src="js/doll-data.js"></script>
 <script defer src="js/doll.js"></script>
+<!-- W0-4: js/doll-data.js (1,7MB) KHÔNG còn parse ở boot — nạp lười qua dollEnsureData() khi doll lần đầu cần -->
 <script defer src="js/render.js"></script>
 <script defer src="js/audio.js"></script>
 <script defer src="js/ui.js"></script>
