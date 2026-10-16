@@ -5,7 +5,7 @@ function ready(mode='phlt'){const g=game();g.run(`fixture('${mode}',80);S.gold=1
 test('local summary records bounded net deltas only once between persisted saves, segregates modes and never grants resources',()=>{
   for(const mode of ['ctc','phlt','g2']){
     const g=ready(mode);g.run('S.gold+=100;save()');assert.equal(g.run('resourceSummary().entries[0].delta.gold'),100);
-    const before=g.json('S');g.run('resourceSummary();save()');assert.equal(g.run('resourceSummary().entries.length'),1);assert.deepEqual(g.json('S'),before);
+    const before=g.json('S');g.run('resourceSummary();save()');assert.equal(g.run('resourceSummary().entries.length'),1);assert.ok(g.json('S').rev>before.rev,'W1-4: save() bump rev đơn điệu');const now=g.json('S');delete now.rev;delete before.rev;assert.deepEqual(now,before);
     g.run('S.mode='+JSON.stringify(mode==='ctc'?'g2':'ctc'));assert.equal(g.run('resourceSummary().unsupported'),true);
   }
 });

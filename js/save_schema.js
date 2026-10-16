@@ -73,20 +73,20 @@ function preservePreMigrationSlot(slot) {
   };
 
   const previousWriteSlot = writeSlot;
-  writeSlot = function (slot, state) {
+  writeSlot = function (slot, state, opt) {
     if (ADMV.sandbox) throw new Error("Không thay bản lưu trong phiên thử nghiệm");
     saveSchemaVersion(state);
     preservePreMigrationSlot(slot);
-    return previousWriteSlot(slot, state);
+    return previousWriteSlot(slot, state, opt);
   };
   const previousImportSave = importSave;
-  importSave = function (text) {
+  importSave = function (text, opt) {
     if (ADMV.sandbox) throw new Error("Không nhập bản lưu trong phiên thử nghiệm");
     // Validate before previousImportSave can replace S or call save().
     const incoming = unpack(decodeURIComponent(escape(atob(String(text).trim()))));
     if (!incoming.ok) throw new Error("Mã đã bị chỉnh sửa (sai chữ ký)");
     migrateSaveSchema(incoming.state);
     preservePreMigrationSlot(SLOT);
-    return previousImportSave(text);
+    return previousImportSave(text, opt);
   };
 }

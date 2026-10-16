@@ -38,22 +38,22 @@
 // bearer token, even when the slot number is reused.
 {
   const legacyWriteSlot = writeSlot;
-  writeSlot = function (slot, state) {
+  writeSlot = function (slot, state, opt) {
     let previousId = null;
     try {
       const old = localStorage.getItem(slotKey(slot));
       const previous = old && unpack(old).state;
       previousId = previous && previous.cid;
     } catch (e) {}
-    const written = legacyWriteSlot(slot, state);
+    const written = legacyWriteSlot(slot, state, opt);
     // Validation or storage failures must leave the old account link intact.
     if (previousId && written && written.cid && previousId !== written.cid) unlinkSlotOnline(slot);
     return written;
   };
   const legacyImportSave = importSave;
-  importSave = function (text) {
+  importSave = function (text, opt) {
     const previous = S && S.cid;
-    legacyImportSave(text);
+    legacyImportSave(text, opt);
     if (previous && S && S.cid && previous !== S.cid) unlinkSlotOnline(SLOT);
   };
 }

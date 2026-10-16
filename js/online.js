@@ -154,7 +154,7 @@ function onlApplyServerSnapshot() {
   try {
     const state = onlPackedState(ONL.conflict.server_save);
     if (!confirm("Nạp bản lưu máy chủ và bỏ thay đổi cục bộ hiện tại?")) return;
-    writeSlot(SLOT, state);
+    writeSlot(SLOT, state, {force: true});
     location.reload();
   } catch (e) { toast(e.msg || "Không nạp được bản lưu máy chủ") }
 }

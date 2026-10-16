@@ -53,6 +53,6 @@ function standardGear(fac,sex,lvl){
 }
 // A complete save for the standardized character: fixed level, no spare points, reference gear, and only what the validated build chose.
 function challengeSave(spec,presetId){
-  const preset=challengePreset(presetId),s=Object.assign(newSave(),{mode:"g2",name:"Chuẩn hóa",fac:spec.fac,sex:spec.sex,lvl:preset.level,attr:{...spec.attr},attrPts:0,sk:{...spec.sk},skPts:0,main:spec.main,inv:[],last:0,cid:"c_standard_challenge_build"});
+  const preset=challengePreset(presetId),s=Object.assign(newSave(),{mode:"g2",name:"Chuẩn hóa",fac:spec.fac,sex:spec.sex,lvl:preset.level,attr:{...spec.attr},attrPts:0,sk:{...spec.sk},skPts:0,main:spec.main,inv:[],last:0,cid:"c_standard_challenge_build",save_id:"std_"+presetId+"_"+spec.fac,rev:0});
   s.eq=standardGear(spec.fac,spec.sex,preset.level);return s;
 }
