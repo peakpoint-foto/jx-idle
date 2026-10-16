@@ -402,7 +402,7 @@ function onlModeCardHTML(acc, recoverBox) {
     <div class="row">Phiên bản save <span>${me && me.char ? me.char.sync_rev : "…"}</span></div>
     ${me && me.flags && me.flags.length ? `<div class="onlflag"><b>Nhân vật đang bị gắn cờ xác minh</b>${me.flags.map(f => `<small>${esc(f.detail || f.code)}</small>`).join("")}</div>` : ""}
     ${ONL.conflict ? `<div class="onlflag"><b>Phát hiện bản lưu mới hơn trên máy chủ.</b><div class="btnrow"><button class="btn sm" id="onlPullConflict">Nạp bản máy chủ</button><button class="btn sm" id="onlPushConflict">Ghi đè bằng bản này</button></div></div>` : ""}
-    <div class="btnrow"><button class="btn" id="onlSyncBtn">Đồng bộ ngay</button><button class="btn" id="onlCodeBtn">Mã khôi phục</button></div>
+    <div class="btnrow"><button class="btn" id="onlSyncBtn">Đồng bộ ngay</button><button class="btn" id="onlCodeBtn">Mã khôi phục</button><button class="btn" id="onlDevBtn">Thiết bị & bảo mật</button></div>
     <small class="dim" id="onlCode" hidden>Giữ kín mã này, nó thay cho mật khẩu: <code>${esc(acc.token)}</code></small>
     <small class="dim">Tài khoản này khóa theo chế độ ${esc(MODES[S.mode].n)}; không vào bảng xếp hạng, PvP, bang hay phòng của Công Thành Chiến.</small>
     ${featureEnabled("room_presence") ? '<div id="onlRoomPanel" class="onlpanel"></div>' : ""}</div>`;
@@ -421,7 +421,7 @@ function onlCardHTML() {
       ${me && me.char && me.char.validation_status === "pending_verification" ? `<div class="onlflag"><b>Đang chờ xác minh lịch sử chuyển sinh</b><small>${esc(me.char.validation_note || "Chưa đủ lịch sử server để đưa vào bảng xếp hạng.")}</small></div>` : ""}
       ${me && me.flags && me.flags.length ? `<div class="onlflag"><b>Đang bị loại khỏi bảng xếp hạng vì nghi gian lận</b>${me.flags.map(f => `<small>${esc(f.detail || f.code)}</small>`).join("")}</div>` : ""}
       ${ONL.conflict ? `<div class="onlflag"><b>Phát hiện bản lưu mới hơn trên máy chủ.</b><small>Chọn nạp bản máy chủ hoặc ghi đè bằng bản đang mở.</small><div class="btnrow"><button class="btn sm" id="onlPullConflict">Nạp bản máy chủ</button><button class="btn sm" id="onlPushConflict">Ghi đè máy chủ</button></div></div>` : ""}
-      <div class="btnrow"><button class="btn" id="onlSyncBtn">Đồng bộ ngay</button><button class="btn" id="onlRankBtn">Bảng xếp hạng</button><button class="btn" id="onlCodeBtn">Mã khôi phục</button></div>
+      <div class="btnrow"><button class="btn" id="onlSyncBtn">Đồng bộ ngay</button><button class="btn" id="onlRankBtn">Bảng xếp hạng</button><button class="btn" id="onlCodeBtn">Mã khôi phục</button><button class="btn" id="onlDevBtn">Thiết bị & bảo mật</button></div>
       <small class="dim" id="onlCode" hidden>Giữ kín mã này, nó thay cho mật khẩu: <code>${esc(acc.token)}</code></small><div id="onlRankPanel" class="onlpanel" hidden></div>
       <div id="onlDuelPanel" class="onlpanel"><b>PvP bất đồng bộ</b><small class="dim">Phân xử bất đồng bộ bằng ước lượng lực chiến và hệ số cố định theo mã trận. Giao hữu không cộng điểm; ranked cần cùng bậc, lực chiến gần nhau.</small><div class="btnrow">${featureEnabled("duel_modes")?'<select id="onlDuelKind" aria-label="Loại thách đấu"><option value="ranked">Ranked</option><option value="friendly">Giao hữu</option></select>':""}<input id="onlOpponent" maxlength="16" placeholder="Tên đối thủ"><button class="btn sm" id="onlChallengeBtn">Thách đấu</button></div><div id="onlDuelList"></div></div>
       <div id="onlGuildPanel" class="onlpanel"></div><div id="onlMentorPanel" class="onlpanel"></div><div id="onlRoomPanel" class="onlpanel"></div></div>`;
@@ -434,6 +434,7 @@ function onlCardBind() {
   const b = id => document.getElementById(id);
   if (b("onlSyncBtn")) b("onlSyncBtn").onclick = async () => { if (await onlSync(false)) { toast("Đã đồng bộ"); await onlRefreshMe(); renderMore() } };
   if (b("onlCodeBtn")) b("onlCodeBtn").onclick = () => { const c = b("onlCode"); if (c) c.hidden = !c.hidden };
+  if (b("onlDevBtn")) b("onlDevBtn").onclick = () => { if (typeof onlOpenDevices === "function") onlOpenDevices() };
   if (b("onlRankBtn")) b("onlRankBtn").onclick = onlRenderRank;
   if (b("onlPullConflict")) b("onlPullConflict").onclick = onlApplyServerSnapshot;
   if (b("onlPushConflict")) b("onlPushConflict").onclick = onlForceLocalSnapshot;
