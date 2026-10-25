@@ -6,17 +6,17 @@ for (const mode of ["ctc", "phlt", "g2"]) {
   test(`${mode}: legacy migration preserves character, gear, points and raw backup`, () => {
     const g=game();
     g.run(`fixture('${mode}');S.v=1;S.extensions=undefined;S.gold=12345;S.attrPts=7;S.skPts=9;S.eq={weapon:{r:2,mo:'${mode}',uid:99,base:[],mag:[]}};var oldCid=S.cid;var oldRaw=pack(S);localStorage.setItem(saveKey(),oldRaw);localStorage.setItem(onlKey(),JSON.stringify({token:'do-not-copy'}));load()`);
-    assert.equal(g.run("S.v"),2);
+    assert.equal(g.run("S.v"),3);
     assert.equal(g.run("S.cid===oldCid"),true);
     const ext=g.json("S.extensions");
     assert.deepEqual([g.json("S.mode"),g.json("S.gold"),g.json("S.attrPts"),g.json("S.skPts"),g.json("S.eq.weapon.uid")],[mode,12345,7,9,99]);
     assert.equal(ext.v,1);assert.equal(ext.wv,3);assert.deepEqual(ext.codex.unlocked,[1]);assert.ok(ext.goals7&&typeof ext.goals7.start==="number");
-    assert.equal(g.run("localStorage.getItem(saveKey()+'_pre_v2')===oldRaw"),true);
+    assert.equal(g.run("localStorage.getItem(saveKey()+'_pre_v3')===oldRaw"),true);
     assert.equal(g.run("onlGet().token"),"do-not-copy");
     g.run("var migrated=migrate(S);var twice=migrate(migrated)");
     assert.deepEqual(g.json("migrated"),g.json("twice"));
     g.run("save();load()");
-    assert.equal(g.run("localStorage.getItem(saveKey()+'_pre_v2')===oldRaw"),true);
+    assert.equal(g.run("localStorage.getItem(saveKey()+'_pre_v3')===oldRaw"),true);
   });
 }
 
@@ -37,8 +37,8 @@ test("backup write failure aborts migration and keeps raw legacy save", () => {
 
 test("corrupted primary preserves the legacy backup before recovery", () => {
   const g=game();g.run("fixture();S.v=1;var original=pack(S);localStorage.setItem(saveKey(),'broken');localStorage.setItem(saveKey()+'_bak',original);load()");
-  assert.equal(g.run("S.v"),2);
-  assert.equal(g.run("localStorage.getItem(saveKey()+'_pre_v2')===original"),true);
+  assert.equal(g.run("S.v"),3);
+  assert.equal(g.run("localStorage.getItem(saveKey()+'_pre_v3')===original"),true);
 });
 
 test("future import and replacement leave current slot and online identity unchanged", () => {
@@ -62,8 +62,8 @@ test("extension migrations are nonmutating and reject unknown schema", () => {
 
 test("backup-only recovery is preserved and unsupported extensions fail closed", () => {
   const g=game();g.run("fixture();S.v=1;var original=pack(S);localStorage.setItem(saveKey()+'_bak',original);load()");
-  assert.equal(g.run("S.v"),2);
-  assert.equal(g.run("localStorage.getItem(saveKey()+'_pre_v2')===original"),true);
+  assert.equal(g.run("S.v"),3);
+  assert.equal(g.run("localStorage.getItem(saveKey()+'_pre_v3')===original"),true);
   g.run("fixture();S.extensions={v:99};var invalid=pack(S);localStorage.setItem(saveKey(),invalid);load()");
   assert.equal(g.run("SAVE_LOCK"),true);
   assert.equal(g.run("localStorage.getItem(saveKey())===invalid"),true);
@@ -82,6 +82,6 @@ test("sandbox import/replacement cannot write migration backups or unlink tokens
   assert.throws(()=>g.run("writeSlot(0,replacement)"),/thử nghiệm/);
   assert.throws(()=>g.run("importSave(btoa(unescape(encodeURIComponent(pack(replacement)))))"),/thử nghiệm/);
   assert.equal(g.run("localStorage.getItem(saveKey())===original"),true);
-  assert.equal(g.run("localStorage.getItem(saveKey()+'_pre_v2')"),null);
+  assert.equal(g.run("localStorage.getItem(saveKey()+'_pre_v3')"),null);
   assert.equal(g.run("onlGet().token"),"private");
 });

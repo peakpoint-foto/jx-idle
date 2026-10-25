@@ -14,6 +14,10 @@ function combatPolicySave(profile,reserveControl) {
   if(S.extensions?.combatPolicy&&S.extensions.combatPolicy.v!==1)return buildResult(["Phiên bản chính sách mới hơn chưa hỗ trợ"]);
   const candidate=JSON.parse(JSON.stringify(S));candidate.extensions||={v:1};
   candidate.extensions.combatPolicy={v:1,mode:modeId(),profile,reserveControl:!!reserveControl};
+  // Bước 5: chọn (lại) profile = người chơi tái khẳng định ngưỡng profile,
+  // nên xóa cờ tay đặt của slider (slider thắng profile chỉ khi cờ còn đó).
+  // buildPersist thay S bằng candidate nên xóa ở đây là nguyên tử cùng save.
+  candidate.potLifeManual=false;candidate.potManaManual=false;
   return buildPersist(candidate);
 }
 function combatPolicyTarget(list) {
@@ -47,7 +51,18 @@ function combatPolicyTarget(list) {
     try{S.potOff=true;originalPotion(dt);}finally{S.potOff=off;}
     const h=R.hot,P=R.P;if(off||S.chal==="nopot"||R.deadT>0||R.life<=0||R.town)return;
     h.cd=Math.max(0,(h.cd||0)-dt);
-    for(const [kind,need] of [["life",R.life<P.life*policy.lifeThreshold],["mana",P.main.cost>0&&R.mana<P.main.cost*policy.manaMultiplier]]) {
+    // Bước 5: slider do người chơi kéo tay là nguồn sự thật cho ngưỡng của
+    // chính nó — khi cờ tay đặt còn đó, ngưỡng slider thắng ngưỡng profile;
+    // khi không có cờ, profile thắng như cũ (không đổi hành vi cũ).
+    // Lý do: slider là lựa chọn số trực tiếp, cụ thể hơn preset thô của
+    // profile (conserve 30%/1x, còn lại 50%/2x); preset chỉ là mặc định
+    // khi người chơi chưa đặt tay. Chỉ ngưỡng potion bị slider thắng —
+    // chọn mục tiêu, rotation, giữ khống chế của profile không đổi.
+    const lifeNeed=S.potLifeManual&&typeof potionLifeThreshold==="function"
+      ?R.life<P.life*potionLifeThreshold()/100:R.life<P.life*policy.lifeThreshold;
+    const manaNeed=S.potManaManual&&typeof potionManaThreshold==="function"
+      ?R.mana<P.mana*potionManaThreshold()/100:P.main.cost>0&&R.mana<P.main.cost*policy.manaMultiplier;
+    for(const [kind,need] of [["life",lifeNeed],["mana",manaNeed]]) {
       if(!need||h[kind+"T"]>0||h.cd>0||R.potCd?.[kind]>0)continue;
       if(kind==="life"&&S.siege&&typeof siegePotLeft==="function"&&siegePotLeft()<=0){combatPolicyReason("potion","Đã hết quota thuốc công thành");continue;}
       const stock=takeStock(kind),potion=stock||(policy.buy?bestPotion(kind):null);

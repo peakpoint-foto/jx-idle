@@ -11,7 +11,7 @@ test("fixture v1 qua migration không mất dữ liệu, waves được áp dụ
   const before = g.json(`(()=>{const snap=${snapJS};const o=JSON.parse(JSON.stringify(S));o.v=1;delete o.extensions;return snap(o);})()`);
   const after = g.json(`(()=>{const snap=${snapJS};const o=JSON.parse(JSON.stringify(S));o.v=1;delete o.extensions;const m=migrate(o);return Object.assign(snap(m),{v:m.v,wv:m.extensions.wv,codex:m.extensions.codex.unlocked,goals7:!!m.extensions.goals7});})()`);
   assert.deepEqual((({v, wv, codex, goals7, ...rest}) => rest)(after), before, "dữ liệu gameplay giữ nguyên");
-  assert.equal(after.v, 2);
+  assert.equal(after.v, 3); // bước 1: SAVE_V bump 2 -> 3, save migrate xong phải mang v3 (không còn v2)
   assert.equal(after.wv, 3, "đã chạy hết waves");
   assert.deepEqual(after.codex, [1]);
   assert.equal(after.goals7, true);

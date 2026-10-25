@@ -52,6 +52,22 @@ const FEATURE_REGISTRY = Object.freeze({
   online_account_g2: { modes: ["g2"], enabled: false, online: true },
   seasonal_challenge: { modes: ["ctc","phlt","g2"], enabled: false, online: true },
   trading: { modes: ["ctc"], enabled: false, online: true },
+  // Bước 1 jx-idle (2026-10-25, BRAINSTORM-v2.3): 7 flag mới, mặc định OFF.
+  // Cả 7 đều online:false — không flag nào tự mở kênh đồng bộ mới.
+  loot_records: { modes: ["ctc","phlt","g2"], enabled: true, online: false },
+  appearance_change: { modes: ["ctc","phlt","g2"], enabled: true, online: false },
+  // Chỉ tái dùng code/định dạng JXB1 của build_library, KHÔNG lấy mode chỉ g2 của nó.
+  build_presets: { modes: ["ctc","phlt","g2"], enabled: true, online: false },
+  // Quy tắc per-Thủ Lĩnh là luật ở tầng tính năng, không phải requires trong
+  // registry: Thủ Lĩnh local thì 3 mode, Thủ Lĩnh CTC thì chỉ CTC qua receipt hiện có.
+  farm_schedule: { modes: ["ctc","phlt","g2"], enabled: true, online: false },
+  // Lát T: "Local" = chế độ chơi offline không đồng bộ, không phải mode id thứ 4
+  // (registry chỉ có ctc/phlt/g2), nên đăng ký [phlt, g2] và CTC bị từ chối;
+  // không chạm đồng bộ CTC/BXH/Thủ Lĩnh bang cho tới khi có shared calc +
+  // validator Worker mở rộng + test D1 + claim runId do server cấp.
+  trigger_deck: { modes: ["phlt","g2"], enabled: true, online: false },
+  companion: { modes: ["phlt","g2"], enabled: true, online: false },
+  trophy_charm: { modes: ["phlt","g2"], enabled: true, online: false },
 });
 let FEATURE_FLAGS = Object.freeze({});
 

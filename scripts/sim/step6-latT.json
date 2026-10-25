@@ -1,0 +1,524 @@
+{
+  "cells": [
+    {
+      "fac": "shaolin",
+      "lvl": 60,
+      "baseDps": 8087,
+      "basicTot": 834.6,
+      "rate": 1.35,
+      "companionRatioNormal": 0.0279,
+      "companionRatioBoss": 0.0139,
+      "totalRatioNormal": 1.4879,
+      "totalRatioBoss": 1.4739
+    },
+    {
+      "fac": "shaolin",
+      "lvl": 100,
+      "baseDps": 29230,
+      "basicTot": 2534.4,
+      "rate": 1.54,
+      "companionRatioNormal": 0.0267,
+      "companionRatioBoss": 0.0134,
+      "totalRatioNormal": 1.4867,
+      "totalRatioBoss": 1.4734
+    },
+    {
+      "fac": "shaolin",
+      "lvl": 180,
+      "baseDps": 94201,
+      "basicTot": 5876,
+      "rate": 1.65,
+      "companionRatioNormal": 0.0206,
+      "companionRatioBoss": 0.0103,
+      "totalRatioNormal": 1.4806,
+      "totalRatioBoss": 1.4703
+    },
+    {
+      "fac": "tianwang",
+      "lvl": 60,
+      "baseDps": 838,
+      "basicTot": 137,
+      "rate": 1,
+      "companionRatioNormal": 0.0322,
+      "companionRatioBoss": 0.0161,
+      "totalRatioNormal": 1.4922,
+      "totalRatioBoss": 1.4761
+    },
+    {
+      "fac": "tianwang",
+      "lvl": 100,
+      "baseDps": 21100,
+      "basicTot": 1997.1,
+      "rate": 1,
+      "companionRatioNormal": 0.0189,
+      "companionRatioBoss": 0.0095,
+      "totalRatioNormal": 1.4789,
+      "totalRatioBoss": 1.4695
+    },
+    {
+      "fac": "tianwang",
+      "lvl": 180,
+      "baseDps": 49739,
+      "basicTot": 4086.1,
+      "rate": 1,
+      "companionRatioNormal": 0.0164,
+      "companionRatioBoss": 0.0082,
+      "totalRatioNormal": 1.4764,
+      "totalRatioBoss": 1.4682
+    },
+    {
+      "fac": "tangmen",
+      "lvl": 60,
+      "baseDps": 3501,
+      "basicTot": 399.4,
+      "rate": 1.79,
+      "companionRatioNormal": 0.0409,
+      "companionRatioBoss": 0.0205,
+      "totalRatioNormal": 1.5009,
+      "totalRatioBoss": 1.4805
+    },
+    {
+      "fac": "tangmen",
+      "lvl": 100,
+      "baseDps": 12409,
+      "basicTot": 1275.4,
+      "rate": 2.06,
+      "companionRatioNormal": 0.0423,
+      "companionRatioBoss": 0.0212,
+      "totalRatioNormal": 1.5023,
+      "totalRatioBoss": 1.4812
+    },
+    {
+      "fac": "tangmen",
+      "lvl": 180,
+      "baseDps": 40021,
+      "basicTot": 3937.9,
+      "rate": 2.06,
+      "companionRatioNormal": 0.0406,
+      "companionRatioBoss": 0.0203,
+      "totalRatioNormal": 1.5006,
+      "totalRatioBoss": 1.4803
+    },
+    {
+      "fac": "wudu",
+      "lvl": 60,
+      "baseDps": 4851,
+      "basicTot": 55.9,
+      "rate": 0.9,
+      "companionRatioNormal": 0.002,
+      "companionRatioBoss": 0.001,
+      "totalRatioNormal": 1.462,
+      "totalRatioBoss": 1.461
+    },
+    {
+      "fac": "wudu",
+      "lvl": 100,
+      "baseDps": 6228,
+      "basicTot": 694.6,
+      "rate": 1,
+      "companionRatioNormal": 0.0223,
+      "companionRatioBoss": 0.0112,
+      "totalRatioNormal": 1.4823,
+      "totalRatioBoss": 1.4712
+    },
+    {
+      "fac": "wudu",
+      "lvl": 180,
+      "baseDps": 23266,
+      "basicTot": 2934,
+      "rate": 1,
+      "companionRatioNormal": 0.0252,
+      "companionRatioBoss": 0.0126,
+      "totalRatioNormal": 1.4852,
+      "totalRatioBoss": 1.4726
+    },
+    {
+      "fac": "emei",
+      "lvl": 60,
+      "baseDps": 7054,
+      "basicTot": 129.9,
+      "rate": 1.44,
+      "companionRatioNormal": 0.0053,
+      "companionRatioBoss": 0.0027,
+      "totalRatioNormal": 1.4653,
+      "totalRatioBoss": 1.4627
+    },
+    {
+      "fac": "emei",
+      "lvl": 100,
+      "baseDps": 13928,
+      "basicTot": 1162.9,
+      "rate": 2.3,
+      "companionRatioNormal": 0.0385,
+      "companionRatioBoss": 0.0192,
+      "totalRatioNormal": 1.4985,
+      "totalRatioBoss": 1.4792
+    },
+    {
+      "fac": "emei",
+      "lvl": 180,
+      "baseDps": 20392,
+      "basicTot": 1478.8,
+      "rate": 2.3,
+      "companionRatioNormal": 0.0334,
+      "companionRatioBoss": 0.0167,
+      "totalRatioNormal": 1.4934,
+      "totalRatioBoss": 1.4767
+    },
+    {
+      "fac": "cuiyan",
+      "lvl": 60,
+      "baseDps": 2193,
+      "basicTot": 797.6,
+      "rate": 1.9,
+      "companionRatioNormal": 0.1386,
+      "companionRatioBoss": 0.0693,
+      "totalRatioNormal": 1.5986,
+      "totalRatioBoss": 1.5293
+    },
+    {
+      "fac": "cuiyan",
+      "lvl": 100,
+      "baseDps": 6583,
+      "basicTot": 761.9,
+      "rate": 2.07,
+      "companionRatioNormal": 0.0478,
+      "companionRatioBoss": 0.0239,
+      "totalRatioNormal": 1.5078,
+      "totalRatioBoss": 1.4839
+    },
+    {
+      "fac": "cuiyan",
+      "lvl": 180,
+      "baseDps": 4208,
+      "basicTot": 1191.9,
+      "rate": 2.3,
+      "companionRatioNormal": 0.1301,
+      "companionRatioBoss": 0.065,
+      "totalRatioNormal": 1.5901,
+      "totalRatioBoss": 1.525
+    },
+    {
+      "fac": "gaibang",
+      "lvl": 60,
+      "baseDps": 975,
+      "basicTot": 439.1,
+      "rate": 1.008,
+      "companionRatioNormal": 0.091,
+      "companionRatioBoss": 0.0455,
+      "totalRatioNormal": 1.551,
+      "totalRatioBoss": 1.5055
+    },
+    {
+      "fac": "gaibang",
+      "lvl": 100,
+      "baseDps": 8429,
+      "basicTot": 832.2,
+      "rate": 2.3,
+      "companionRatioNormal": 0.0453,
+      "companionRatioBoss": 0.0226,
+      "totalRatioNormal": 1.5053,
+      "totalRatioBoss": 1.4826
+    },
+    {
+      "fac": "gaibang",
+      "lvl": 180,
+      "baseDps": 35385,
+      "basicTot": 2712.6,
+      "rate": 2.3,
+      "companionRatioNormal": 0.0353,
+      "companionRatioBoss": 0.0176,
+      "totalRatioNormal": 1.4953,
+      "totalRatioBoss": 1.4776
+    },
+    {
+      "fac": "tianren",
+      "lvl": 60,
+      "baseDps": 8239,
+      "basicTot": 637.5,
+      "rate": 2.547,
+      "companionRatioNormal": 0.0396,
+      "companionRatioBoss": 0.0198,
+      "totalRatioNormal": 1.4996,
+      "totalRatioBoss": 1.4798
+    },
+    {
+      "fac": "tianren",
+      "lvl": 100,
+      "baseDps": 37296,
+      "basicTot": 1463.3,
+      "rate": 2.83,
+      "companionRatioNormal": 0.0222,
+      "companionRatioBoss": 0.0111,
+      "totalRatioNormal": 1.4822,
+      "totalRatioBoss": 1.4711
+    },
+    {
+      "fac": "tianren",
+      "lvl": 180,
+      "baseDps": 70439,
+      "basicTot": 2258.6,
+      "rate": 2.83,
+      "companionRatioNormal": 0.0182,
+      "companionRatioBoss": 0.0091,
+      "totalRatioNormal": 1.4782,
+      "totalRatioBoss": 1.4691
+    },
+    {
+      "fac": "wudang",
+      "lvl": 60,
+      "baseDps": 13324,
+      "basicTot": 771.4,
+      "rate": 2.07,
+      "companionRatioNormal": 0.0239,
+      "companionRatioBoss": 0.012,
+      "totalRatioNormal": 1.4839,
+      "totalRatioBoss": 1.472
+    },
+    {
+      "fac": "wudang",
+      "lvl": 100,
+      "baseDps": 15900,
+      "basicTot": 378.6,
+      "rate": 2.07,
+      "companionRatioNormal": 0.0099,
+      "companionRatioBoss": 0.0049,
+      "totalRatioNormal": 1.4699,
+      "totalRatioBoss": 1.4649
+    },
+    {
+      "fac": "wudang",
+      "lvl": 180,
+      "baseDps": 18358,
+      "basicTot": 616.1,
+      "rate": 2.07,
+      "companionRatioNormal": 0.0139,
+      "companionRatioBoss": 0.0069,
+      "totalRatioNormal": 1.4739,
+      "totalRatioBoss": 1.4669
+    },
+    {
+      "fac": "kunlun",
+      "lvl": 60,
+      "baseDps": 1569,
+      "basicTot": 477.8,
+      "rate": 2.5,
+      "companionRatioNormal": 0.153,
+      "companionRatioBoss": 0.0765,
+      "totalRatioNormal": 1.613,
+      "totalRatioBoss": 1.5365
+    },
+    {
+      "fac": "kunlun",
+      "lvl": 100,
+      "baseDps": 8674,
+      "basicTot": 641.6,
+      "rate": 2.5,
+      "companionRatioNormal": 0.0369,
+      "companionRatioBoss": 0.0184,
+      "totalRatioNormal": 1.4969,
+      "totalRatioBoss": 1.4784
+    },
+    {
+      "fac": "kunlun",
+      "lvl": 180,
+      "baseDps": 23609,
+      "basicTot": 1728.3,
+      "rate": 2.5,
+      "companionRatioNormal": 0.0366,
+      "companionRatioBoss": 0.0183,
+      "totalRatioNormal": 1.4966,
+      "totalRatioBoss": 1.4783
+    }
+  ],
+  "maxTotalRatioNormal": 1.613,
+  "maxTotalRatioBoss": 1.5365,
+  "maxCompanionRatio": 0.153,
+  "warnThreshold": 2.125,
+  "capThreshold": 2.5,
+  "charmByLevel": [
+    {
+      "level": 1,
+      "charmDamageBonus": 0.05,
+      "totalRatio": 1.51,
+      "overWarn": false,
+      "overCap": false
+    },
+    {
+      "level": 2,
+      "charmDamageBonus": 0.1,
+      "totalRatio": 1.56,
+      "overWarn": false,
+      "overCap": false
+    },
+    {
+      "level": 3,
+      "charmDamageBonus": 0.15,
+      "totalRatio": 1.61,
+      "overWarn": false,
+      "overCap": false
+    },
+    {
+      "level": 4,
+      "charmDamageBonus": 0.2,
+      "totalRatio": 1.66,
+      "overWarn": false,
+      "overCap": false
+    },
+    {
+      "level": 5,
+      "charmDamageBonus": 0.25,
+      "totalRatio": 1.71,
+      "overWarn": false,
+      "overCap": false
+    },
+    {
+      "level": 6,
+      "charmDamageBonus": 0.3,
+      "totalRatio": 1.76,
+      "overWarn": false,
+      "overCap": false
+    },
+    {
+      "level": 7,
+      "charmDamageBonus": 0.35,
+      "totalRatio": 1.81,
+      "overWarn": false,
+      "overCap": false
+    },
+    {
+      "level": 8,
+      "charmDamageBonus": 0.4,
+      "totalRatio": 1.86,
+      "overWarn": false,
+      "overCap": false
+    },
+    {
+      "level": 9,
+      "charmDamageBonus": 0.45,
+      "totalRatio": 1.91,
+      "overWarn": false,
+      "overCap": false
+    },
+    {
+      "level": 10,
+      "charmDamageBonus": 0.5,
+      "totalRatio": 1.96,
+      "overWarn": false,
+      "overCap": false
+    },
+    {
+      "level": 11,
+      "charmDamageBonus": 0.55,
+      "totalRatio": 2.01,
+      "overWarn": false,
+      "overCap": false
+    },
+    {
+      "level": 12,
+      "charmDamageBonus": 0.6,
+      "totalRatio": 2.06,
+      "overWarn": false,
+      "overCap": false
+    },
+    {
+      "level": 13,
+      "charmDamageBonus": 0.65,
+      "totalRatio": 2.11,
+      "overWarn": false,
+      "overCap": false
+    },
+    {
+      "level": 14,
+      "charmDamageBonus": 0.7,
+      "totalRatio": 2.16,
+      "overWarn": true,
+      "overCap": false
+    },
+    {
+      "level": 15,
+      "charmDamageBonus": 0.75,
+      "totalRatio": 2.21,
+      "overWarn": true,
+      "overCap": false
+    },
+    {
+      "level": 16,
+      "charmDamageBonus": 0.8,
+      "totalRatio": 2.26,
+      "overWarn": true,
+      "overCap": false
+    },
+    {
+      "level": 17,
+      "charmDamageBonus": 0.85,
+      "totalRatio": 2.31,
+      "overWarn": true,
+      "overCap": false
+    },
+    {
+      "level": 18,
+      "charmDamageBonus": 0.9,
+      "totalRatio": 2.36,
+      "overWarn": true,
+      "overCap": false
+    },
+    {
+      "level": 19,
+      "charmDamageBonus": 0.95,
+      "totalRatio": 2.41,
+      "overWarn": true,
+      "overCap": false
+    },
+    {
+      "level": 20,
+      "charmDamageBonus": 1,
+      "totalRatio": 2.46,
+      "overWarn": true,
+      "overCap": false
+    },
+    {
+      "level": 21,
+      "charmDamageBonus": 1.05,
+      "totalRatio": 2.51,
+      "overWarn": true,
+      "overCap": true
+    },
+    {
+      "level": 22,
+      "charmDamageBonus": 1.1,
+      "totalRatio": 2.56,
+      "overWarn": true,
+      "overCap": true
+    },
+    {
+      "level": 23,
+      "charmDamageBonus": 1.15,
+      "totalRatio": 2.61,
+      "overWarn": true,
+      "overCap": true
+    },
+    {
+      "level": 24,
+      "charmDamageBonus": 1.2,
+      "totalRatio": 2.66,
+      "overWarn": true,
+      "overCap": true
+    },
+    {
+      "level": 25,
+      "charmDamageBonus": 1.25,
+      "totalRatio": 2.71,
+      "overWarn": true,
+      "overCap": true
+    }
+  ],
+  "warnLevel": 14,
+  "capLevel": 21,
+  "evalMs": {
+    "slots1": 129.2,
+    "slots3": 188.7,
+    "calls": 5000,
+    "note": "gồm overhead g.run; chỉ dùng để so sánh 1 ô vs 3 ô"
+  }
+}

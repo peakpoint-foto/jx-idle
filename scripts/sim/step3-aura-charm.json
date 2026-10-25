@@ -1,0 +1,253 @@
+{
+ "method": "POWER_BUDGET additive on calc() DPS proxy + sessionCombatStep cross-check",
+ "candidate": {
+  "auraDamage": 0.1,
+  "charmDamage": 0.05
+ },
+ "worstNew": 0.15000000000000002,
+ "existingBudget": 0.31,
+ "total": 0.46,
+ "cap": 1.5,
+ "warn": 1.125,
+ "withinCap": true,
+ "withinWarn": true,
+ "cells": [
+  {
+   "fac": "shaolin",
+   "lvl": 60,
+   "baseDps": 8087,
+   "plusOneLevelRatio": 0,
+   "withAuraCharm": 9300
+  },
+  {
+   "fac": "shaolin",
+   "lvl": 100,
+   "baseDps": 29230,
+   "plusOneLevelRatio": 0.0248,
+   "withAuraCharm": 33615
+  },
+  {
+   "fac": "shaolin",
+   "lvl": 180,
+   "baseDps": 94201,
+   "plusOneLevelRatio": 0.0193,
+   "withAuraCharm": 108331
+  },
+  {
+   "fac": "tianwang",
+   "lvl": 60,
+   "baseDps": 838,
+   "plusOneLevelRatio": 0.0177,
+   "withAuraCharm": 964
+  },
+  {
+   "fac": "tianwang",
+   "lvl": 100,
+   "baseDps": 21100,
+   "plusOneLevelRatio": 0.013,
+   "withAuraCharm": 24265
+  },
+  {
+   "fac": "tianwang",
+   "lvl": 180,
+   "baseDps": 49739,
+   "plusOneLevelRatio": 0.0113,
+   "withAuraCharm": 57200
+  },
+  {
+   "fac": "tangmen",
+   "lvl": 60,
+   "baseDps": 3501,
+   "plusOneLevelRatio": 0.0148,
+   "withAuraCharm": 4026
+  },
+  {
+   "fac": "tangmen",
+   "lvl": 100,
+   "baseDps": 12409,
+   "plusOneLevelRatio": 0.0142,
+   "withAuraCharm": 14271
+  },
+  {
+   "fac": "tangmen",
+   "lvl": 180,
+   "baseDps": 40021,
+   "plusOneLevelRatio": 0.0142,
+   "withAuraCharm": 46025
+  },
+  {
+   "fac": "wudu",
+   "lvl": 60,
+   "baseDps": 4851,
+   "plusOneLevelRatio": 0.0153,
+   "withAuraCharm": 5578
+  },
+  {
+   "fac": "wudu",
+   "lvl": 100,
+   "baseDps": 6228,
+   "plusOneLevelRatio": 0,
+   "withAuraCharm": 7162
+  },
+  {
+   "fac": "wudu",
+   "lvl": 180,
+   "baseDps": 23266,
+   "plusOneLevelRatio": 0,
+   "withAuraCharm": 26756
+  },
+  {
+   "fac": "emei",
+   "lvl": 60,
+   "baseDps": 7054,
+   "plusOneLevelRatio": 0.0148,
+   "withAuraCharm": 8112
+  },
+  {
+   "fac": "emei",
+   "lvl": 100,
+   "baseDps": 13928,
+   "plusOneLevelRatio": 0,
+   "withAuraCharm": 16017
+  },
+  {
+   "fac": "emei",
+   "lvl": 180,
+   "baseDps": 20392,
+   "plusOneLevelRatio": 0,
+   "withAuraCharm": 23451
+  },
+  {
+   "fac": "cuiyan",
+   "lvl": 60,
+   "baseDps": 2193,
+   "plusOneLevelRatio": 0,
+   "withAuraCharm": 2522
+  },
+  {
+   "fac": "cuiyan",
+   "lvl": 100,
+   "baseDps": 6583,
+   "plusOneLevelRatio": 0,
+   "withAuraCharm": 7571
+  },
+  {
+   "fac": "cuiyan",
+   "lvl": 180,
+   "baseDps": 4208,
+   "plusOneLevelRatio": 0,
+   "withAuraCharm": 4839
+  },
+  {
+   "fac": "gaibang",
+   "lvl": 60,
+   "baseDps": 975,
+   "plusOneLevelRatio": 0,
+   "withAuraCharm": 1121
+  },
+  {
+   "fac": "gaibang",
+   "lvl": 100,
+   "baseDps": 8429,
+   "plusOneLevelRatio": 0.0124,
+   "withAuraCharm": 9693
+  },
+  {
+   "fac": "gaibang",
+   "lvl": 180,
+   "baseDps": 35385,
+   "plusOneLevelRatio": 0.0142,
+   "withAuraCharm": 40692
+  },
+  {
+   "fac": "tianren",
+   "lvl": 60,
+   "baseDps": 8239,
+   "plusOneLevelRatio": 0,
+   "withAuraCharm": 9475
+  },
+  {
+   "fac": "tianren",
+   "lvl": 100,
+   "baseDps": 37296,
+   "plusOneLevelRatio": 0.0124,
+   "withAuraCharm": 42890
+  },
+  {
+   "fac": "tianren",
+   "lvl": 180,
+   "baseDps": 70439,
+   "plusOneLevelRatio": 0.0108,
+   "withAuraCharm": 81005
+  },
+  {
+   "fac": "wudang",
+   "lvl": 60,
+   "baseDps": 13324,
+   "plusOneLevelRatio": 0.0023,
+   "withAuraCharm": 15322
+  },
+  {
+   "fac": "wudang",
+   "lvl": 100,
+   "baseDps": 15900,
+   "plusOneLevelRatio": 0.0156,
+   "withAuraCharm": 18285
+  },
+  {
+   "fac": "wudang",
+   "lvl": 180,
+   "baseDps": 18358,
+   "plusOneLevelRatio": 0.0128,
+   "withAuraCharm": 21112
+  },
+  {
+   "fac": "kunlun",
+   "lvl": 60,
+   "baseDps": 1569,
+   "plusOneLevelRatio": 0.0187,
+   "withAuraCharm": 1804
+  },
+  {
+   "fac": "kunlun",
+   "lvl": 100,
+   "baseDps": 8674,
+   "plusOneLevelRatio": 0.0296,
+   "withAuraCharm": 9975
+  },
+  {
+   "fac": "kunlun",
+   "lvl": 180,
+   "baseDps": 23609,
+   "plusOneLevelRatio": 0.0283,
+   "withAuraCharm": 27151
+  }
+ ],
+ "sessionChecks": [
+  {
+   "fac": "shaolin",
+   "lvl": 100,
+   "base": 19669,
+   "scaled": 19132,
+   "ratio": 0.9727
+  },
+  {
+   "fac": "emei",
+   "lvl": 100,
+   "base": 3920,
+   "scaled": 4382,
+   "ratio": 1.1179
+  },
+  {
+   "fac": "wudang",
+   "lvl": 100,
+   "base": 50880,
+   "scaled": 58512,
+   "ratio": 1.15
+  }
+ ],
+ "plusOneLevel": {
+  "min": 0,
+  "max": 0.0296
+ }
+}

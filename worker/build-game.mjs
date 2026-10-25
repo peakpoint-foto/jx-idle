@@ -30,7 +30,7 @@ const EXPORTS = [
   "applyPart", "hitPercent", "heroGuard",
   "tickEnemyStatuses",
   "CHALLENGE_VERSION", "CHALLENGE_PRESETS", "challengeBudgets", "challengeSpecCheck", "challengeSave", "standardGear",
-  "JX_CONTENT", "eventScheduled", "eventsForWeek", "SESSION_COMBAT", "SESSION_SIEGE", "SESSION_RESCUE", "SESSION_TRIAL", "sessionTrialRule", "sessionTrialMutator", "sessionActor", "sessionCombatNew", "sessionCombatStep",
+  "JX_CONTENT", "validateBossLoot", "eventScheduled", "eventsForWeek", "SESSION_COMBAT", "SESSION_SIEGE", "SESSION_RESCUE", "SESSION_TRIAL", "sessionTrialRule", "sessionTrialMutator", "sessionActor", "sessionCombatNew", "sessionCombatStep",
   "RIFT_RULES", "RIFT_MODIFIERS", "riftModifiersValid", "riftStats", "riftChoices",
   "featureEnabled", "featureConfigSnapshot", "parseFeatureFlags",
   "redactFeedbackText", "cleanFeedbackDiagnostics", "cleanFeedbackContext",
@@ -72,6 +72,7 @@ const __contentData = {
   seasonThemes: __loadContent("data/content/season_themes.v1.json", __contentCtx.validateSeasonThemes),
   legendaryAffixes: __loadContent("data/content/legendary_affixes.v1.json", __contentCtx.validateLegendaryAffixes),
   factionStories: __loadContent("data/content/faction_stories.v2.json", __contentCtx.validateFactionStories),
+  bossLoot: __loadContent("data/content/boss_loot.v1.json", __contentCtx.validateBossLoot),
 };
 // JX_CONTENT có mặt trong bundle trước mọi file game (kể cả js/content.js và js/session_combat.js).
 // Deep-freeze để giữ nguyên semantics bất biến như bản hardcode Object.freeze lồng nhau trước đây.

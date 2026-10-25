@@ -250,3 +250,69 @@ function contentReloadBanner(feature) {
     (document.body || document.documentElement).appendChild(b);
   } catch (e) {}
 }
+// Bảng loot theo Thủ Lĩnh (Bước 2, boss-loot-v1): phân bổ lại pool hiện có, không đổi tỉ lệ toàn cục.
+// Validator chỉ kiểm tra tính nhất quán nội bộ (đủ 16 boss, không boss trống, tổng tỉ lệ, pity theo công thức,
+// không món độc quyền bịa ra); việc đối chiếu pool với data.js/world.js nằm ở test/step2-boss-loot.test.mjs.
+function validateBossLoot(data) {
+  const what = "boss-loot";
+  if (!isPlainObj(data)) throw contentError(what, "phải là object");
+  checkVersion(data.version, "boss-loot", what);
+  if (typeof data.notes !== "string" || !data.notes.trim()) throw contentError(what, "thiếu notes giải thích phân bổ lại");
+  if (!Array.isArray(data.bosses) || data.bosses.length !== 16) throw contentError(what, "bosses phải đúng 16 mục");
+  const zones = new Set(), bossIds = new Set();
+  data.bosses.forEach((b, i) => {
+    const at = `bosses[${i}]`;
+    if (!isPlainObj(b)) throw contentError(what, `${at} phải là object`);
+    if (!Number.isInteger(b.zone_id)) throw contentError(what, `${at}.zone_id phải là số nguyên`);
+    if (zones.has(b.zone_id)) throw contentError(what, `${at}.zone_id trùng: ${b.zone_id}`);
+    zones.add(b.zone_id);
+    if (!Number.isInteger(b.boss_id)) throw contentError(what, `${at}.boss_id phải là số nguyên`);
+    if (bossIds.has(b.boss_id)) throw contentError(what, `${at}.boss_id trùng: ${b.boss_id}`);
+    bossIds.add(b.boss_id);
+    if (typeof b.zone !== "string" || !b.zone.trim()) throw contentError(what, `${at}.zone không hợp lệ`);
+    if (typeof b.boss !== "string" || !b.boss.trim()) throw contentError(what, `${at}.boss không hợp lệ`);
+    if (b.zone_index !== i) throw contentError(what, `${at}.zone_index phải bằng thứ tự ${i}`);
+    if (!Number.isInteger(b.level_lo) || !Number.isInteger(b.level_hi) || !(b.level_lo >= 1 && b.level_hi > b.level_lo && b.level_hi <= 180))
+      throw contentError(what, `${at}: khoảng cấp không hợp lệ`);
+    if (b.faction_affinity !== null && b.faction_affinity !== "wudang")
+      throw contentError(what, `${at}.faction_affinity chỉ được null hoặc "wudang" (suy từ kỹ năng boss, không gán phái suy đoán)`);
+    if (typeof b.drop_file !== "string" || !/^npcdroprate(10|20|30|40|50|60|70|80|90|110|119)\.ini$/.test(b.drop_file))
+      throw contentError(what, `${at}.drop_file không hợp lệ`);
+    if (!Array.isArray(b.common) || b.common.length === 0) throw contentError(what, `${at}.common trống`);
+    const details = new Set(); let sum = 0;
+    b.common.forEach((c, j) => {
+      if (!Number.isInteger(c.detail) || c.detail < 0 || c.detail > 9) throw contentError(what, `${at}.common[${j}].detail phải 0-9`);
+      if (details.has(c.detail)) throw contentError(what, `${at}.common[${j}].detail trùng: ${c.detail}`);
+      details.add(c.detail);
+      if (!Number.isInteger(c.rows) || c.rows < 1) throw contentError(what, `${at}.common[${j}].rows phải >= 1`);
+      if (!Number.isInteger(c.weight_permyriad) || c.weight_permyriad < 0) throw contentError(what, `${at}.common[${j}].weight_permyriad không hợp lệ`);
+      sum += c.weight_permyriad;
+    });
+    if (sum !== 10000) throw contentError(what, `${at}.common tổng phải = 10000, nhận ${sum}`);
+    const pool = b.set_pool;
+    if (!isPlainObj(pool) || pool.kind !== "gold" || !Number.isInteger(pool.records) || pool.records < 1)
+      throw contentError(what, `${at}.set_pool không hợp lệ`);
+    if (!Array.isArray(pool.groups) || pool.groups.length === 0) throw contentError(what, `${at}.set_pool.groups trống`);
+    let gsum = 0, grec = 0;
+    pool.groups.forEach((g, j) => {
+      if (!Number.isInteger(g.records) || g.records < 1) throw contentError(what, `${at}.set_pool.groups[${j}].records phải >= 1`);
+      if (!Number.isInteger(g.share_permyriad) || g.share_permyriad < 0) throw contentError(what, `${at}.set_pool.groups[${j}].share_permyriad không hợp lệ`);
+      gsum += g.share_permyriad; grec += g.records;
+    });
+    if (gsum !== 10000) throw contentError(what, `${at}.set_pool.groups tổng phải = 10000, nhận ${gsum}`);
+    if (grec !== pool.records) throw contentError(what, `${at}.set_pool.groups tổng records phải = ${pool.records}, nhận ${grec}`);
+    if (b.faction_affinity === "wudang" && !pool.groups.some(g => g.faction === "wudang"))
+      throw contentError(what, `${at}: affinity wudang nhưng set_pool thiếu nhóm wudang`);
+    if (!isPlainObj(b.platina_conditional) || !Number.isInteger(b.platina_conditional.records) || b.platina_conditional.records < 1)
+      throw contentError(what, `${at}.platina_conditional không hợp lệ`);
+    if (!isPlainObj(b.shard_conditional) || b.shard_conditional.rate_boss !== 0.06)
+      throw contentError(what, `${at}.shard_conditional.rate_boss phải = 0.06 theo DROP.shard hiện có`);
+    if (!isPlainObj(b.pity) || !Number.isInteger(b.pity.boss_kills) || b.pity.boss_kills !== Math.ceil(500 / (1 + 0.2 * i)))
+      throw contentError(what, `${at}.pity.boss_kills phải = ceil(500/(1+0.2*zone_index)) = ${Math.ceil(500 / (1 + 0.2 * i))}`);
+    if (typeof b.pity.basis !== "string" || !b.pity.basis.trim() || typeof b.pity.applies_to !== "string" || !b.pity.applies_to.trim())
+      throw contentError(what, `${at}.pity thiếu basis/applies_to`);
+    if (!Array.isArray(b.exclusive) || b.exclusive.length !== 0)
+      throw contentError(what, `${at}.exclusive phải rỗng (không bịa món độc quyền theo boss)`);
+  });
+  return data;
+}

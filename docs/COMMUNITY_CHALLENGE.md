@@ -46,6 +46,20 @@ Mô phỏng 10 phái (build chia đều chỉ số, 6 kỹ năng, tự đánh v�
 - `test/community_challenge.test.mjs` (6 case): danh tính, cắt build theo ngân sách (10 phái × 3 mốc, luôn qua kiểm tra chung), thoát HTML, throttle, body gửi đi, lỗi thân thiện.
 - `scripts/session-browser-smoke.mjs`: hai trình duyệt cô lập (360/1280) đăng build, thấy nhau, cùng chạy, bảng chung #1/#2, không ghi sổ cái, nút chạm ≥44px, không tràn ngang, tắt flag thì panel biến mất.
 
+## Ghi chú Bước 2 (2026-10-25) — chỉ là ghi chú văn bản, KHÔNG đổi hành vi code
+
+Phạm vi Giai đoạn 1 trong Phụ lục F của `BRAINSTORM-v2.3.md` (“cả cộng đồng/bang góp sát thương/vòng farm để mở mốc thưởng chung, chỉ khi kết quả đã qua snapshot kiểm định, 2.0 + requires `online_account_g2`”) **khác** với code G04 đang chạy mô tả ở trên (“giao hữu chuẩn hóa 1 người”, “Không có thưởng”). Đây là mâu thuẫn phạm vi còn tồn tại, KHÔNG được tự hòa giải bằng cách sửa mô tả code đang chạy hay đổi hành vi code trong Bước 2:
+
+- Giữ nguyên nghĩa Phụ lục F cho Giai đoạn 1; giữ nguyên các câu mô tả code hiện tại trong tài liệu này (“chạy một mình”, “Không có thưởng”, “không ghi sổ cái”) vì chúng vẫn đúng với code hiện tại.
+- Chỗ cần sửa văn bản cho khớp khi Bước 3 triển khai xong (chưa sửa trong Bước 2): tách tài liệu này thành 2 lớp — (a) lớp G04 hiện tại (giao hữu chuẩn hóa 1 người, không thưởng) và (b) lớp mốc thưởng chung Giai đoạn 1 (góp chung → snapshot kiểm định → mở mốc) — chỉ ghi lớp (b) là “đã triển khai” sau khi có test snapshot + route claim; trước đó lớp (b) chỉ được ghi là “thiết kế, chưa triển khai”.
+- Phần đã chuẩn bị ở Bước 2 (chưa nối route, chưa mở thưởng): validator snapshot thuần `worker/src/season_snapshot.js` (từ chối snapshot nguồn client, tổng lệch contributors, mốc lạ, thời gian tương lai) + bản nháp D1 `migrations/0014_season_milestones.sql` (chưa nối `ensureSchema`, chưa nối route). Thưởng chung vẫn ĐÓNG cho tới Bước 3.
+
+## Ghi chú Bước 3 (2026-10-25) — chỉ là ghi chú văn bản, KHÔNG đổi hành vi code
+
+- Bước 3 chỉ code phần đếm đóng góp cộng đồng (client `js/step3.js`: `step3CommunityContribute`, test `test/step3.test.mjs`); thưởng chung vẫn ĐÓNG (`STEP3_COMMUNITY_REWARD.open === false`, `step3CommunityClaim` luôn ném lỗi).
+- Chưa nối thêm gì so với Bước 2: migration 0014 vẫn là bản nháp (chưa nối `ensureSchema`/route, chưa kiểm chứng trên D1 thật) và ngưỡng mốc vẫn chưa chốt vì chưa có cơ sở vận hành (không bịa ngưỡng). Vì vậy việc tách tài liệu thành 2 lớp (ghi chú Bước 2) vẫn CHƯA làm — chỉ tách sau khi snapshot + route claim + ngưỡng mốc được nối và test xong.
+- Mâu thuẫn phạm vi G04 (giao hữu 1 người, không thưởng) vs Phụ lục F (góp chung mở mốc) vẫn còn tồn tại, giữ nguyên như ghi chú Bước 2.
+
 ## Giới hạn
 
 - Hệ số mốc chỉ hiệu chỉnh bằng mô phỏng với build chia đều; chưa playtest, build tối ưu hóa của người chơi có thể vượt xa hoặc hoàn thành hết mốc thấp.

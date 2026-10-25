@@ -5,6 +5,18 @@ const potionLifeThreshold = () => {
   if (!S || !Number.isFinite(+S.potLifePct)) return POT_LIFE_DEFAULT;
   return Math.max(5, Math.min(95, Math.floor(+S.potLifePct)));
 };
+/* Bước 5: ngưỡng % cho mana, tương tự slider HP. Mặc định 50% — KHÁC với
+ * luật cũ (mana < 2x cost chiêu chính): luật cũ không phải %, không thể
+ * giữ nguyên khi chuyển sang %; 50% được chọn để khớp mặc định HP và là
+ * điểm giữa dải slider 5–95%. Thay đổi hành vi này được ghi rõ, không
+ * giấu trong "giữ nguyên". Cờ potLifeManual/potManaManual chỉ được đặt
+ * khi người chơi KÉO slider (xem handler dưới) — gán trực tiếp S.potLifePct
+ * trong code/test không đặt cờ, nên profile vẫn thắng trong trường hợp đó. */
+const POT_MANA_DEFAULT = 50;
+const potionManaThreshold = () => {
+  if (!S || !Number.isFinite(+S.potManaPct)) return POT_MANA_DEFAULT;
+  return Math.max(5, Math.min(95, Math.floor(+S.potManaPct)));
+};
 
 /* Keep the existing shared potion/cooldown/CTC-cap path, but make the HP
  * trigger an explicit saved percentage instead of a hidden constant. */
@@ -22,7 +34,7 @@ if (typeof autoPotion === "function") {
     }
     if (S.potOff || S.chal === "nopot") return;
     const needLife = R.life < p.life * potionLifeThreshold() / 100;
-    const needMana = p.main.cost > 0 && R.mana < p.main.cost * 2;
+    const needMana = R.mana < p.mana * potionManaThreshold() / 100;
     h.cd = Math.max(0, (h.cd || 0) - dt);
     for (const [kind, need] of [["life", needLife], ["mana", needMana]]) {
       const urgent = kind === "life" && R.life < p.life * .3 && h.cd <= 0;
@@ -43,18 +55,31 @@ if (typeof renderMore === "function") {
   renderMore = function (...args) {
     const out = legacyRenderMoreForPotion.apply(this, args);
     const checkbox = document.getElementById("cPot");
-    if (!checkbox || document.getElementById("potLifePct")) return out;
-    const row = document.createElement("label");
-    row.id = "potLifePctRow";
-    row.innerHTML = `Ngưỡng tự bơm HP: <input id="potLifePct" type="range" min="5" max="95" step="5" value="${potionLifeThreshold()}"> <output>${potionLifeThreshold()}%</output>`;
+    if (!checkbox) return out;
     const label = checkbox.parentNode, host = label.parentNode || label;
-    host.insertBefore(row, label.nextSibling);
-    const slider = row.querySelector("#potLifePct"), output = row.querySelector("output");
-    slider.oninput = () => {
-      S.potLifePct = Math.max(5, Math.min(95, Math.floor(+slider.value || POT_LIFE_DEFAULT)));
-      output.value = output.textContent = `${S.potLifePct}%`;
-      save();
+    const addRow = (rowId, inputId, title, value, onSet, afterEl) => {
+      if (document.getElementById(inputId)) return;
+      const row = document.createElement("label");
+      row.id = rowId;
+      row.innerHTML = `${title}: <input id="${inputId}" type="range" min="5" max="95" step="5" value="${value}"> <output>${value}%</output>`;
+      host.insertBefore(row, (afterEl || label).nextSibling);
+      const slider = row.querySelector(`#${inputId}`), output = row.querySelector("output");
+      slider.oninput = () => {
+        const v = Math.max(5, Math.min(95, Math.floor(+slider.value || 50)));
+        onSet(v);
+        output.value = output.textContent = `${v}%`;
+        save();
+      };
     };
+    // Kéo slider = người chơi đặt tay: đặt cờ tay đặt để combat_policy biết
+    // slider này thắng profile (xem js/combat_policy.js). Chọn lại profile
+    // sẽ xóa cờ (về ngưỡng profile) — xem combatPolicySave.
+    addRow("potLifePctRow", "potLifePct", "Ngưỡng tự bơm HP", potionLifeThreshold(), v => {
+      S.potLifePct = v; S.potLifeManual = true;
+    });
+    addRow("potManaPctRow", "potManaPct", "Ngưỡng tự bơm mana", potionManaThreshold(), v => {
+      S.potManaPct = v; S.potManaManual = true;
+    }, document.getElementById("potLifePctRow"));
     return out;
   };
 }

@@ -6,7 +6,7 @@ export const DUEL_RULES=Object.freeze({version:'power-v2',ttl:3*864e5,powerRatio
 export function advancedDuels(env,row){let state;try{state=JSON.parse(row.snapshot);}catch(e){}return !!state&&GAME.featureEnabled('duel_modes',state.mode,env.FEATURE_FLAGS,!!state.sandbox);}
 export function duelProfile(row,mode='ctc'){
   let state;try{state=JSON.parse(row.snapshot);}catch(e){throw new HttpError(403,'snapshot_invalid');}
-  if(!state||typeof state!=='object'||state.mode!==mode||state.sandbox||!GAME.FAC[state.fac]||state.fac!==row.fac||state.lvl!==row.lvl||![1,2].includes(state.v))throw new HttpError(403,'snapshot_invalid');
+  if(!state||typeof state!=='object'||state.mode!==mode||state.sandbox||!GAME.FAC[state.fac]||state.fac!==row.fac||state.lvl!==row.lvl||![1,2,3].includes(state.v))throw new HttpError(403,'snapshot_invalid'); // v3 = SAVE_V sau bước 1 (bump 2 -> 3); lần bump sau phải mở rộng danh sách này cùng lúc
   const previous=GAME.getS();let result;
   try{result=validateChar(state,row.play_sec);}catch(e){throw new HttpError(403,'snapshot_invalid');}finally{GAME.setS(previous);}
   if(result.flags.length||result.pending.length||!Number.isFinite(result.power)||result.power<1)throw new HttpError(403,'snapshot_invalid','Cần đồng bộ snapshot hợp lệ trước khi đấu');
