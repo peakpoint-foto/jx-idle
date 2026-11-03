@@ -60,6 +60,18 @@ function step5SkillFingerprint() {
     if (typeof buildsHTML === "function") {
       try { parts.push(buildsHTML()); } catch (e) { /* noop */ }
     }
+    // (bổ sung 2026-11-03, fix CI 25/10): cờ tính năng, chế độ chơi và trạng
+    // thái tắt gợi ý CŨNG là đầu vào hiển thị của tab kỹ năng — các panel
+    // gợi ý/policy/library/codex chỉ hiện khi flag tương ứng bật, panel gợi
+    // ý đổi dạng khi bị tắt. Thiếu chúng, renderSkill() bị bỏ qua khi người
+    // chơi (hoặc smoke test) chỉ bật/tắt một panel mà không đổi kỹ năng:
+    // panel không hiện/không ẩn, và smoke chết ở adviceCheck vì
+    // querySelector('[data-advice-goal]') trả null. Cả ba đều ổn định giữa
+    // các lần render (chỉ đổi khi người dùng/flag đổi) nên không giết
+    // optimization bỏ render thừa.
+    try { if (typeof FEATURE_FLAGS !== "undefined") parts.push(JSON.stringify(FEATURE_FLAGS)); } catch (e) { /* noop */ }
+    try { if (typeof modeId === "function") parts.push(modeId()); } catch (e) { /* noop */ }
+    try { if (typeof adviceDismissed === "function") parts.push(adviceDismissed()); } catch (e) { /* noop */ }
     return JSON.stringify(parts);
   } catch (e) { return null; }
 }
